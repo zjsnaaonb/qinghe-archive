@@ -1,0 +1,29 @@
+{
+  "name": "qinghe-archive-arg",
+  "private": true,
+  "version": "1.0.0",
+  "description": "《青禾库：祠下村遗存影像考》—— 中式民俗恐怖多站点调查网页 ARG",
+  "type": "module",
+  "scripts": {
+    "encrypt-lore": "node scripts/encrypt-content.mjs",
+    "dev": "node scripts/encrypt-content.mjs && vite",
+    "build": "node scripts/encrypt-content.mjs && tsc -b && vite build",
+    "preview": "vite preview",
+    "verify-arg": "node scripts/verify-playthrough.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.475.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.9",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.7.0",
+    "tailwindcss": "^4.0.9",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}

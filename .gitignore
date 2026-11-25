@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+.DS_Store
+
+# 防剧透保护：公开 GitHub 仓库仅上传编译后的 AES-256-GCM 密文库 (src/data/encryptedVault.ts)
+# 原始明文金库、主控谜底表与内部审核脚本仅保留在创作者本地电脑中：
+vault-raw/
+docs/
+scripts/verify-playthrough.mjs
