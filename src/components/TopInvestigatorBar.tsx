@@ -115,26 +115,26 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/90 bg-[#0b0c10]/95 text-zinc-200 backdrop-blur-md">
-      {/* 精简优雅的第一排：品牌标识 + 融合搜索栏 + 右侧核心工具 */}
+    <header className="sticky top-0 z-50 border-b border-[#dfd8ca] bg-[#fbf9f4]/95 text-stone-800 backdrop-blur-md shadow-[0_1px_3px_rgba(24,24,27,0.04)]">
+      {/* 第一排：品牌标识 + 融合搜索栏 + 右侧核心工具 */}
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-3 px-4 py-2.5">
         <div className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-            <span className="font-serif-cn text-sm font-bold tracking-widest text-zinc-100">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#9e2a2b] shadow-[0_0_6px_rgba(158,42,43,0.45)]" />
+            <span className="font-serif-cn text-sm font-bold tracking-widest text-[#16263f]">
               青禾库
             </span>
           </div>
-          <span className="hidden md:inline-block h-3.5 w-px bg-zinc-800" />
-          <span className="hidden md:inline text-[11px] font-mono-tech text-zinc-400">
-            距零点公映 <strong className="text-amber-300 font-normal">{countdownText}</strong>
+          <span className="hidden md:inline-block h-3.5 w-px bg-[#dcd4c4]" />
+          <span className="hidden md:inline text-[11px] font-mono-tech text-stone-500">
+            距零点公映 <strong className="text-[#9e2a2b] font-semibold">{countdownText}</strong>
           </span>
         </div>
 
-        {/* 仅在解锁青禾馆后再高亮跨站搜索，避免开局首屏干扰 */}
+        {/* 跨站联合检索栏 */}
         <form onSubmit={handleSearchSubmit} className="flex flex-1 max-w-lg items-center">
           <div className="relative flex w-full items-center">
-            <span className="hidden lg:inline-flex items-center rounded-l-lg border border-r-0 border-zinc-800 bg-zinc-900/90 px-2.5 py-1.5 text-[11px] font-mono-tech text-zinc-500 select-all">
+            <span className="hidden lg:inline-flex items-center rounded-l-lg border border-r-0 border-[#dcd4c4] bg-[#f2ede2] px-2.5 py-1.5 text-[11px] font-mono-tech text-stone-500 select-all">
               {currentMeta.domain}
             </span>
             <div className="relative flex-1">
@@ -147,11 +147,11 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
                     ? '跨站检索……（切勿回头核对身后光线）'
                     : '跨站检索关键词、村名或编号……'
                 }
-                className="w-full rounded-lg lg:rounded-l-none border border-zinc-800 bg-zinc-950/90 py-1.5 pl-3 pr-8 text-xs text-zinc-100 placeholder-zinc-500 focus:border-amber-500/60 focus:outline-none transition"
+                className="w-full rounded-lg lg:rounded-l-none border border-[#dcd4c4] bg-white py-1.5 pl-3 pr-8 text-xs text-stone-800 placeholder-stone-400 focus:border-[#9e2a2b]/60 focus:outline-none transition"
               />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-amber-400 cursor-pointer transition"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#9e2a2b] cursor-pointer transition"
                 title="跨站联合检索"
               >
                 <Search className="h-3.5 w-3.5" />
@@ -169,15 +169,15 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
             }}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium cursor-pointer transition ${
               activePanel === 'notebook'
-                ? 'border-amber-500/80 bg-amber-500/15 text-amber-200'
-                : 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:border-zinc-600 hover:text-white'
+                ? 'border-[#9e2a2b]/60 bg-[#9e2a2b]/10 text-[#9e2a2b]'
+                : 'border-[#dcd4c4] bg-white text-stone-700 hover:border-stone-400 hover:bg-stone-50'
             }`}
             title="展开/收起右侧分栏手记（主页面会自动左移不遮挡）"
           >
-            <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+            <BookOpen className="h-3.5 w-3.5 text-[#9e2a2b]" />
             <span>手记</span>
             {state.discoveredClues.length > 0 && (
-              <span className="rounded-full bg-amber-500/20 px-1.5 text-[10px] font-mono-tech text-amber-300">
+              <span className="rounded-full bg-[#9e2a2b]/12 px-1.5 text-[10px] font-mono-tech font-semibold text-[#9e2a2b]">
                 {state.discoveredClues.length}
               </span>
             )}
@@ -189,27 +189,27 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
               horrorAudio.playClick('ui');
               onTogglePanel('hints');
             }}
-            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs cursor-pointer transition ${
+            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium cursor-pointer transition ${
               activePanel === 'hints'
-                ? 'border-emerald-500/80 bg-emerald-500/15 text-emerald-200'
-                : 'border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200'
+                ? 'border-emerald-600/60 bg-emerald-50 text-emerald-800'
+                : 'border-[#dcd4c4] bg-white text-stone-600 hover:border-stone-400 hover:text-stone-800'
             }`}
             title="卡关时按需查看分级提示"
           >
-            <Lightbulb className="h-3.5 w-3.5 text-emerald-400" />
+            <Lightbulb className="h-3.5 w-3.5 text-emerald-600" />
             <span className="hidden sm:inline">提示</span>
           </button>
 
           <button
             type="button"
             onClick={onToggleMute}
-            className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-1.5 text-zinc-400 hover:border-zinc-600 hover:text-white cursor-pointer transition"
+            className="rounded-lg border border-[#dcd4c4] bg-white p-1.5 text-stone-600 hover:border-stone-400 hover:text-stone-900 cursor-pointer transition"
             title={state.audioMuted ? '开启声效' : '静音'}
           >
             {state.audioMuted ? (
-              <VolumeX className="h-3.5 w-3.5 text-red-400" />
+              <VolumeX className="h-3.5 w-3.5 text-[#9e2a2b]" />
             ) : (
-              <Volume2 className="h-3.5 w-3.5 text-emerald-400" />
+              <Volume2 className="h-3.5 w-3.5 text-emerald-600" />
             )}
           </button>
 
@@ -221,8 +221,8 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
             }}
             className={`rounded-lg border p-1.5 cursor-pointer transition ${
               activePanel === 'settings'
-                ? 'border-zinc-500 bg-zinc-800 text-white'
-                : 'border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:border-zinc-600 hover:text-white'
+                ? 'border-[#16263f]/40 bg-[#16263f]/10 text-[#16263f]'
+                : 'border-[#dcd4c4] bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900'
             }`}
             title="设置、惊吓模式与存档码"
           >
@@ -231,8 +231,8 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
         </div>
       </div>
 
-      {/* 第二排：仅展示已解锁的站点标签，配合 Framer Motion layoutId 顺滑滑块！ */}
-      <div className="border-t border-zinc-800/70 bg-zinc-950/75 px-4 py-1.5">
+      {/* 第二排：已解锁站点标签栏 */}
+      <div className="border-t border-[#eae4d7] bg-[#f3efe5]/90 px-4 py-1.5">
         <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2">
           <div className="flex items-center gap-1 overflow-x-auto">
             {state.unlockedSites.map((siteId) => {
@@ -247,21 +247,21 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
                     onSelectSite(siteId);
                   }}
                   className={`relative inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium cursor-pointer transition ${
-                    active ? 'text-amber-100' : 'text-zinc-400 hover:text-zinc-200'
+                    active ? 'text-[#16263f] font-semibold' : 'text-stone-600 hover:text-[#16263f]'
                   }`}
                 >
                   {active && (
                     <motion.span
                       layoutId="activeSiteTab"
                       transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                      className="absolute inset-0 rounded-lg border border-amber-500/45 bg-amber-500/12"
+                      className="absolute inset-0 rounded-lg border border-[#d4cbb8] bg-white shadow-2xs"
                     />
                   )}
                   <span className="relative z-10 flex items-center gap-1.5">
                     {meta.icon}
                     <span>{meta.shortName}</span>
                     {siteId === 'oa' && state.oaLevel > 0 && (
-                      <span className="rounded bg-emerald-950 px-1 text-[10px] font-mono-tech text-emerald-300">
+                      <span className="rounded bg-emerald-100 border border-emerald-300/70 px-1 text-[10px] font-mono-tech text-emerald-800">
                         Lv.{state.oaLevel}
                       </span>
                     )}
@@ -271,14 +271,14 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
             })}
           </div>
 
-          <div className="hidden sm:flex items-center gap-3 shrink-0 text-[11px] font-mono-tech text-zinc-500">
+          <div className="hidden sm:flex items-center gap-3 shrink-0 text-[11px] font-mono-tech text-stone-500">
             {state.contamination > 0 && (
-              <span className={state.contamination >= 50 ? 'text-red-400' : 'text-zinc-400'}>
+              <span className={state.contamination >= 50 ? 'text-[#9e2a2b] font-semibold' : 'text-stone-500'}>
                 视网膜残留 {state.contamination}%
               </span>
             )}
             {state.act >= 4 && (
-              <span className="text-red-400 animate-pulse">同页浏览：2 人</span>
+              <span className="text-[#9e2a2b] font-semibold animate-pulse">同页浏览：2 人</span>
             )}
           </div>
         </div>

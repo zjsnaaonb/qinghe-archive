@@ -171,20 +171,20 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
 
   return (
     <div className="min-h-[calc(100vh-124px)] bg-[#f6f3ec] text-[#1f2937]">
-      {/* 典雅博物馆风深普鲁士蓝门户页眉 */}
-      <div className="border-b border-[#d6cfc0] bg-[#16263f] text-[#f5f1e8]">
+      {/* 典雅明亮的高校数字博物馆纸本页眉 */}
+      <div className="border-t-4 border-t-[#9e2a2b] border-b border-[#dfd8ca] bg-[#fcfaf5] text-[#16263f]">
         <div className="mx-auto max-w-6xl px-5 py-7">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2 text-[11px] tracking-widest text-[#c9b07a]">
+              <div className="flex items-center gap-2 text-[11px] font-semibold tracking-widest text-[#9e2a2b]">
                 <span>南州大学人文高等研究院</span>
                 <span>·</span>
                 <span className="font-mono-tech">省社科重点项目 24ZDA0838</span>
               </div>
-              <h1 className="mt-1.5 font-serif-cn text-2xl sm:text-3xl font-bold tracking-[0.1em] text-white">
+              <h1 className="mt-1.5 font-serif-cn text-2xl sm:text-3xl font-bold tracking-[0.08em] text-[#16263f]">
                 {state.act >= 4 ? '青禾数字民俗馆 · 遗存影像总目' : '青禾数字民俗馆'}
               </h1>
-              <p className="mt-1.5 text-xs text-slate-300/85">
+              <p className="mt-1.5 text-xs text-stone-500">
                 1996—1999 云溪水库淹没区三十七村抢救性田野影像、口述史与器物数字典藏
               </p>
             </div>
@@ -197,11 +197,11 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                   value={localQuery}
                   onChange={(e) => setLocalQuery(e.target.value)}
                   placeholder="搜馆藏名、编号或人名（如：晒谷场收工图）"
-                  className="w-full rounded-xl border border-white/15 bg-white/10 py-2.5 pl-4 pr-10 text-xs text-white placeholder-slate-300/70 backdrop-blur-sm focus:border-[#d4b46a] focus:bg-white/15 focus:outline-none transition"
+                  className="w-full rounded-xl border border-[#d6cebe] bg-white py-2.5 pl-4 pr-10 text-xs text-stone-800 placeholder-stone-400 shadow-2xs focus:border-[#9e2a2b] focus:outline-none transition"
                 />
                 <button
                   type="submit"
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#d4b46a] hover:bg-white/10 cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#9e2a2b] hover:bg-red-50 cursor-pointer"
                   title="馆内检索"
                 >
                   <Search className="h-4 w-4" />

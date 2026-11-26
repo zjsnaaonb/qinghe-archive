@@ -16,9 +16,6 @@ interface StageDirection {
   actionDocId?: string;
 }
 
-/**
- * 克制、不剧透的阶段调查方向引导条（解决“不知从何下手”但绝不替玩家给出谜底）
- */
 function resolveStageDirection(state: GameState): StageDirection {
   if (!state.unlockedSites.includes('qinghe')) {
     return {
@@ -101,15 +98,15 @@ export const InvestigationGuideRibbon: React.FC<InvestigationGuideRibbonProps> =
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
         transition={{ duration: 0.22 }}
-        className="border-b border-zinc-800/80 bg-zinc-900/70 px-4 py-1.5 backdrop-blur-sm"
+        className="border-b border-[#e4ddce] bg-[#f8f4ea] px-4 py-1.5"
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-300">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#9e2a2b]/30 bg-[#9e2a2b]/8 px-2 py-0.5 text-[11px] font-semibold text-[#9e2a2b]">
               <Compass className="h-3 w-3" />
               {direction.tag}
             </span>
-            <p className="truncate sm:whitespace-normal text-zinc-300/95 leading-relaxed">
+            <p className="truncate sm:whitespace-normal text-stone-700 leading-relaxed">
               {direction.text}
             </p>
           </div>
@@ -118,7 +115,7 @@ export const InvestigationGuideRibbon: React.FC<InvestigationGuideRibbonProps> =
               <button
                 type="button"
                 onClick={() => onNavigateSite(direction.actionSite!, direction.actionDocId)}
-                className="inline-flex items-center gap-0.5 rounded-full border border-amber-500/40 bg-amber-500/15 px-2.5 py-0.5 text-[11px] font-medium text-amber-200 hover:bg-amber-500/25 cursor-pointer transition"
+                className="inline-flex items-center gap-0.5 rounded-full border border-[#9e2a2b]/35 bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#9e2a2b] hover:bg-red-50 cursor-pointer transition"
               >
                 <span>{direction.actionLabel}</span>
                 <ChevronRight className="h-3 w-3" />
@@ -127,7 +124,7 @@ export const InvestigationGuideRibbon: React.FC<InvestigationGuideRibbonProps> =
             <button
               type="button"
               onClick={() => setHidden(true)}
-              className="rounded p-0.5 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+              className="rounded p-0.5 text-stone-400 hover:text-stone-700 cursor-pointer"
               title="暂时收起方向提示"
             >
               <X className="h-3.5 w-3.5" />

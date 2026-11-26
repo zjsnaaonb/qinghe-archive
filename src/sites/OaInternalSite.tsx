@@ -6,8 +6,6 @@ import {
   CheckCircle2,
   ChevronRight,
   ExternalLink,
-  Eye,
-  FileText,
   FolderOpen,
   KeyRound,
   Lock,
@@ -114,7 +112,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocId, setSelectedDocId] = useState<string>(OA_DOCUMENTS[0]?.id ?? '');
 
-  // 登录与权限切换抽屉状态
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loginUser, setLoginUser] = useState<string>(
     state.oaLevel === 0 ? 'qh_guest' : state.oaLevel === 1 ? 'qh_guest' : state.oaLevel === 2 ? 'chen_mo' : 'zheng_gd'
@@ -124,12 +121,10 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccessMsg, setAuthSuccessMsg] = useState<string | null>(null);
 
-  // 文档内联补解密状态（用于存档恢复或跨级登录后补解密密文块）
   const [inlineKeyInput, setInlineKeyInput] = useState('');
   const [inlineBusy, setInlineBusy] = useState(false);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
-  // 第四面墙实时停留计时器
   const [nowTs, setNowTs] = useState<number>(() => Date.now());
   const [metaChilled, setMetaChilled] = useState(false);
 
@@ -140,7 +135,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
     return () => window.clearInterval(timer);
   }, []);
 
-  // 响应跨站检索定位
   useEffect(() => {
     if (!focusedItemId) return;
     const target = OA_DOCUMENTS.find((d) => d.id === focusedItemId || d.code === focusedItemId);
@@ -189,7 +183,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
     return selectedDoc.fallbackPlainContent ?? '';
   }, [selectedDoc, isDocLevelUnlocked, state.decryptedCache]);
 
-  // 阅读已解锁且已解密文档时自动记录已读、线索、关键词与解锁关联站点
   useEffect(() => {
     if (!selectedDoc || !isDocLevelUnlocked || resolvedPlaintext === null) return;
 
@@ -285,7 +278,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
           : `已通过 ${account.username} 权限认证，浏览器端成功实时解密 ${decryptedCount} 份 AES-256-GCM 机密卷宗！`
       );
 
-      // 自动定位到该权限层级的首份代表文档
       const firstNewDoc = OA_DOCUMENTS.find((d) => d.minLevel === account.level);
       if (firstNewDoc) {
         setSelectedDocId(firstNewDoc.id);
@@ -330,7 +322,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
     horrorAudio.playClick('ui');
   };
 
-  // 第四面墙遥测统计计算
   const dwell = formatDuration(nowTs - state.startedAt);
   const totalPhotoInspections = useMemo(
     () => Object.values(state.photoViewCounts).reduce((sum, n) => sum + n, 0),
@@ -348,63 +339,63 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
       typeof window !== 'undefined' ? `${window.innerWidth}×${window.innerHeight}px` : '1920×1080px';
 
     return (
-      <div className="mt-6 overflow-hidden rounded-lg border-2 border-red-800/80 bg-zinc-950 text-zinc-100 shadow-2xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-red-900/80 bg-red-950/60 px-4 py-2.5">
+      <div className="mt-6 overflow-hidden rounded-xl border-2 border-red-300 bg-[#fffafa] text-slate-800 shadow-md">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-red-200 bg-red-50 px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 animate-pulse text-red-400" />
-            <span className="font-mono-tech text-xs font-bold tracking-wider text-red-200">
+            <Activity className="h-4 w-4 animate-pulse text-[#9e2a2b]" />
+            <span className="font-mono-tech text-xs font-bold tracking-wider text-[#7f1d1d]">
               EYEGEN-V4 LIVE TELEMETRY // 外部视网膜校准样本 #39 实时遥测面板
             </span>
           </div>
-          <span className="rounded border border-red-700/80 bg-red-950 px-2 py-0.5 font-mono-tech text-[11px] text-red-300">
+          <span className="rounded border border-red-300 bg-white px-2 py-0.5 font-mono-tech text-[11px] font-semibold text-[#9e2a2b]">
             STATUS: SACCADE_SAMPLING_ACTIVE
           </span>
         </div>
 
         <div className="p-4 sm:p-5">
-          <p className="mb-4 rounded border border-red-900/50 bg-red-950/25 px-3.5 py-2.5 text-xs leading-6 text-red-200/90">
+          <p className="mb-4 rounded-lg border border-red-200 bg-red-50/70 px-3.5 py-2.5 text-xs leading-6 text-[#7f1d1d]">
             【守护进程实时回传】：第 38 批驻场样本（林知夏、陈默、苏晓棠、赵一鸣）因产生排异抗拒已转入静态锚定；当前正由场外接入的
-            <strong className="mx-1 text-red-300 underline decoration-red-600">第 39 号未登记视网膜样本（当前浏览器会话）</strong>
+            <strong className="mx-1 text-[#9e2a2b] underline">第 39 号未登记视网膜样本（当前浏览器会话）</strong>
             提供高纯度焦点轨迹，用于拟合零点公映『无目社公』眼窝高光曲率。
           </p>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded border border-zinc-800 bg-zinc-900/90 p-3">
-              <div className="font-mono-tech text-[11px] text-zinc-400">样本持续凝视时长</div>
-              <div className="mt-1 font-mono-tech text-xl font-bold text-red-300">{dwell.clock}</div>
-              <div className="mt-0.5 font-mono-tech text-[10px] text-zinc-500">
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="font-mono-tech text-[11px] text-slate-500">样本持续凝视时长</div>
+              <div className="mt-1 font-mono-tech text-xl font-bold text-[#9e2a2b]">{dwell.clock}</div>
+              <div className="mt-0.5 font-mono-tech text-[10px] text-slate-400">
                 折算 16mm 银盐帧: {equivalentFrames.toLocaleString()} f
               </div>
             </div>
 
-            <div className="rounded border border-zinc-800 bg-zinc-900/90 p-3">
-              <div className="font-mono-tech text-[11px] text-zinc-400">交互点击采样频次</div>
-              <div className="mt-1 font-mono-tech text-xl font-bold text-amber-300">
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="font-mono-tech text-[11px] text-slate-500">交互点击采样频次</div>
+              <div className="mt-1 font-mono-tech text-xl font-bold text-amber-800">
                 {state.totalClicks.toLocaleString()} <span className="text-xs font-normal">次</span>
               </div>
-              <div className="mt-0.5 font-mono-tech text-[10px] text-zinc-500">
+              <div className="mt-0.5 font-mono-tech text-[10px] text-slate-400">
                 视窗焦平面: {viewportSpec}
               </div>
             </div>
 
-            <div className="rounded border border-zinc-800 bg-zinc-900/90 p-3">
-              <div className="font-mono-tech text-[11px] text-zinc-400">已摄取卷宗 / 显微审看</div>
-              <div className="mt-1 font-mono-tech text-xl font-bold text-emerald-300">
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="font-mono-tech text-[11px] text-slate-500">已摄取卷宗 / 显微审看</div>
+              <div className="mt-1 font-mono-tech text-xl font-bold text-emerald-800">
                 {state.readDocIds.length} <span className="text-xs font-normal">篇</span>
-                <span className="mx-1 text-zinc-600">/</span>
-                <span className="text-base text-teal-300">{totalPhotoInspections}次</span>
+                <span className="mx-1 text-slate-300">/</span>
+                <span className="text-base text-teal-700">{totalPhotoInspections}次</span>
               </div>
-              <div className="mt-0.5 font-mono-tech text-[10px] text-zinc-500">
+              <div className="mt-0.5 font-mono-tech text-[10px] text-slate-400">
                 已归档线索链: {state.discoveredClues.length} 条
               </div>
             </div>
 
-            <div className="rounded border border-zinc-800 bg-zinc-900/90 p-3">
-              <div className="font-mono-tech text-[11px] text-zinc-400">视网膜认知残留指数</div>
-              <div className="mt-1 font-mono-tech text-xl font-bold text-rose-400">{state.contamination}%</div>
-              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded bg-zinc-800">
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <div className="font-mono-tech text-[11px] text-slate-500">视网膜认知残留指数</div>
+              <div className="mt-1 font-mono-tech text-xl font-bold text-[#9e2a2b]">{state.contamination}%</div>
+              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded bg-slate-100">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-500 to-red-600 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-amber-500 to-[#9e2a2b] transition-all duration-500"
                   style={{ width: `${Math.min(100, Math.max(4, state.contamination))}%` }}
                 />
               </div>
@@ -412,13 +403,13 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
           </div>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="rounded border border-zinc-800 bg-black/70 p-3">
-              <div className="mb-2 flex items-center justify-between border-b border-zinc-800 pb-1.5 font-mono-tech text-[11px] text-zinc-400">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-2 flex items-center justify-between border-b border-slate-200 pb-1.5 font-mono-tech text-[11px] text-slate-500">
                 <span>样本 #39 真实检索词捕获队列 (state.searchHistory)</span>
-                <span className="text-red-400">共 {state.searchHistory.length} 条</span>
+                <span className="font-semibold text-[#9e2a2b]">共 {state.searchHistory.length} 条</span>
               </div>
               {recentSearches.length === 0 ? (
-                <div className="py-3 font-mono-tech text-xs text-zinc-500">
+                <div className="py-3 font-mono-tech text-xs text-slate-400">
                   [尚未捕获主动检索词 · 当前通过页面焦点位移进行静默采样]
                 </div>
               ) : (
@@ -426,7 +417,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                   {recentSearches.map((kw, idx) => (
                     <span
                       key={`${kw}-${idx}`}
-                      className="rounded border border-red-900/60 bg-red-950/40 px-2 py-0.5 font-mono-tech text-xs text-red-200"
+                      className="rounded border border-red-200 bg-white px-2 py-0.5 font-mono-tech text-xs text-[#9e2a2b]"
                     >
                       #{state.searchHistory.length - idx} &ldquo;{kw}&rdquo;
                     </span>
@@ -435,24 +426,24 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
               )}
             </div>
 
-            <div className="rounded border border-zinc-800 bg-black/70 p-3">
-              <div className="mb-2 flex items-center justify-between border-b border-zinc-800 pb-1.5 font-mono-tech text-[11px] text-zinc-400">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-2 flex items-center justify-between border-b border-slate-200 pb-1.5 font-mono-tech text-[11px] text-slate-500">
                 <span>近期阅读轨迹哈希流 (state.readDocIds)</span>
-                <span className="text-amber-400">SYNCED</span>
+                <span className="font-semibold text-amber-700">SYNCED</span>
               </div>
-              <div className="max-h-20 overflow-y-auto font-mono-tech text-[11px] leading-5 text-zinc-400">
+              <div className="max-h-20 overflow-y-auto font-mono-tech text-[11px] leading-5 text-slate-600">
                 {state.readDocIds.slice(-8).reverse().map((docId, idx) => (
                   <div key={`${docId}-${idx}`} className="truncate">
-                    <span className="text-zinc-600">[TRACE-{String(state.readDocIds.length - idx).padStart(2, '0')}]</span>{' '}
-                    <span className="text-zinc-300">{docId}</span>
+                    <span className="text-slate-400">[TRACE-{String(state.readDocIds.length - idx).padStart(2, '0')}]</span>{' '}
+                    <span className="text-slate-800">{docId}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800 pt-3">
-            <span className="font-mono-tech text-xs text-amber-300/90">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-red-200 pt-3">
+            <span className="font-mono-tech text-xs font-medium text-[#7f1d1d]">
               ※ 警告：距离 2026-11-26 00:00 全网推流仅剩最后窗口，请集齐四人救援与木刻真牌位次序后前往 B2 总控台斩断回路。
             </span>
             {state.unlockedSites.includes('b2') && (
@@ -462,7 +453,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                   horrorAudio.playClick('ui');
                   onNavigateSite('b2');
                 }}
-                className="inline-flex items-center gap-1.5 rounded border border-red-600/80 bg-red-950/70 px-3 py-1.5 font-mono-tech text-xs font-semibold text-red-100 hover:bg-red-900/70 cursor-pointer transition"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[#9e2a2b] px-3 py-1.5 font-mono-tech text-xs font-semibold text-white hover:bg-[#822021] cursor-pointer transition"
               >
                 <Terminal className="h-3.5 w-3.5" />
                 立即跳转 B2 发布总控台反制
@@ -474,24 +465,21 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
     );
   };
 
-  // ============================================================================
-  // 未登录态（Level 0）：企业级内网统一身份认证门户
-  // ============================================================================
   if (state.oaLevel === 0) {
     return (
-      <div className="min-h-[calc(100vh-7rem)] bg-slate-950 px-4 py-10 text-slate-100">
+      <div className="min-h-[calc(100vh-7rem)] bg-[#f1f5f9] px-4 py-10 text-slate-800">
         <div className="mx-auto max-w-2xl">
-          <div className="overflow-hidden rounded-xl border border-slate-700/80 bg-slate-900 shadow-2xl">
-            <div className="border-b border-slate-800 bg-gradient-to-r from-slate-900 via-blue-950/70 to-slate-900 px-6 py-5">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
+            <div className="border-b border-slate-200 bg-gradient-to-r from-[#f8fafc] via-blue-50/70 to-[#f8fafc] px-6 py-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-blue-500/40 bg-blue-950/70 text-blue-300">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
                   <Building2 className="h-6 w-6" />
                 </div>
                 <div>
-                  <div className="font-mono-tech text-[11px] tracking-widest text-blue-300/90">
+                  <div className="font-mono-tech text-[11px] font-semibold tracking-widest text-blue-700">
                     NANZHOU UNIV. // oa.qinghe-internal.cn
                   </div>
-                  <h1 className="text-lg font-bold tracking-wide text-white sm:text-xl">
+                  <h1 className="text-lg font-bold tracking-wide text-[#1e3a8a] sm:text-xl">
                     青禾民俗影像数字化保护工程 · 内部协同办公与工单系统
                   </h1>
                 </div>
@@ -499,9 +487,9 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
             </div>
 
             <div className="p-6 sm:p-8">
-              <div className="mb-6 rounded-lg border border-amber-700/50 bg-amber-950/30 p-4 text-xs leading-6 text-amber-200/90">
-                <div className="mb-1 flex items-center gap-1.5 font-bold text-amber-300">
-                  <AlertTriangle className="h-4 w-4" />
+              <div className="mb-6 rounded-xl border border-amber-300/80 bg-amber-50/80 p-4 text-xs leading-6 text-amber-950">
+                <div className="mb-1 flex items-center gap-1.5 font-bold text-amber-900">
+                  <AlertTriangle className="h-4 w-4 text-amber-700" />
                   <span>校信息化办内网安全巡检提示（编号：2026-119）</span>
                 </div>
                 本系统部署于人文楼地下独立子网，实行三级权限隔离与浏览器端 PBKDF2-SHA256 + AES-256-GCM 实时离线解密。
@@ -509,7 +497,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
               </div>
 
               <div className="mb-5">
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">
                   快捷选择预设内网工号（或手动输入）
                 </label>
                 <div className="grid gap-2 sm:grid-cols-3">
@@ -524,15 +512,15 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                           setLoginUser(acc.username);
                           setAuthError(null);
                         }}
-                        className={`rounded-lg border p-3 text-left transition cursor-pointer ${
+                        className={`rounded-xl border p-3 text-left transition cursor-pointer ${
                           active
-                            ? 'border-blue-500 bg-blue-950/50 text-blue-100'
-                            : 'border-slate-700/80 bg-slate-950/60 text-slate-300 hover:border-slate-600'
+                            ? 'border-blue-500 bg-blue-50/80 text-blue-950 shadow-2xs'
+                            : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
                         }`}
                       >
-                        <div className="font-mono-tech text-xs font-bold text-blue-300">{acc.username}</div>
-                        <div className="mt-0.5 text-xs font-medium">{acc.roleLabel}</div>
-                        <div className="mt-0.5 text-[11px] text-slate-400">{acc.deptLabel}</div>
+                        <div className="font-mono-tech text-xs font-bold text-blue-700">{acc.username}</div>
+                        <div className="mt-0.5 text-xs font-semibold text-slate-800">{acc.roleLabel}</div>
+                        <div className="mt-0.5 text-[11px] text-slate-500">{acc.deptLabel}</div>
                       </button>
                     );
                   })}
@@ -541,18 +529,18 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
 
               <form onSubmit={handleAuthSubmit} className="space-y-4">
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-300">内网登录账号 (Account ID)</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">内网登录账号 (Account ID)</label>
                   <input
                     type="text"
                     value={loginUser}
                     onChange={(e) => setLoginUser(e.target.value)}
                     placeholder="例如：qh_guest"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 font-mono-tech text-sm text-slate-100 outline-none focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tech text-sm text-slate-900 outline-none focus:border-blue-600"
                   />
                 </div>
 
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-slate-300">
+                  <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                     认证口令 / 离线解密密钥 (Passphrase)
                   </label>
                   <input
@@ -560,12 +548,12 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     value={loginPass}
                     onChange={(e) => setLoginPass(e.target.value)}
                     placeholder="输入对应权限口令（忽略空格与连字符）"
-                    className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 font-mono-tech text-sm text-slate-100 outline-none focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tech text-sm text-slate-900 outline-none focus:border-blue-600"
                   />
                 </div>
 
                 {authError && (
-                  <div className="rounded-lg border border-red-800/80 bg-red-950/50 px-3.5 py-2.5 text-xs leading-5 text-red-200">
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-xs leading-5 text-[#9e2a2b]">
                     {authError}
                   </div>
                 )}
@@ -573,7 +561,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                 <button
                   type="submit"
                   disabled={authBusy || !loginUser.trim() || !loginPass.trim()}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition"
                 >
                   <KeyRound className="h-4 w-4" />
                   {authBusy ? '正在校验哈希摘要并派生 AES-256 密钥……' : '验证凭证并接入青禾内部 OA'}
@@ -586,31 +574,28 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
     );
   }
 
-  // ============================================================================
-  // 已登录工作台（Level 1 / 2 / 3）
-  // ============================================================================
   const currentTierMeta = OA_ACCOUNTS.find((a) => a.level === state.oaLevel) ?? OA_ACCOUNTS[0];
   const jumpMeta = selectedDoc?.unlocksSite ? SITE_JUMP_LABELS[selectedDoc.unlocksSite] : undefined;
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] bg-slate-950 text-slate-100">
-      {/* 顶部企业内网导航栏 */}
-      <div className="border-b border-slate-800 bg-slate-900/95 px-4 py-3">
+    <div className="min-h-[calc(100vh-7rem)] bg-[#f1f5f9] text-slate-800">
+      {/* 顶部明亮企业内网导航栏 */}
+      <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-2xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/40 bg-blue-950/70 text-blue-300">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
               <Building2 className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-white sm:text-base">
+                <span className="text-sm font-bold text-[#1e3a8a] sm:text-base">
                   青禾工程内部协同 OA 与修复工单平台
                 </span>
-                <span className="hidden rounded border border-slate-700 bg-slate-800 px-2 py-0.5 font-mono-tech text-[11px] text-slate-300 sm:inline">
+                <span className="hidden rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono-tech text-[11px] text-slate-600 sm:inline">
                   v3.4.2-intranet
                 </span>
               </div>
-              <div className="font-mono-tech text-[11px] text-slate-400">
+              <div className="font-mono-tech text-[11px] text-slate-500">
                 当前最高授权：{currentTierMeta.username} ({currentTierMeta.roleLabel})
               </div>
             </div>
@@ -625,14 +610,14 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                   key={lvl}
                   type="button"
                   onClick={() => openSwitchToLevel(lvl)}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition cursor-pointer ${
                     unlocked
                       ? lvl === 3
-                        ? 'border-red-600/80 bg-red-950/60 text-red-200'
+                        ? 'border-red-300 bg-red-50 text-[#9e2a2b]'
                         : lvl === 2
-                        ? 'border-emerald-600/80 bg-emerald-950/50 text-emerald-200'
-                        : 'border-blue-600/70 bg-blue-950/50 text-blue-200'
-                      : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-amber-500/70 hover:text-amber-200'
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                        : 'border-blue-300 bg-blue-50 text-blue-900'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-400 hover:text-blue-800'
                   }`}
                 >
                   {unlocked ? <UserCheck className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
@@ -649,9 +634,9 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                 setShowAuthModal((v) => !v);
                 setAuthError(null);
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-600/70 bg-amber-950/50 px-3 py-1.5 text-xs font-semibold text-amber-200 hover:bg-amber-900/60 cursor-pointer transition"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-950 hover:bg-amber-100 cursor-pointer transition"
             >
-              <KeyRound className="h-3.5 w-3.5" />
+              <KeyRound className="h-3.5 w-3.5 text-amber-700" />
               切换账号 / 提升权限
             </button>
           </div>
@@ -659,16 +644,16 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
 
         {/* 权限切换内嵌抽屉 */}
         {showAuthModal && (
-          <div className="mx-auto mt-3 max-w-7xl rounded-xl border border-blue-800/70 bg-slate-950/95 p-4 shadow-xl">
+          <div className="mx-auto mt-3 max-w-7xl rounded-xl border border-blue-200 bg-slate-50 p-4 shadow-md">
             <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold text-blue-300">
-                <Shield className="h-4 w-4" />
+              <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
+                <Shield className="h-4 w-4 text-blue-700" />
                 <span>OA 多级权限认证与离线密钥派生（支持 qh_guest / chen_mo / zheng_gd）</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAuthModal(false)}
-                className="text-xs text-slate-400 hover:text-slate-200 cursor-pointer"
+                className="text-xs font-medium text-slate-500 hover:text-slate-900 cursor-pointer"
               >
                 收起面板 [×]
               </button>
@@ -682,7 +667,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     setLoginUser(e.target.value);
                     setAuthError(null);
                   }}
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono-tech text-xs text-slate-100 outline-none focus:border-blue-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono-tech text-xs text-slate-800 outline-none focus:border-blue-600"
                 >
                   {OA_ACCOUNTS.map((acc) => (
                     <option key={acc.username} value={acc.username}>
@@ -697,14 +682,14 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                   value={loginPass}
                   onChange={(e) => setLoginPass(e.target.value)}
                   placeholder="输入该工号对应的口令 / AES离线解密密钥"
-                  className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono-tech text-xs text-slate-100 outline-none focus:border-blue-500"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono-tech text-xs text-slate-800 outline-none focus:border-blue-600"
                 />
               </div>
               <div className="sm:col-span-3">
                 <button
                   type="submit"
                   disabled={authBusy || !loginPass.trim()}
-                  className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50 cursor-pointer transition"
+                  className="w-full rounded-lg bg-blue-700 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-800 disabled:opacity-50 cursor-pointer transition"
                 >
                   {authBusy ? '实时解密中……' : '验证并解密卷宗'}
                 </button>
@@ -712,7 +697,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
             </form>
 
             {authError && (
-              <div className="mt-2.5 rounded border border-red-800/70 bg-red-950/50 px-3 py-2 text-xs text-red-200">
+              <div className="mt-2.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-[#9e2a2b]">
                 {authError}
               </div>
             )}
@@ -720,15 +705,15 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
         )}
 
         {authSuccessMsg && (
-          <div className="mx-auto mt-2.5 flex max-w-7xl items-center justify-between rounded-lg border border-emerald-700/70 bg-emerald-950/40 px-3.5 py-2 text-xs text-emerald-200">
-            <span className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="mx-auto mt-2.5 flex max-w-7xl items-center justify-between rounded-lg border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs text-emerald-900">
+            <span className="flex items-center gap-2 font-medium">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               {authSuccessMsg}
             </span>
             <button
               type="button"
               onClick={() => setAuthSuccessMsg(null)}
-              className="text-emerald-400 hover:text-emerald-200 cursor-pointer"
+              className="font-semibold text-emerald-700 hover:text-emerald-950 cursor-pointer"
             >
               知道了
             </button>
@@ -736,19 +721,19 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
         )}
       </div>
 
-      {/* 主体三栏式公文与工单布局 */}
+      {/* 主体两栏式公文与工单布局 */}
       <div className="mx-auto grid max-w-7xl gap-4 px-4 py-5 lg:grid-cols-12">
         {/* 左侧文件夹与检索目录 */}
         <aside className="space-y-4 lg:col-span-4">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-3.5">
+          <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
             <div className="relative mb-3">
-              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+              <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="检索OA编号、标题、发件人或已解密正文…"
-                className="w-full rounded-lg border border-slate-700 bg-slate-950 py-2 pl-9 pr-3 text-xs text-slate-100 outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-slate-300 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-blue-600 focus:bg-white"
               />
             </div>
 
@@ -771,9 +756,9 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs transition cursor-pointer ${
                       active
                         ? isDeanFolder
-                          ? 'border-red-500 bg-red-950/70 font-semibold text-red-200'
-                          : 'border-blue-500 bg-blue-950/70 font-semibold text-blue-200'
-                        : 'border-slate-800 bg-slate-950/70 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                          ? 'border-[#9e2a2b] bg-red-50 font-semibold text-[#9e2a2b]'
+                          : 'border-blue-600 bg-blue-50 font-semibold text-blue-900'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900'
                     }`}
                   >
                     <FolderOpen className="h-3 w-3" />
@@ -786,9 +771,9 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
           </div>
 
           {/* 文档列表 */}
-          <div className="max-h-[68vh] space-y-2 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900/80 p-2.5">
+          <div className="max-h-[68vh] space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2.5 shadow-2xs">
             {filteredDocs.length === 0 ? (
-              <div className="py-10 text-center text-xs text-slate-500">未找到匹配的内部工单或公文</div>
+              <div className="py-10 text-center text-xs text-slate-400">未找到匹配的内部工单或公文</div>
             ) : (
               filteredDocs.map((doc) => {
                 const unlocked = state.oaLevel >= doc.minLevel;
@@ -796,10 +781,10 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                 const selected = selectedDoc?.id === doc.id;
                 const levelBadge =
                   doc.minLevel === 1
-                    ? 'border-slate-700 bg-slate-800 text-slate-300'
+                    ? 'border-slate-200 bg-slate-100 text-slate-600'
                     : doc.minLevel === 2
-                    ? 'border-emerald-800/80 bg-emerald-950/60 text-emerald-300'
-                    : 'border-red-800/80 bg-red-950/60 text-red-300';
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                    : 'border-red-300 bg-red-50 text-[#9e2a2b]';
 
                 return (
                   <button
@@ -812,15 +797,15 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     }}
                     className={`w-full rounded-lg border p-3 text-left transition cursor-pointer ${
                       selected
-                        ? 'border-blue-500 bg-blue-950/40 shadow-md'
-                        : 'border-slate-800/90 bg-slate-950/70 hover:border-slate-700'
+                        ? 'border-blue-500 bg-blue-50/50 shadow-2xs'
+                        : 'border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/70'
                     }`}
                   >
                     <div className="mb-1.5 flex items-center justify-between gap-2">
-                      <span className="font-mono-tech text-[11px] text-slate-400">{doc.code}</span>
+                      <span className="font-mono-tech text-[11px] text-slate-500">{doc.code}</span>
                       <div className="flex items-center gap-1.5">
                         {doc.isAlert && (
-                          <span className="rounded bg-red-950 px-1.5 py-0.5 text-[10px] font-bold text-red-300">
+                          <span className="rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-[#9e2a2b]">
                             告警
                           </span>
                         )}
@@ -831,19 +816,19 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                       </div>
                     </div>
 
-                    <div className={`text-xs font-semibold leading-5 ${unlocked ? 'text-slate-100' : 'text-slate-400'}`}>
+                    <div className={`text-xs font-semibold leading-5 ${unlocked ? 'text-slate-900' : 'text-slate-400'}`}>
                       {unlocked ? doc.title : `[权限受限 · 需 Lv.${doc.minLevel}] ${doc.folder}加密卷宗`}
                     </div>
 
-                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-500">
+                    <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400">
                       <span className="truncate">{doc.date}</span>
                       <span className="shrink-0">
                         {doc.unlocksSite && unlocked ? (
-                          <span className="text-amber-400">含外链跳板</span>
+                          <span className="font-semibold text-amber-700">含外链跳板</span>
                         ) : isRead ? (
-                          <span className="text-slate-500">已阅</span>
+                          <span className="text-slate-400">已阅</span>
                         ) : (
-                          <span className="text-blue-400">未读</span>
+                          <span className="font-medium text-blue-600">未读</span>
                         )}
                       </span>
                     </div>
@@ -857,20 +842,19 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
         {/* 右侧公文阅读与实时遥测面板 */}
         <main className="lg:col-span-8">
           {selectedDoc && (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/90 p-5 shadow-xl sm:p-7">
-              {/* 权限不足遮罩 */}
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
               {!isDocLevelUnlocked ? (
                 <div className="py-12 text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-700/60 bg-amber-950/40 text-amber-300">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-300 bg-amber-50 text-amber-700">
                     <Lock className="h-7 w-7" />
                   </div>
-                  <div className="font-mono-tech text-xs uppercase tracking-widest text-amber-400">
+                  <div className="font-mono-tech text-xs font-semibold uppercase tracking-widest text-amber-800">
                     ACCESS DENIED // CLEARANCE LEVEL {selectedDoc.minLevel} REQUIRED
                   </div>
-                  <h2 className="mt-2 text-lg font-bold text-white">
+                  <h2 className="mt-2 text-lg font-bold text-slate-900">
                     该卷宗受 AES-256-GCM 离线加密保护（编号：{selectedDoc.code}）
                   </h2>
-                  <p className="mx-auto mt-2 max-w-lg text-xs leading-6 text-slate-400">
+                  <p className="mx-auto mt-2 max-w-lg text-xs leading-6 text-slate-500">
                     {selectedDoc.minLevel === 2
                       ? '调阅【修复工单 / 安全规范核心卷 / 技术员加密私信】须切换至二级技术运维账号 chen_mo 并校验其8位数字独立密钥。'
                       : '调阅【院长专档】须切换至三级课题首席账号 zheng_gd 并输入在地下 B2 逐帧审片台合成的院长专档口令。'}
@@ -878,24 +862,23 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                   <button
                     type="button"
                     onClick={() => openSwitchToLevel(selectedDoc.minLevel)}
-                    className="mt-6 inline-flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-500 cursor-pointer transition"
+                    className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-800 cursor-pointer transition"
                   >
                     <KeyRound className="h-4 w-4" />
                     立即切换至 {selectedDoc.minLevel === 2 ? 'chen_mo (Lv.2)' : 'zheng_gd (Lv.3)'} 验证解锁
                   </button>
                 </div>
               ) : resolvedPlaintext === null ? (
-                /* 权限等级已达标，但浏览器缓存尚未解密该密文块（如读档或跨级登录） */
                 <div className="py-10">
-                  <div className="mx-auto max-w-md rounded-xl border border-blue-800/70 bg-slate-950 p-6">
-                    <div className="mb-2 flex items-center gap-2 text-sm font-bold text-blue-300">
-                      <KeyRound className="h-4 w-4" />
+                  <div className="mx-auto max-w-md rounded-xl border border-blue-200 bg-slate-50 p-6">
+                    <div className="mb-2 flex items-center gap-2 text-sm font-bold text-blue-900">
+                      <KeyRound className="h-4 w-4 text-blue-700" />
                       <span>需要派生 Lv.{selectedDoc.minLevel} 离线解密密钥</span>
                     </div>
-                    <p className="mb-4 text-xs leading-6 text-slate-400">
-                      当前会话尚未缓存 <span className="font-mono-tech text-slate-200">{selectedDoc.encryptedVaultId}</span>{' '}
+                    <p className="mb-4 text-xs leading-6 text-slate-600">
+                      当前会话尚未缓存 <span className="font-mono-tech font-semibold text-slate-800">{selectedDoc.encryptedVaultId}</span>{' '}
                       的明文副本。请输入账号{' '}
-                      <span className="font-mono-tech text-amber-300">
+                      <span className="font-mono-tech font-semibold text-[#9e2a2b]">
                         {selectedDoc.minLevel === 2 ? 'chen_mo' : 'zheng_gd'}
                       </span>{' '}
                       的密钥完成浏览器本地解密：
@@ -908,13 +891,13 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                         placeholder={
                           selectedDoc.minLevel === 2 ? '输入 chen_mo 二级密钥' : '输入 zheng_gd 三级院长口令'
                         }
-                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 font-mono-tech text-xs text-white outline-none focus:border-blue-500"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono-tech text-xs text-slate-900 outline-none focus:border-blue-600"
                       />
-                      {inlineError && <div className="text-xs text-red-300">{inlineError}</div>}
+                      {inlineError && <div className="text-xs font-medium text-[#9e2a2b]">{inlineError}</div>}
                       <button
                         type="submit"
                         disabled={inlineBusy || !inlineKeyInput.trim()}
-                        className="w-full rounded-lg bg-blue-600 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-50 cursor-pointer"
+                        className="w-full rounded-lg bg-blue-700 py-2 text-xs font-semibold text-white hover:bg-blue-800 disabled:opacity-50 cursor-pointer"
                       >
                         {inlineBusy ? '正在执行 PBKDF2 + AES-GCM 解密……' : '实时解密本级全部卷宗'}
                       </button>
@@ -922,45 +905,43 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                   </div>
                 </div>
               ) : (
-                /* 正常展示公文/加密档案正文 */
                 <>
-                  <div className="border-b border-slate-800 pb-4">
+                  <div className="border-b border-slate-200 pb-4">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded border border-slate-700 bg-slate-950 px-2 py-0.5 font-mono-tech text-xs text-blue-300">
+                      <span className="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 font-mono-tech text-xs font-medium text-blue-800">
                         {selectedDoc.code}
                       </span>
-                      <span className="rounded border border-slate-700 bg-slate-800/80 px-2 py-0.5 text-xs text-slate-300">
+                      <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
                         {selectedDoc.folder}
                       </span>
                       {selectedDoc.encryptedVaultId && (
-                        <span className="inline-flex items-center gap-1 rounded border border-emerald-800/80 bg-emerald-950/60 px-2 py-0.5 font-mono-tech text-[11px] text-emerald-300">
+                        <span className="inline-flex items-center gap-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-0.5 font-mono-tech text-[11px] font-medium text-emerald-800">
                           <Unlock className="h-3 w-3" />
                           AES-256-GCM 已实时解密
                         </span>
                       )}
                     </div>
 
-                    <h1 className="text-lg font-bold leading-snug text-white sm:text-xl">
+                    <h1 className="text-lg font-bold leading-snug text-slate-900 sm:text-xl">
                       {selectedDoc.title}
                     </h1>
 
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                       <span>发件/签发：{selectedDoc.senderOrAuthor}</span>
                       <span className="font-mono-tech">归档时间：{selectedDoc.date}</span>
                     </div>
                   </div>
 
-                  {/* 关联新站点解锁与明显跳转横幅 */}
                   {selectedDoc.unlocksSite && jumpMeta && (
-                    <div className="mt-5 rounded-xl border-2 border-amber-500/80 bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/40 p-4 shadow-lg">
+                    <div className="mt-5 rounded-xl border-2 border-amber-400 bg-amber-50/85 p-4 shadow-xs">
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-                            <ExternalLink className="h-4 w-4" />
+                          <div className="flex items-center gap-2 text-xs font-bold text-amber-950">
+                            <ExternalLink className="h-4 w-4 text-amber-700" />
                             <span>发现内网穿透跳板入口：{jumpMeta.title}</span>
                           </div>
-                          <div className="font-mono-tech text-[11px] text-amber-200/80">{jumpMeta.domain}</div>
-                          <p className="max-w-xl text-xs leading-5 text-slate-300">{jumpMeta.desc}</p>
+                          <div className="font-mono-tech text-[11px] text-amber-800">{jumpMeta.domain}</div>
+                          <p className="max-w-xl text-xs leading-5 text-slate-700">{jumpMeta.desc}</p>
                         </div>
 
                         <button
@@ -972,7 +953,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                               onNavigateSite(selectedDoc.unlocksSite);
                             }
                           }}
-                          className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow hover:bg-amber-400 cursor-pointer transition"
+                          className="inline-flex items-center gap-2 rounded-lg bg-[#16263f] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#1f3557] cursor-pointer transition"
                         >
                           <span>{jumpMeta.cta}</span>
                           <ChevronRight className="h-4 w-4" />
@@ -981,15 +962,13 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     </div>
                   )}
 
-                  {/* 公文正文内容（清爽分段排版，不再替玩家剧透总结谜底） */}
-                  <article className="mt-5 rounded-xl border border-slate-800/90 bg-slate-950/85 p-6 sm:p-8">
-                    <EditorialProse text={resolvedPlaintext} theme="dark" />
-                    <div className="mt-6 border-t border-slate-800/70 pt-3 text-[11px] text-slate-500">
+                  <article className="mt-5 rounded-xl border border-slate-200 bg-[#fbfcfd] p-6 sm:p-8">
+                    <EditorialProse text={resolvedPlaintext} theme="gov" />
+                    <div className="mt-6 border-t border-slate-200 pt-3 text-[11px] text-slate-400">
                       提示：阅读时发现可疑工号、日期或规则，用鼠标划选即可直接摘录进右侧随身手记。
                     </div>
                   </article>
 
-                  {/* 第四面墙高潮演出：在 Lv.3 院长专档中额外展示《外部视网膜校准样本 #39 实时遥测面板》 */}
                   {state.oaLevel >= 3 &&
                     lv3AllDecrypted &&
                     (selectedDoc.folder === '院长专档' || selectedDoc.id === 'oa-l3-retinal-calibration') && (
@@ -1000,7 +979,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
             </div>
           )}
 
-          {/* 当停留在院长专档文件夹且已解锁 Lv.3 但当前选中非专档时，也可在底部保持遥测警示入口 */}
           {state.oaLevel >= 3 &&
             lv3AllDecrypted &&
             selectedDoc &&

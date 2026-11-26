@@ -210,62 +210,62 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
     { bg: string; border: string; accent: string; badge: string; icon: React.ReactNode }
   > = {
     bad: {
-      bg: 'from-red-950/90 via-zinc-950 to-black',
-      border: 'border-red-900/80',
-      accent: 'text-red-300',
-      badge: 'bg-red-950/80 text-red-200 border-red-800',
-      icon: <EyeOff className="h-6 w-6 text-red-400" />,
+      bg: 'from-[#f9eeee] via-[#f6f2ea] to-[#eee8dc]',
+      border: 'border-red-300',
+      accent: 'text-[#8b1e1e]',
+      badge: 'bg-red-50 text-[#9e2a2b] border-red-200',
+      icon: <EyeOff className="h-6 w-6 text-[#9e2a2b]" />,
     },
     normal: {
-      bg: 'from-amber-950/70 via-zinc-950 to-black',
-      border: 'border-amber-800/70',
-      accent: 'text-amber-200',
-      badge: 'bg-amber-950/80 text-amber-200 border-amber-700',
-      icon: <Flame className="h-6 w-6 text-amber-400" />,
+      bg: 'from-[#fbf4e6] via-[#f6f2ea] to-[#eee8dc]',
+      border: 'border-amber-300',
+      accent: 'text-amber-950',
+      badge: 'bg-amber-50 text-amber-900 border-amber-300',
+      icon: <Flame className="h-6 w-6 text-amber-700" />,
     },
     bittersweet: {
-      bg: 'from-slate-900 via-zinc-950 to-black',
-      border: 'border-sky-800/70',
-      accent: 'text-sky-200',
-      badge: 'bg-sky-950/80 text-sky-200 border-sky-700',
-      icon: <ShieldCheck className="h-6 w-6 text-sky-400" />,
+      bg: 'from-[#edf4f9] via-[#f6f2ea] to-[#eee8dc]',
+      border: 'border-sky-300',
+      accent: 'text-[#16263f]',
+      badge: 'bg-sky-50 text-sky-900 border-sky-300',
+      icon: <ShieldCheck className="h-6 w-6 text-sky-700" />,
     },
     twist: {
-      bg: 'from-purple-950/75 via-red-950/40 to-zinc-950',
-      border: 'border-rose-800/80',
-      accent: 'text-rose-200',
-      badge: 'bg-rose-950/80 text-rose-200 border-rose-700',
-      icon: <AlertOctagon className="h-6 w-6 text-rose-400" />,
+      bg: 'from-[#f6eef5] via-[#f6f2ea] to-[#eee8dc]',
+      border: 'border-rose-300',
+      accent: 'text-[#7f1d1d]',
+      badge: 'bg-rose-50 text-rose-900 border-rose-300',
+      icon: <AlertOctagon className="h-6 w-6 text-rose-700" />,
     },
     true: {
-      bg: 'from-emerald-950/75 via-teal-950/40 to-zinc-950',
-      border: 'border-emerald-600/80',
-      accent: 'text-emerald-200',
-      badge: 'bg-emerald-950/80 text-emerald-200 border-emerald-600',
-      icon: <Sparkles className="h-6 w-6 text-emerald-400" />,
+      bg: 'from-[#ecf7f1] via-[#f6f2ea] to-[#eee8dc]',
+      border: 'border-emerald-400',
+      accent: 'text-emerald-950',
+      badge: 'bg-emerald-50 text-emerald-900 border-emerald-300',
+      icon: <Sparkles className="h-6 w-6 text-emerald-700" />,
     },
   };
 
   const theme = themeMap[data.tone] || themeMap.normal;
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b ${theme.bg} px-4 py-10 text-zinc-100`}>
+    <div className={`min-h-screen bg-gradient-to-b ${theme.bg} px-4 py-10 text-stone-800`}>
       <div className="mx-auto max-w-4xl">
-        {/* 顶部结局铭牌 */}
-        <div className={`mb-8 rounded-xl border ${theme.border} bg-zinc-950/85 p-6 shadow-2xl backdrop-blur`}>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+        {/* 顶部结局纸本卷宗卡 */}
+        <div className={`mb-8 rounded-2xl border ${theme.border} bg-[#fffdf9] p-7 shadow-lg`}>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#ece5d5] pb-4">
             <div className="flex items-center gap-2.5">
               {theme.icon}
-              <span className={`rounded border px-2.5 py-0.5 text-xs font-mono-tech ${theme.badge}`}>
+              <span className={`rounded border px-2.5 py-0.5 text-xs font-mono-tech font-semibold ${theme.badge}`}>
                 {data.code}
               </span>
-              <span className="text-xs text-zinc-400">{data.subtitle}</span>
+              <span className="text-xs text-stone-500">{data.subtitle}</span>
             </div>
 
-            <div className="flex items-center gap-3 text-xs font-mono-tech text-zinc-400">
+            <div className="flex items-center gap-3 text-xs font-mono-tech text-stone-500">
               <span>已救出成员: {rescuedCount}/4</span>
               <span>视网膜残留: {contamination}%</span>
-              <span className="text-amber-300">结局收集: {unlockedEndings.length}/5</span>
+              <span className="font-semibold text-[#9e2a2b]">结局收集: {unlockedEndings.length}/5</span>
             </div>
           </div>
 
@@ -274,12 +274,12 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
           </h1>
 
           {decrypting ? (
-            <div className="py-12 text-center font-mono-tech text-sm text-amber-300 animate-pulse">
+            <div className="py-12 text-center font-mono-tech text-sm font-medium text-[#9e2a2b] animate-pulse">
               [AES-256-GCM] 正在使用终局密钥实时解密档案收束卷宗……
             </div>
           ) : (
             <>
-              <div className="space-y-4 font-serif-cn text-base leading-8 text-zinc-200">
+              <div className="space-y-4 font-serif-cn text-base leading-8 text-stone-800">
                 {data.paragraphs.slice(0, visibleCount).map((p, idx) => (
                   <p key={idx} className="indent-8 transition-opacity duration-500">
                     {p}
@@ -292,7 +292,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setVisibleCount(data.paragraphs.length)}
-                    className="text-xs font-mono-tech text-zinc-400 underline hover:text-zinc-200 cursor-pointer"
+                    className="text-xs font-mono-tech font-medium text-[#9e2a2b] underline hover:text-red-900 cursor-pointer"
                   >
                     立即展开全部段落 ({visibleCount}/{data.paragraphs.length})
                   </button>
@@ -304,27 +304,27 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
 
         {/* 尾声档案阅读器 */}
         {!decrypting && visibleCount >= data.paragraphs.length && (
-          <div className="mb-8 rounded-xl border border-zinc-700/90 bg-zinc-900/90 p-6 shadow-xl">
-            <div className="mb-3 flex items-center gap-2 border-b border-zinc-800 pb-3">
-              <FileText className="h-4 w-4 text-amber-400" />
-              <span className="text-xs font-mono-tech uppercase tracking-wider text-amber-300">
+          <div className="mb-8 rounded-2xl border border-[#dfd8ca] bg-white p-6 shadow-sm">
+            <div className="mb-3 flex items-center gap-2 border-b border-[#ece6da] pb-3">
+              <FileText className="h-4 w-4 text-[#9e2a2b]" />
+              <span className="text-xs font-mono-tech font-semibold uppercase tracking-wider text-[#9e2a2b]">
                 EPILOGUE ARCHIVE // 尾声解密附件
               </span>
             </div>
-            <h2 className="mb-4 font-serif-cn text-xl font-bold text-amber-100">
+            <h2 className="mb-4 font-serif-cn text-xl font-bold text-[#16263f]">
               {data.epilogueDocTitle}
             </h2>
-            <div className="whitespace-pre-line rounded border border-zinc-800 bg-zinc-950/90 p-5 font-serif-cn text-sm leading-7 text-zinc-300">
+            <div className="whitespace-pre-line rounded-xl border border-[#ece6da] bg-[#faf8f3] p-5 font-serif-cn text-sm leading-7 text-stone-700">
               {data.epilogueDocBody}
             </div>
           </div>
         )}
 
         {/* 结局分支导航与操作栏 */}
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950/90 p-5">
+        <div className="rounded-2xl border border-[#dfd8ca] bg-white p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-zinc-300">
-              <Award className="h-4 w-4 text-amber-400" />
+            <div className="flex items-center gap-2 text-xs font-bold text-[#16263f]">
+              <Award className="h-4 w-4 text-amber-600" />
               <span>已解锁分支结局图鉴（可在总控台继续探索未达成结局）</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -340,12 +340,12 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
                       horrorAudio.playClick('ui');
                       onSelectEnding?.(eid);
                     }}
-                    className={`rounded border px-2.5 py-1 text-xs transition ${
+                    className={`rounded-lg border px-2.5 py-1 text-xs transition ${
                       isCurrent
-                        ? 'border-amber-500 bg-amber-950/60 text-amber-200 font-bold'
+                        ? 'border-[#9e2a2b] bg-red-50 text-[#9e2a2b] font-bold'
                         : isUnlocked
-                        ? 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-amber-600 cursor-pointer'
-                        : 'border-zinc-800/70 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                        ? 'border-stone-300 bg-[#faf8f3] text-stone-700 hover:border-[#9e2a2b] cursor-pointer'
+                        : 'border-stone-200 bg-stone-50 text-stone-400 cursor-not-allowed'
                     }`}
                   >
                     {isUnlocked ? ENDING_LABELS[eid] : '？？？未解锁'}
@@ -355,14 +355,14 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800 pt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#ece6da] pt-4">
             <button
               type="button"
               onClick={() => {
                 horrorAudio.playClick('ui');
                 onReturnToConsole();
               }}
-              className="inline-flex items-center gap-2 rounded-lg border border-amber-600/80 bg-amber-950/50 px-5 py-2.5 text-sm font-medium text-amber-100 hover:bg-amber-900/60 cursor-pointer transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#16263f] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1f3557] cursor-pointer transition"
             >
               <ArrowLeft className="h-4 w-4" />
               返回 B2 发布总控台（体验其他分支结局）
@@ -376,7 +376,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
                   onResetGame();
                 }
               }}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs text-zinc-300 hover:border-red-700 hover:text-red-200 cursor-pointer transition"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-xs font-medium text-stone-600 hover:border-[#9e2a2b] hover:text-[#9e2a2b] cursor-pointer transition"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               清空记录并开启新周目

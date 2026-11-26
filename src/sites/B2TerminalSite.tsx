@@ -548,13 +548,13 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
       const midY = H / 2;
       ctx.clearRect(0, 0, W, H);
 
-      ctx.fillStyle = '#070b09';
+      ctx.fillStyle = '#f8fafc';
       ctx.fillRect(0, 0, W, H);
 
       // 每 1 秒时间刻度竖线（总长 12 秒，突出每 4 秒刻度：4s、8s、12s）
       for (let sec = 0; sec <= 12; sec++) {
         const x = (sec / 12) * W;
-        ctx.strokeStyle = sec % 4 === 0 ? 'rgba(16, 185, 129, 0.35)' : 'rgba(63, 63, 70, 0.35)';
+        ctx.strokeStyle = sec % 4 === 0 ? 'rgba(13, 148, 136, 0.35)' : 'rgba(148, 163, 184, 0.3)';
         ctx.lineWidth = sec % 4 === 0 ? 1.2 : 0.8;
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -562,14 +562,14 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
         ctx.stroke();
 
         if (sec % 2 === 0 && sec < 12) {
-          ctx.fillStyle = sec % 4 === 0 ? '#6ee7b7' : '#71717a';
+          ctx.fillStyle = sec % 4 === 0 ? '#0f766e' : '#64748b';
           ctx.font = '10px monospace';
           ctx.fillText(`${sec}s`, x + 3, H - 5);
         }
       }
 
       // 中心零电平轴
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+      ctx.strokeStyle = 'rgba(13, 148, 136, 0.25)';
       ctx.beginPath();
       ctx.moveTo(0, midY);
       ctx.lineTo(W, midY);
@@ -605,17 +605,17 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
         const x = (i / bars) * W;
         const isBreathSpike = ch.hasBreath && sec % 4.0 >= 3.62 && sec % 4.0 < 3.88;
         ctx.fillStyle = isBreathSpike
-          ? '#fbbf24'
+          ? '#d97706'
           : ch.hasBreath
-          ? '#34d399'
-          : '#f87171';
+          ? '#059669'
+          : '#dc2626';
         ctx.fillRect(x, midY - barH / 2, Math.max(1.8, W / bars - 1.2), barH);
       }
 
       // 试听扫描线
       if (playingChannel === ch.id) {
         const px = playTick * W;
-        ctx.strokeStyle = '#fde047';
+        ctx.strokeStyle = '#9e2a2b';
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(px, 0);
@@ -911,28 +911,28 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
   );
 
   return (
-    <div className="crt-scanlines min-h-[calc(100vh-7rem)] bg-[#070a08] font-mono-tech text-emerald-100">
-      {/* 工业 CRT 顶栏 */}
-      <header className="border-b border-emerald-900/70 bg-[#0a100c] px-4 py-3">
+    <div className="min-h-[calc(100vh-7rem)] bg-[#f2f5f4] font-mono-tech text-slate-800">
+      {/* 清爽实验室工控顶栏 */}
+      <header className="border-b border-slate-200 bg-white px-4 py-3 shadow-2xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded border border-emerald-600/60 bg-emerald-950/70 text-emerald-400">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 text-teal-800">
               <Terminal className="h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold tracking-wider text-emerald-300">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-bold tracking-wider text-[#16263f]">
                   B2-TELECINE &amp; SECURITY CONSOLE // 地下B2远程审片与总控终端
                 </span>
-                <span className="rounded border border-emerald-800 bg-black px-2 py-0.5 text-[10px] text-emerald-400">
+                <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
                   wss://terminal.qinghe-b2.local:9838
                 </span>
               </div>
-              <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11px] text-emerald-500/90">
-                <span>母带审片: {reelsPassedCount}/3</span>
-                <span>受困成员救援: {rescuedCount}/4</span>
-                <span className="text-amber-400">违规记次: {state.b2Progress.violations}</span>
-                <span className="text-rose-400">视网膜残留: {state.contamination}%</span>
+              <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+                <span>母带审片: <strong className="text-teal-800">{reelsPassedCount}/3</strong></span>
+                <span>受困成员救援: <strong className="text-teal-800">{rescuedCount}/4</strong></span>
+                <span className="text-amber-700">违规记次: {state.b2Progress.violations}</span>
+                <span className="text-[#9e2a2b]">视网膜残留: {state.contamination}%</span>
               </div>
             </div>
           </div>
@@ -950,13 +950,13 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   sourceSite: 'b2',
                 });
               }}
-              className={`inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                 showDiagLog
-                  ? 'border-amber-400 bg-amber-950/70 text-amber-200'
-                  : 'border-emerald-700/80 bg-emerald-950/40 text-emerald-300 hover:border-amber-500/70 hover:text-amber-200'
+                  ? 'border-amber-500 bg-amber-50 text-amber-950'
+                  : 'border-slate-300 bg-slate-50 text-slate-700 hover:border-teal-600 hover:text-teal-900'
               }`}
             >
-              <FileCode2 className="h-3.5 w-3.5" />
+              <FileCode2 className="h-3.5 w-3.5 text-teal-700" />
               底层诊断日志 (SysDiag)
             </button>
           </div>
@@ -964,18 +964,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
         {/* 底层诊断日志抽屉（展示陈默回滚密钥第三段 REVERT） */}
         {showDiagLog && (
-          <div className="mx-auto mt-3 max-w-7xl rounded-lg border border-amber-700/70 bg-black/95 p-4 text-xs leading-6 text-emerald-300 shadow-2xl">
-            <div className="mb-2 flex items-center justify-between border-b border-emerald-900/80 pb-1.5 text-amber-300">
+          <div className="mx-auto mt-3 max-w-7xl rounded-xl border border-amber-300 bg-amber-50/60 p-4 text-xs leading-6 text-slate-800 shadow-md">
+            <div className="mb-2 flex items-center justify-between border-b border-amber-200 pb-1.5 font-semibold text-amber-950">
               <span>/var/log/b2-eyegen-watchdog.log (只读内核转储 · 留存人: chen_mo)</span>
               <button
                 type="button"
                 onClick={() => setShowDiagLog(false)}
-                className="text-zinc-400 hover:text-white cursor-pointer"
+                className="text-slate-500 hover:text-slate-900 cursor-pointer"
               >
                 关闭 [×]
               </button>
             </div>
-            <pre className="overflow-x-auto whitespace-pre-wrap text-[11.5px] leading-5 text-emerald-200/90">
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-[11.5px] leading-5 text-slate-800">
 {`[2026-10-14 02:13:09] KERNEL: Wet-Gate 16mm Scanner bus #03 locked by root(zheng_gd).
 [2026-10-14 02:14:22] WARN  : EyeGen-v4 pupil-inpainting weights injected into Reel QH-38-14 pipeline!
 [2026-10-14 02:14:55] EMERGENCY_HOOK (by chen_mo):
@@ -1027,12 +1027,12 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   horrorAudio.playClick('ui');
                   setActiveTab(tab.id);
                 }}
-                className={`flex flex-col items-start rounded-lg border px-3.5 py-2.5 text-left transition cursor-pointer ${
+                className={`flex flex-col items-start rounded-xl border px-3.5 py-2.5 text-left transition cursor-pointer ${
                   active
                     ? isMaster
-                      ? 'border-red-500 bg-red-950/50 text-red-100 shadow-lg'
-                      : 'border-emerald-400 bg-emerald-950/60 text-emerald-100 shadow-lg'
-                    : 'border-emerald-900/60 bg-black/60 text-emerald-400/80 hover:border-emerald-700 hover:text-emerald-200'
+                      ? 'border-[#9e2a2b] bg-red-50/80 text-[#7f1d1d] shadow-xs'
+                      : 'border-teal-600 bg-teal-50/80 text-teal-950 shadow-xs'
+                    : 'border-slate-200 bg-slate-50/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900'
                 }`}
               >
                 <div className="flex items-center gap-2 text-xs font-bold">
@@ -1054,32 +1054,32 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
           <div className="space-y-4">
             {/* 院长口令合成状态横幅 */}
             <div
-              className={`rounded-xl border p-4 ${
+              className={`rounded-xl border p-4 shadow-2xs ${
                 deanSynthesizedPass
-                  ? 'border-amber-400 bg-amber-950/40 text-amber-100 shadow-xl'
-                  : 'border-emerald-900/80 bg-[#0b130e] text-emerald-200'
+                  ? 'border-amber-400 bg-amber-50/90 text-amber-950'
+                  : 'border-slate-200 bg-white text-slate-800'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-3 text-xs">
-                  <span className="font-bold uppercase tracking-wider text-emerald-400">
+                  <span className="font-bold uppercase tracking-wider text-teal-800">
                     三号机柜母带口令提取槽：
                   </span>
-                  <span className="rounded border border-emerald-800 bg-black px-2.5 py-1">
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1">
                     QH-38-04:{' '}
-                    <strong className={state.b2Progress.reel04Passed ? 'text-amber-300' : 'text-zinc-500'}>
+                    <strong className={state.b2Progress.reel04Passed ? 'text-[#9e2a2b]' : 'text-slate-400'}>
                       {state.b2Progress.reel04Passed ? 'kan' : '???'}
                     </strong>
                   </span>
-                  <span className="rounded border border-emerald-800 bg-black px-2.5 py-1">
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1">
                     QH-38-09:{' '}
-                    <strong className={state.b2Progress.reel09Passed ? 'text-amber-300' : 'text-zinc-500'}>
+                    <strong className={state.b2Progress.reel09Passed ? 'text-[#9e2a2b]' : 'text-slate-400'}>
                       {state.b2Progress.reel09Passed ? 'xia' : '???'}
                     </strong>
                   </span>
-                  <span className="rounded border border-emerald-800 bg-black px-2.5 py-1">
+                  <span className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1">
                     QH-38-12:{' '}
-                    <strong className={state.b2Progress.reel12Passed ? 'text-amber-300' : 'text-zinc-500'}>
+                    <strong className={state.b2Progress.reel12Passed ? 'text-[#9e2a2b]' : 'text-slate-400'}>
                       {state.b2Progress.reel12Passed ? '1998' : '????'}
                     </strong>
                   </span>
@@ -1087,7 +1087,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
                 {deanSynthesizedPass && (
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-lg border border-amber-400 bg-black px-3 py-1.5 text-xs font-bold text-amber-300">
+                    <span className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-bold text-[#9e2a2b]">
                       ★ 合成院长专档 (zheng_gd) 口令：{deanSynthesizedPass}
                     </span>
                     <button
@@ -1096,7 +1096,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         horrorAudio.playClick('ui');
                         onNavigateSite('oa');
                       }}
-                      className="rounded-lg bg-amber-500 px-3.5 py-1.5 text-xs font-bold text-zinc-950 hover:bg-amber-400 cursor-pointer transition"
+                      className="rounded-lg bg-[#16263f] px-3.5 py-1.5 text-xs font-bold text-white hover:bg-[#1f3557] cursor-pointer transition"
                     >
                       前往内部 OA 登录三级专档 →
                     </button>
@@ -1108,7 +1108,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
             {/* 三卷母带切换与物理安全护具开关 */}
             <div className="grid gap-4 lg:grid-cols-12">
               <div className="space-y-4 lg:col-span-8">
-                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-900/70 bg-[#0b130e] p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-2xs">
                   <div className="flex flex-wrap gap-2">
                     {(
                       [
@@ -1126,12 +1126,12 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         }}
                         className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-bold transition cursor-pointer ${
                           selectedReel === r.code
-                            ? 'border-emerald-400 bg-emerald-900/60 text-white'
-                            : 'border-emerald-900 bg-black text-emerald-400 hover:border-emerald-700'
+                            ? 'border-teal-600 bg-teal-50 text-teal-950'
+                            : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900'
                         }`}
                       >
                         {r.passed ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-amber-400" />
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                         ) : (
                           <Film className="h-3.5 w-3.5" />
                         )}
@@ -1150,13 +1150,13 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         horrorAudio.playClick('film');
                         setAmberFilterOn((v) => !v);
                       }}
-                      className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
                         amberFilterOn
-                          ? 'border-amber-400 bg-amber-950/80 text-amber-200'
-                          : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-amber-600'
+                          ? 'border-amber-500 bg-amber-50 text-amber-950'
+                          : 'border-slate-300 bg-white text-slate-700 hover:border-amber-500'
                       }`}
                     >
-                      <Eye className="h-3.5 w-3.5" />
+                      <Eye className="h-3.5 w-3.5 text-amber-700" />
                       {amberFilterOn ? '琥珀黄滤光片：已挂载' : '开启【琥珀黄滤光片】'}
                     </button>
 
@@ -1166,13 +1166,13 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         horrorAudio.playClick('ui');
                         setReelAudioMuted((v) => !v);
                       }}
-                      className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
                         reelAudioMuted
-                          ? 'border-sky-400 bg-sky-950/80 text-sky-200'
-                          : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-sky-600'
+                          ? 'border-sky-500 bg-sky-50 text-sky-950'
+                          : 'border-slate-300 bg-white text-slate-700 hover:border-sky-500'
                       }`}
                     >
-                      {reelAudioMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                      {reelAudioMuted ? <VolumeX className="h-3.5 w-3.5 text-sky-700" /> : <Volume2 className="h-3.5 w-3.5 text-slate-600" />}
                       {reelAudioMuted ? '静音音轨：已开启' : '开启【静音音轨】'}
                     </button>
 
@@ -1182,31 +1182,33 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         horrorAudio.playClick('ui');
                         setRoomLightsOff((v) => !v);
                       }}
-                      className={`inline-flex items-center gap-1.5 rounded border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
                         roomLightsOff
-                          ? 'border-emerald-400 bg-emerald-950/90 text-emerald-200'
-                          : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-emerald-600'
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-950'
+                          : 'border-slate-300 bg-white text-slate-700 hover:border-emerald-500'
                       }`}
                     >
-                      <LightbulbOff className="h-3.5 w-3.5" />
+                      <LightbulbOff className="h-3.5 w-3.5 text-emerald-700" />
                       {roomLightsOff ? '机房照明：已关闭' : '点击【关闭机房照明】'}
                     </button>
                   </div>
                 </div>
 
-                {/* 16mm 光学胶片视窗 */}
-                <div className="film-vignette relative overflow-hidden rounded-xl border-2 border-emerald-900/90 bg-black p-2">
-                  <canvas
-                    ref={telecineCanvasRef}
-                    width={640}
-                    height={360}
-                    className={`mx-auto block w-full max-w-[640px] rounded ${
-                      amberFilterOn ? 'amber-safety-filter' : ''
-                    }`}
-                  />
+                {/* 16mm 光学胶片视窗（保留真实物理取景窗黑框，控制栏亮色化） */}
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                  <div className="bg-zinc-900 p-2.5">
+                    <canvas
+                      ref={telecineCanvasRef}
+                      width={640}
+                      height={360}
+                      className={`mx-auto block w-full max-w-[640px] rounded ${
+                        amberFilterOn ? 'amber-safety-filter' : ''
+                      }`}
+                    />
+                  </div>
 
                   {/* 各卷专属检视操作栏 */}
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-emerald-950 bg-[#09110c] px-3 py-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 bg-slate-50 px-4 py-3">
                     {selectedReel === 'QH-38-04' && (
                       <>
                         <div className="flex flex-wrap items-center gap-2">
@@ -1216,7 +1218,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                               horrorAudio.playClick('film');
                               setReel04SubFrame((f) => (f === 1 ? 2 : 1));
                             }}
-                            className="rounded border border-emerald-800 bg-black px-3 py-1.5 text-xs text-emerald-300 hover:border-emerald-600 cursor-pointer"
+                            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-teal-600 cursor-pointer"
                           >
                             切换相邻帧比对 ({reel04SubFrame === 1 ? '当前#0104: 7人 → 看#0105: 6人' : '当前#0105: 6人 → 回看#0104: 7人'})
                           </button>
@@ -1226,7 +1228,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                           <button
                             type="button"
                             onClick={handleReel04Zoom}
-                            className="inline-flex items-center gap-1.5 rounded border border-red-800/80 bg-red-950/50 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-900/60 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-[#9e2a2b] hover:bg-red-100 cursor-pointer"
                           >
                             <ZoomIn className="h-3.5 w-3.5" />
                             放大检视缺失位置
@@ -1234,7 +1236,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                           <button
                             type="button"
                             onClick={handleReel04Skip3}
-                            className="inline-flex items-center gap-1.5 rounded bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-zinc-950 hover:bg-amber-500 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-amber-700 cursor-pointer"
                           >
                             <FastForward className="h-3.5 w-3.5" />
                             跳帧 +3
@@ -1254,7 +1256,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                               horrorAudio.playClick('film');
                             }
                           }}
-                          className="inline-flex items-center gap-1.5 rounded border border-emerald-800 bg-black px-3 py-1.5 text-xs text-emerald-300 hover:border-emerald-600 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-teal-600 cursor-pointer"
                         >
                           <Play className="h-3.5 w-3.5" />
                           重放本段声轨（锣响三声）
@@ -1270,14 +1272,14 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                                 'shrine'
                               )
                             }
-                            className="rounded border border-red-900/70 bg-red-950/40 px-3 py-1.5 text-xs text-red-300 hover:bg-red-900/50 cursor-pointer"
+                            className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-[#9e2a2b] hover:bg-red-100 cursor-pointer"
                           >
                             凝视背景空龛
                           </button>
                           <button
                             type="button"
                             onClick={handleReel09ReadPlaque}
-                            className="inline-flex items-center gap-1.5 rounded bg-emerald-500 px-4 py-1.5 text-xs font-bold text-zinc-950 hover:bg-emerald-400 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-4 py-1.5 text-xs font-bold text-white hover:bg-teal-800 cursor-pointer"
                           >
                             <Eye className="h-3.5 w-3.5" />
                             读取牌文
@@ -1288,7 +1290,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
                     {selectedReel === 'QH-38-12' && (
                       <>
-                        <span className="text-xs text-emerald-300/90">
+                        <span className="text-xs font-medium text-slate-700">
                           {roomLightsOff
                             ? figureWalkProgress >= 1 || state.b2Progress.reel12Passed
                               ? '✓ 湿蓝布衫背影已走过三号机柜，当前处于安全检视窗口'
@@ -1298,7 +1300,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         <button
                           type="button"
                           onClick={handleReel12ReadCouplet}
-                          className="inline-flex items-center gap-1.5 rounded bg-emerald-500 px-4 py-1.5 text-xs font-bold text-zinc-950 hover:bg-emerald-400 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-4 py-1.5 text-xs font-bold text-white hover:bg-teal-800 cursor-pointer"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
                           读取戏台柱联
@@ -1309,30 +1311,30 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                 </div>
 
                 {/* 检视台实时日志反馈 */}
-                <div className="rounded-xl border border-emerald-900/80 bg-black/80 px-4 py-3 text-xs leading-6 text-emerald-200">
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs leading-6 text-slate-700 shadow-2xs">
                   {telecineStatusMsg}
                 </div>
               </div>
 
               {/* 右侧副屏：三号机柜实时红外监控 + 十诫速查 */}
               <aside className="space-y-4 lg:col-span-4">
-                <div className="rounded-xl border border-emerald-800/80 bg-[#0b130e] p-3.5">
-                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-emerald-300">
+                <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-2xs">
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#16263f]">
                     <span className="flex items-center gap-1.5">
-                      <Activity className="h-3.5 w-3.5 text-red-400" />
+                      <Activity className="h-3.5 w-3.5 text-[#9e2a2b]" />
                       B2内室 · 三号机柜红外监控
                     </span>
-                    <span className="text-[10px] text-emerald-500">CAM-IR-03</span>
+                    <span className="text-[10px] text-teal-700">CAM-IR-03</span>
                   </div>
 
                   <canvas
                     ref={irMonitorCanvasRef}
                     width={310}
                     height={200}
-                    className="w-full rounded border border-emerald-900 bg-black"
+                    className="w-full rounded-lg border border-slate-300 bg-zinc-900"
                   />
 
-                  <p className="mt-2.5 text-[11px] leading-5 text-emerald-300/80">
+                  <p className="mt-2.5 text-[11px] leading-5 text-slate-600">
                     {selectedReel === 'QH-38-12' && !state.b2Progress.reel12Passed
                       ? roomLightsOff
                         ? figureWalkProgress >= 1
@@ -1343,8 +1345,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-emerald-900/70 bg-black/70 p-4 text-xs leading-6 text-emerald-300/85">
-                  <div className="mb-1.5 font-bold text-amber-300">《B2安全审片规程》机房贴条摘要</div>
+                <div className="rounded-xl border border-amber-200 bg-[#fcf9f0] p-4 text-xs leading-6 text-stone-700 shadow-2xs">
+                  <div className="mb-1.5 font-bold text-amber-950">《B2安全审片规程》机房贴条摘要</div>
                   <ul className="list-disc space-y-1.5 pl-4 text-[11.5px]">
                     <li>凡背身人数较上一帧骤减，切忌放大寻脸，须先挂【琥珀黄滤光片】再【跳帧 +3】。</li>
                     <li>凡闻铜锣三响挂出白底剧目牌，须先切【静音音轨】再【读取牌文】，勿看空龛。</li>
@@ -1361,21 +1363,21 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
            ==================================================================== */}
         {activeTab === 'audio' && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-emerald-800/80 bg-[#0b130e] p-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-base font-bold text-emerald-200">
+                  <h2 className="text-base font-bold text-[#16263f]">
                     声学走廊三室门禁对讲分轨辨伪台（目标：解救音频组 · 赵一鸣）
                   </h2>
-                  <p className="mt-1 text-xs leading-5 text-emerald-400/90">
-                    判别准则（据《安全审片十诫》第4条）：受惊活人连续求救时，**每 4 秒左右必有明显断句停顿与急促换气峰值**；“龛中伪声”毫无换气间隙。请结合包络图与试听锁定真人所在房间！
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    判别准则（据《安全审片十诫》第4条）：受惊活人连续求救时，<strong>每 4 秒左右必有明显断句停顿与急促换气峰值</strong>；“龛中伪声”毫无换气间隙。请结合包络图与试听锁定真人所在房间！
                   </p>
                 </div>
                 <span
                   className={`rounded-lg border px-3 py-1.5 text-xs font-bold ${
                     state.rescued.zhaoYiming
-                      ? 'border-emerald-400 bg-emerald-950 text-emerald-200'
-                      : 'border-amber-600 bg-amber-950/60 text-amber-200'
+                      ? 'border-emerald-400 bg-emerald-50 text-emerald-900'
+                      : 'border-amber-400 bg-amber-50 text-amber-900'
                   }`}
                 >
                   {state.rescued.zhaoYiming ? '✓ 赵一鸣已成功获救' : '待锁定真身房间 (0/1)'}
@@ -1387,8 +1389,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
               <div
                 className={`rounded-xl border px-4 py-3 text-xs leading-6 ${
                   state.rescued.zhaoYiming
-                    ? 'border-emerald-500 bg-emerald-950/50 text-emerald-100'
-                    : 'border-red-700 bg-red-950/50 text-red-200'
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-950'
+                    : 'border-red-300 bg-red-50 text-[#9e2a2b]'
                 }`}
               >
                 {audioStatusMsg}
@@ -1403,16 +1405,16 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                 return (
                   <div
                     key={ch.id}
-                    className={`rounded-xl border p-4 transition ${
+                    className={`rounded-xl border p-4 shadow-2xs transition ${
                       isRescuedTrueRoom
-                        ? 'border-emerald-400 bg-emerald-950/30'
-                        : 'border-emerald-900/80 bg-[#0a110d]'
+                        ? 'border-emerald-400 bg-emerald-50/40'
+                        : 'border-slate-200 bg-white'
                     }`}
                   >
                     <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <span className="text-sm font-bold text-white">{ch.roomTitle}</span>
-                        <span className="ml-3 text-[11px] text-emerald-400/80">{ch.noiseFloorLabel}</span>
+                        <span className="text-sm font-bold text-[#16263f]">{ch.roomTitle}</span>
+                        <span className="ml-3 text-[11px] text-slate-500">{ch.noiseFloorLabel}</span>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
@@ -1425,8 +1427,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                           }}
                           className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${
                             isPlaying
-                              ? 'border-amber-400 bg-amber-950/70 text-amber-200'
-                              : 'border-emerald-700 bg-black text-emerald-200 hover:border-emerald-500'
+                              ? 'border-amber-500 bg-amber-50 text-amber-950'
+                              : 'border-slate-300 bg-slate-50 text-slate-700 hover:border-teal-600 hover:bg-white'
                           }`}
                         >
                           <Headphones className="h-3.5 w-3.5" />
@@ -1437,7 +1439,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                           type="button"
                           disabled={state.rescued.zhaoYiming}
                           onClick={() => handleSelectAudioRoom(ch)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
                         >
                           <Unlock className="h-3.5 w-3.5" />
                           {isRescuedTrueRoom ? '电磁铅门已开启 ✓' : `释放 ${ch.id} 电磁门锁`}
@@ -1451,11 +1453,11 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                       }}
                       width={680}
                       height={104}
-                      className="w-full rounded border border-emerald-950 bg-black"
+                      className="w-full rounded-lg border border-slate-200 bg-slate-50"
                     />
 
-                    <div className="mt-2 text-[11.5px] text-zinc-400">
-                      语音识别转写摘要：<span className="text-zinc-300">{ch.transcriptSnippet}</span>
+                    <div className="mt-2 text-[11.5px] text-slate-500">
+                      语音识别转写摘要：<span className="font-medium text-slate-700">{ch.transcriptSnippet}</span>
                     </div>
                   </div>
                 );
@@ -1483,18 +1485,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                 return (
                   <div
                     key={m.key}
-                    className={`rounded-xl border p-3.5 ${
+                    className={`rounded-xl border p-3.5 shadow-2xs ${
                       ok
-                        ? 'border-emerald-500/80 bg-emerald-950/40 text-emerald-100'
-                        : 'border-emerald-900/70 bg-[#0b130e] text-zinc-300'
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-950'
+                        : 'border-slate-200 bg-white text-slate-700'
                     }`}
                   >
                     <div className="flex items-center justify-between text-xs font-bold">
                       <span>{m.name}</span>
                       {ok ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                       ) : (
-                        <Lock className="h-4 w-4 text-amber-400" />
+                        <Lock className="h-4 w-4 text-amber-600" />
                       )}
                     </div>
                     <div className="mt-1 text-[11px] opacity-80">{ok ? '状态：已脱离地下锚点 ✓' : m.loc}</div>
@@ -1505,18 +1507,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
             <div className="grid gap-4 md:grid-cols-3">
               {/* 1. 苏晓棠 WS-B2-04 断屏码 */}
-              <div className="flex flex-col justify-between rounded-xl border border-emerald-900/80 bg-[#0b130e] p-5">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="rounded border border-emerald-800 bg-black px-2 py-0.5 text-[11px] text-emerald-300">
+                    <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
                       工位总线: WS-B2-04
                     </span>
                     {state.rescued.suXiaotang && (
-                      <span className="text-xs font-bold text-emerald-400">✓ 已断屏获救</span>
+                      <span className="text-xs font-bold text-emerald-700">✓ 已断屏获救</span>
                     )}
                   </div>
-                  <h3 className="text-sm font-bold text-white">苏晓棠 · 善本库镜面隔离断屏器</h3>
-                  <p className="mt-2 text-xs leading-5 text-emerald-300/80">
+                  <h3 className="text-sm font-bold text-[#16263f]">苏晓棠 · 善本库镜面隔离断屏器</h3>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
                     苏晓棠反锁于无反光介质的「B1-09 古籍恒温善本库」。输入她在青禾民俗馆 12 / 24 / 36 号馆藏校注中分段留下的 <strong>4 位纯数字隔离断屏码</strong>，切断 WS-B2-04 高透镜面屏电源。
                   </p>
                 </div>
@@ -1528,17 +1530,17 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     value={suCodeInput}
                     onChange={(e) => setSuCodeInput(e.target.value)}
                     placeholder="输入 4 位断屏码"
-                    className="w-full rounded-lg border border-emerald-800 bg-black px-3 py-2 text-xs text-white outline-none focus:border-emerald-400 disabled:opacity-50"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-teal-600 disabled:bg-slate-50 disabled:opacity-50"
                   />
                   {rescueFeedback.su && (
-                    <div className={`text-[11px] leading-5 ${rescueFeedback.su.ok ? 'text-emerald-300' : 'text-red-300'}`}>
+                    <div className={`text-[11px] leading-5 ${rescueFeedback.su.ok ? 'text-emerald-700' : 'text-[#9e2a2b]'}`}>
                       {rescueFeedback.su.text}
                     </div>
                   )}
                   <button
                     type="submit"
                     disabled={state.rescued.suXiaotang || !suCodeInput.trim()}
-                    className="w-full rounded-lg bg-emerald-600 py-2 text-xs font-bold text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
+                    className="w-full rounded-lg bg-teal-700 py-2 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
                   >
                     {state.rescued.suXiaotang ? 'WS-B2-04 已物理断电 ✓' : '发送 WS-B2-04 断屏脉冲'}
                   </button>
@@ -1546,18 +1548,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
               </div>
 
               {/* 2. 陈默 AI 超分权重回滚框 */}
-              <div className="flex flex-col justify-between rounded-xl border border-emerald-900/80 bg-[#0b130e] p-5">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="rounded border border-emerald-800 bg-black px-2 py-0.5 text-[11px] text-emerald-300">
+                    <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
                       守护进程: EyeGen-v4
                     </span>
                     {state.rescued.chenMo && (
-                      <span className="text-xs font-bold text-emerald-400">✓ 已回滚获救</span>
+                      <span className="text-xs font-bold text-emerald-700">✓ 已回滚获救</span>
                     )}
                   </div>
-                  <h3 className="text-sm font-bold text-white">陈默 · AI 补帧点睛权重离线回滚</h3>
-                  <p className="mt-2 text-xs leading-5 text-emerald-300/80">
+                  <h3 className="text-sm font-bold text-[#16263f]">陈默 · AI 补帧点睛权重离线回滚</h3>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
                     拼接三段离线销毁密钥：①内部 OA 二级陈默 Git 工单首段 + ②显影液论坛热帖 #88 隐藏层（搜 EyeGen）中段 + ③本机顶部【底层诊断日志】末段。
                   </p>
                 </div>
@@ -1569,11 +1571,11 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     value={chenCodeInput}
                     onChange={(e) => setChenCodeInput(e.target.value)}
                     placeholder="例如：XXXXX-XXXX-XXXXXX"
-                    className="w-full rounded-lg border border-emerald-800 bg-black px-3 py-2 text-xs text-white outline-none focus:border-emerald-400 disabled:opacity-50"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-teal-600 disabled:bg-slate-50 disabled:opacity-50"
                   />
                   {rescueFeedback.chen && (
                     <div
-                      className={`text-[11px] leading-5 ${rescueFeedback.chen.ok ? 'text-emerald-300' : 'text-red-300'}`}
+                      className={`text-[11px] leading-5 ${rescueFeedback.chen.ok ? 'text-emerald-700' : 'text-[#9e2a2b]'}`}
                     >
                       {rescueFeedback.chen.text}
                     </div>
@@ -1581,7 +1583,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   <button
                     type="submit"
                     disabled={state.rescued.chenMo || !chenCodeInput.trim()}
-                    className="w-full rounded-lg bg-emerald-600 py-2 text-xs font-bold text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
+                    className="w-full rounded-lg bg-teal-700 py-2 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
                   >
                     {state.rescued.chenMo ? 'EyeGen 权重已销毁 ✓' : '执行离线权重销毁回滚'}
                   </button>
@@ -1589,18 +1591,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
               </div>
 
               {/* 3. 林知夏双重视野朱砂符框 */}
-              <div className="flex flex-col justify-between rounded-xl border border-emerald-900/80 bg-[#0b130e] p-5">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-2xs">
                 <div>
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="rounded border border-emerald-800 bg-black px-2 py-0.5 text-[11px] text-emerald-300">
+                    <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
                       视觉回路: WS-B2-01
                     </span>
                     {state.rescued.linZhixia && (
-                      <span className="text-xs font-bold text-emerald-400">✓ 已解锚获救</span>
+                      <span className="text-xs font-bold text-emerald-700">✓ 已解锚获救</span>
                     )}
                   </div>
-                  <h3 className="text-sm font-bold text-white">林知夏 · 双重视野朱砂符锚点切断</h3>
-                  <p className="mt-2 text-xs leading-5 text-emerald-300/80">
+                  <h3 className="text-sm font-bold text-[#16263f]">林知夏 · 双重视野朱砂符锚点切断</h3>
+                  <p className="mt-2 text-xs leading-5 text-slate-600">
                     解锁私人云笔记『夏夜拾遗』深层加密夹，输入外婆为她留下的 <strong>朱砂符器物登记号</strong>（字母+4位数字），剥离其右眼中心视野的神龛重影。
                   </p>
                 </div>
@@ -1612,11 +1614,11 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     value={linCodeInput}
                     onChange={(e) => setLinCodeInput(e.target.value)}
                     placeholder="输入朱砂符登记号 (如 XX-XXXX)"
-                    className="w-full rounded-lg border border-emerald-800 bg-black px-3 py-2 text-xs text-white outline-none focus:border-emerald-400 disabled:opacity-50"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 outline-none focus:border-teal-600 disabled:bg-slate-50 disabled:opacity-50"
                   />
                   {rescueFeedback.lin && (
                     <div
-                      className={`text-[11px] leading-5 ${rescueFeedback.lin.ok ? 'text-emerald-300' : 'text-red-300'}`}
+                      className={`text-[11px] leading-5 ${rescueFeedback.lin.ok ? 'text-emerald-700' : 'text-[#9e2a2b]'}`}
                     >
                       {rescueFeedback.lin.text}
                     </div>
@@ -1624,7 +1626,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   <button
                     type="submit"
                     disabled={state.rescued.linZhixia || !linCodeInput.trim()}
-                    className="w-full rounded-lg bg-emerald-600 py-2 text-xs font-bold text-zinc-950 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
+                    className="w-full rounded-lg bg-teal-700 py-2 text-xs font-bold text-white hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer transition"
                   >
                     {state.rescued.linZhixia ? '双重视野锚点已切断 ✓' : '注入朱砂符波长切断锚点'}
                   </button>
@@ -1633,12 +1635,12 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
             </div>
 
             {!state.rescued.zhaoYiming && (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-700/70 bg-amber-950/30 px-4 py-3 text-xs text-amber-200">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950">
                 <span>提示：音频组赵一鸣需在【② 多轨音频取证台】通过呼吸包络辨伪释放门锁。</span>
                 <button
                   type="button"
                   onClick={() => setActiveTab('audio')}
-                  className="rounded-lg bg-amber-500 px-3.5 py-1.5 font-bold text-zinc-950 hover:bg-amber-400 cursor-pointer"
+                  className="rounded-lg bg-amber-600 px-3.5 py-1.5 font-bold text-white hover:bg-amber-700 cursor-pointer"
                 >
                   前往多轨音频取证台 →
                 </button>
@@ -1653,33 +1655,33 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
         {activeTab === 'master' && (
           <div className="space-y-5">
             {/* 零点推流警报总览 */}
-            <div className="rounded-xl border-2 border-red-800/80 bg-gradient-to-r from-red-950/60 via-[#0d120f] to-red-950/40 p-5">
+            <div className="rounded-xl border-2 border-red-300 bg-gradient-to-r from-red-50 via-white to-red-50/70 p-5 shadow-2xs">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-400">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#9e2a2b]">
                     <AlertOctagon className="h-4 w-4 animate-pulse" />
                     <span>CDN AUTO-BROADCAST GATEWAY // 2026-11-26 00:00:00 零点并机总控台</span>
                   </div>
-                  <h2 className="mt-1 text-lg font-bold text-white">
+                  <h2 className="mt-1 text-lg font-bold text-[#16263f]">
                     「水下青禾 · 百年乡愁」全网无滤镜推流最终处置权限已就绪
                   </h2>
                 </div>
 
-                <div className="flex flex-wrap gap-2 text-xs">
+                <div className="flex flex-wrap gap-2 text-xs font-semibold">
                   <span
-                    className={`rounded border px-2.5 py-1 ${
+                    className={`rounded-lg border px-2.5 py-1 ${
                       rescuedCount === 4
-                        ? 'border-emerald-500 bg-emerald-950/70 text-emerald-200'
-                        : 'border-amber-600 bg-amber-950/60 text-amber-200'
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-900'
+                        : 'border-amber-400 bg-amber-50 text-amber-900'
                     }`}
                   >
                     成员救援：{rescuedCount}/4
                   </span>
                   <span
-                    className={`rounded border px-2.5 py-1 ${
+                    className={`rounded-lg border px-2.5 py-1 ${
                       allReelsPassed
-                        ? 'border-emerald-500 bg-emerald-950/70 text-emerald-200'
-                        : 'border-amber-600 bg-amber-950/60 text-amber-200'
+                        ? 'border-emerald-400 bg-emerald-50 text-emerald-900'
+                        : 'border-amber-400 bg-amber-50 text-amber-900'
                     }`}
                   >
                     母带审片：{reelsPassedCount}/3
@@ -1691,16 +1693,16 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
             {/* 前三项直接处置协议（对应结局一、结局二、结局三） */}
             <div className="grid gap-4 md:grid-cols-3">
               {/* 分支一：同化结局 ending_assimilation */}
-              <div className="flex flex-col justify-between rounded-xl border border-red-900/80 bg-[#13090a] p-5">
+              <div className="flex flex-col justify-between rounded-xl border border-red-200 bg-[#fff8f8] p-5 shadow-2xs">
                 <div>
-                  <div className="mb-2 flex items-center gap-2 text-xs font-bold text-red-400">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold text-[#9e2a2b]">
                     <EyeOff className="h-4 w-4" />
                     <span>通道 A · 原始流直连 / 荣誉契约</span>
                   </div>
-                  <h3 className="text-sm font-bold text-red-100">
+                  <h3 className="text-sm font-bold text-[#7f1d1d]">
                     预览未过滤第14卷《辞社点睛》原片 / 签署入组协议
                   </h3>
-                  <p className="mt-2 text-xs leading-5 text-red-200/75">
+                  <p className="mt-2 text-xs leading-5 text-stone-600">
                     卸除琥珀黄光学滤片，直接审看 QH-38-14 未压缩银盐母带，或接受郑国栋拟定的《线上荣誉审片员入组协议》成为永久观测节点。
                   </p>
                 </div>
@@ -1713,7 +1715,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                       horrorAudio.playScareStinger(state.scareMode);
                       void handleTriggerStandardEnding('ending_assimilation');
                     }}
-                    className="w-full rounded-lg border border-red-600 bg-red-900/70 px-3 py-2 text-xs font-bold text-red-100 hover:bg-red-800 cursor-pointer transition"
+                    className="w-full rounded-lg bg-[#9e2a2b] px-3 py-2 text-xs font-bold text-white hover:bg-[#822021] cursor-pointer transition"
                   >
                     强行预览未过滤第14卷原片
                   </button>
@@ -1724,7 +1726,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                       horrorAudio.playScareStinger(state.scareMode);
                       void handleTriggerStandardEnding('ending_assimilation');
                     }}
-                    className="w-full rounded-lg border border-red-800/80 bg-black/60 px-3 py-1.5 text-[11px] text-red-300 hover:border-red-600 cursor-pointer transition"
+                    className="w-full rounded-lg border border-red-300 bg-white px-3 py-1.5 text-[11px] font-medium text-[#9e2a2b] hover:bg-red-50 cursor-pointer transition"
                   >
                     签署《线上荣誉审片员协议》
                   </button>
@@ -1732,14 +1734,14 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
               </div>
 
               {/* 分支二：物理过载焚毁结局 ending_overload */}
-              <div className="flex flex-col justify-between rounded-xl border border-amber-800/80 bg-[#141008] p-5">
+              <div className="flex flex-col justify-between rounded-xl border border-amber-300 bg-[#fffcf2] p-5 shadow-2xs">
                 <div>
-                  <div className="mb-2 flex items-center gap-2 text-xs font-bold text-amber-400">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-bold text-amber-800">
                     <Flame className="h-4 w-4" />
                     <span>通道 B · 强电短路硬熔断</span>
                   </div>
-                  <h3 className="text-sm font-bold text-amber-100">启动高压配电过载物理焚毁 B2 机房</h3>
-                  <p className="mt-2 text-xs leading-5 text-amber-200/75">
+                  <h3 className="text-sm font-bold text-amber-950">启动高压配电过载物理焚毁 B2 机房</h3>
+                  <p className="mt-2 text-xs leading-5 text-stone-600">
                     无需考证古籍牌位或集齐密钥，直接合死地下 B2 变压器组引燃三号机柜与全部十四卷 1998 醋酸片基，以彻底焚毁代价阻断零点推流。
                   </p>
                 </div>
@@ -1750,24 +1752,24 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     horrorAudio.playScareStinger(state.scareMode);
                     void handleTriggerStandardEnding('ending_overload');
                   }}
-                  className="mt-4 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-bold text-zinc-950 hover:bg-amber-500 cursor-pointer transition"
+                  className="mt-4 w-full rounded-lg bg-amber-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-amber-700 cursor-pointer transition"
                 >
                   启动高压配电过载焚毁 B2 机房
                 </button>
               </div>
 
               {/* 分支三：单向锁死替影结局 ending_sacrifice */}
-              <div className="flex flex-col justify-between rounded-xl border border-sky-800/80 bg-[#081018] p-5">
+              <div className="flex flex-col justify-between rounded-xl border border-sky-200 bg-[#f5faff] p-5 shadow-2xs">
                 <div>
-                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-sky-400">
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-sky-800">
                     <span className="flex items-center gap-1.5">
                       <ShieldAlert className="h-4 w-4" />
                       通道 C · 外部会话单向隔离
                     </span>
                     <span>{rescuedCount}/4 人</span>
                   </div>
-                  <h3 className="text-sm font-bold text-sky-100">以当前外部终端会话单向锁死隔离回路</h3>
-                  <p className="mt-2 text-xs leading-5 text-sky-200/75">
+                  <h3 className="text-sm font-bold text-[#16263f]">以当前外部终端会话单向锁死隔离回路</h3>
+                  <p className="mt-2 text-xs leading-5 text-stone-600">
                     在全部 4 名研究生撤离地下后激活：斩断全部外网 CDN 推流网关，用你当前这台浏览器会话独自承接空神龛所需的最后一道封门视线。
                   </p>
                 </div>
@@ -1779,7 +1781,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     horrorAudio.playBronzeGong(1);
                     void handleTriggerStandardEnding('ending_sacrifice');
                   }}
-                  className="mt-4 w-full rounded-lg border border-sky-500 bg-sky-800/80 px-3 py-2.5 text-xs font-bold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer transition"
+                  className="mt-4 w-full rounded-lg bg-sky-700 px-3 py-2.5 text-xs font-bold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer transition"
                 >
                   {rescuedCount === 4
                     ? '以当前外部终端会话锁死隔离回路'
@@ -1788,27 +1790,26 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
               </div>
             </div>
 
-            {/* 第四项核心决战区：宗祠牌位逆向覆写仪轨（对应伪志陷阱结局四 & 完美真结局五） */}
-            <div className="rounded-2xl border-2 border-emerald-600/80 bg-[#09140e] p-6 shadow-2xl">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-emerald-900 pb-3">
+            {/* 第四项核心决战区：宗祠牌位逆向覆写仪轨 */}
+            <div className="rounded-2xl border-2 border-teal-600/60 bg-white p-6 shadow-md">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
                 <div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400">
+                  <div className="flex items-center gap-2 text-xs font-bold text-teal-800">
                     <Sparkles className="h-4 w-4" />
                     <span>通道 D · 终极底层覆写 // 执行宗祠牌位逆向覆写仪轨</span>
                   </div>
-                  <h3 className="mt-1 font-serif-cn text-xl font-bold text-emerald-100">
+                  <h3 className="mt-1 font-serif-cn text-xl font-bold text-[#16263f]">
                     四道祀典木牌次序排定 &amp; 1998 粮站铁盒封存暗记核验
                   </h3>
                 </div>
-                <span className="rounded border border-emerald-700 bg-black px-2.5 py-1 text-[11px] text-emerald-300">
+                <span className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
                   警惕：切勿盲信被篡改的电子版方志次序！
                 </span>
               </div>
 
               <form onSubmit={handleRitualOverrideSubmit} className="space-y-4">
-                {/* 交互式木牌点选器 */}
                 <div>
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-emerald-300">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
                     <span>
                       第一步：依次点选 4 枚祀典牌位词元（或直接在下方框内手输四道牌位顺序）：
                     </span>
@@ -1820,7 +1821,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         setRitualSeqInput('');
                         setRitualError(null);
                       }}
-                      className="inline-flex items-center gap-1 text-amber-300 hover:underline cursor-pointer"
+                      className="inline-flex items-center gap-1 font-medium text-[#9e2a2b] hover:underline cursor-pointer"
                     >
                       <RotateCcw className="h-3 w-3" />
                       清空重排
@@ -1836,14 +1837,14 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                           key={token}
                           type="button"
                           onClick={() => handleToggleTabletToken(token)}
-                          className={`relative rounded-lg border-2 px-4 py-2.5 font-serif-cn text-base font-bold tracking-widest transition cursor-pointer ${
+                          className={`relative rounded-xl border-2 px-4 py-2.5 font-serif-cn text-base font-bold tracking-widest transition cursor-pointer ${
                             picked
-                              ? 'border-amber-400 bg-amber-950/70 text-amber-100 shadow-md'
-                              : 'border-stone-700 bg-stone-900 text-stone-200 hover:border-emerald-500'
+                              ? 'border-amber-500 bg-amber-50 text-amber-950 shadow-xs'
+                              : 'border-[#dcd4c4] bg-[#faf7f0] text-[#2c241b] hover:border-teal-600'
                           }`}
                         >
                           {picked && (
-                            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 font-mono-tech text-xs font-bold text-zinc-950">
+                            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 font-mono-tech text-xs font-bold text-white">
                               {orderIdx + 1}
                             </span>
                           )}
@@ -1856,7 +1857,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-emerald-200">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                       四道宗祠牌位顺序（共 8 字，自动忽略短横线与空格）
                     </label>
                     <input
@@ -1867,12 +1868,12 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         setRitualError(null);
                       }}
                       placeholder="点选上方木牌或直接输入四道二字牌位名"
-                      className="w-full rounded-lg border border-emerald-700 bg-black px-3.5 py-2.5 font-serif-cn text-sm tracking-widest text-white outline-none focus:border-amber-400"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 font-serif-cn text-sm tracking-widest text-slate-900 outline-none focus:border-teal-600"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-emerald-200">
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700">
                       第二步：输入 1998 年十四卷母带铁盒底部封存暗记
                     </label>
                     <input
@@ -1883,26 +1884,26 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                         setRitualError(null);
                       }}
                       placeholder="输入周怀瑾刻于铁盒底部的暗记（4汉字+2数字）"
-                      className="w-full rounded-lg border border-emerald-700 bg-black px-3.5 py-2.5 font-serif-cn text-sm tracking-widest text-white outline-none focus:border-amber-400"
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 font-serif-cn text-sm tracking-widest text-slate-900 outline-none focus:border-teal-600"
                     />
                   </div>
                 </div>
 
                 {ritualError && (
-                  <div className="flex items-start gap-2 rounded-xl border border-amber-600/80 bg-amber-950/40 px-4 py-3 text-xs leading-6 text-amber-100">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-950">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                     <span>{ritualError}</span>
                   </div>
                 )}
 
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                  <div className="text-[11px] text-emerald-400/85">
+                  <div className="text-[11px] text-slate-500">
                     真结局达成条件：木刻原件真牌位次序 + 1998铁盒封存暗记 + 救齐 4/4 成员 + 通过 3/3 卷审片
                   </div>
                   <button
                     type="submit"
                     disabled={ritualBusy || !ritualSeqInput.trim()}
-                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-xs font-bold tracking-wider text-zinc-950 shadow-lg hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition"
+                    className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-6 py-3 text-xs font-bold tracking-wider text-white shadow-sm hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition"
                   >
                     <KeyRound className="h-4 w-4" />
                     {ritualBusy ? '正在校验祀典哈希并覆写底层阵列……' : '执行宗祠牌位逆向覆写仪轨'}

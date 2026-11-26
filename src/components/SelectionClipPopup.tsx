@@ -24,7 +24,6 @@ export const SelectionClipPopup: React.FC<SelectionClipPopupProps> = ({
 
   useEffect(() => {
     const handleMouseUp = (e: MouseEvent) => {
-      // 忽略点击弹窗本身或输入框内部
       const target = e.target as HTMLElement | null;
       if (target?.closest('[data-clip-popup="true"]')) return;
       if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') {
@@ -95,32 +94,32 @@ export const SelectionClipPopup: React.FC<SelectionClipPopupProps> = ({
             top: selectionInfo.y,
             transform: 'translate(-50%, -100%)',
           }}
-          className="z-[110] flex items-center gap-1 rounded-full border border-amber-500/50 bg-zinc-950/95 px-2 py-1 text-xs text-zinc-100 shadow-2xl shadow-black/80 backdrop-blur-md"
+          className="z-[110] flex items-center gap-1 rounded-full border border-[#d4cbb8] bg-white/98 px-2 py-1 text-xs text-stone-800 shadow-xl shadow-stone-900/15 backdrop-blur-md"
         >
           <button
             type="button"
             onClick={handleClip}
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium text-amber-200 hover:bg-amber-500/20 cursor-pointer transition"
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold text-[#9e2a2b] hover:bg-red-50 cursor-pointer transition"
           >
             {clippedToast ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-300">已摘录</span>
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-emerald-700">已摘录</span>
               </>
             ) : (
               <>
-                <Pin className="h-3.5 w-3.5 text-amber-400" />
+                <Pin className="h-3.5 w-3.5 text-[#9e2a2b]" />
                 <span>摘录到手记</span>
               </>
             )}
           </button>
-          <span className="h-3.5 w-px bg-zinc-700" />
+          <span className="h-3.5 w-px bg-stone-200" />
           <button
             type="button"
             onClick={handleSearch}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer transition"
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-[#16263f] hover:bg-stone-100 cursor-pointer transition"
           >
-            <Search className="h-3.5 w-3.5 text-sky-400" />
+            <Search className="h-3.5 w-3.5 text-sky-600" />
             <span>跨站检索</span>
           </button>
         </motion.div>

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   CloudRain,
   Feather,
-  FileText,
   KeyRound,
   Lock,
   Search,
@@ -40,13 +39,11 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
   const [selectedNoteId, setSelectedNoteId] = useState<string>(surfaceNotes[0]?.id ?? ZHIXIA_NOTES[0]?.id ?? '');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 深层密保验证状态
   const [passInput, setPassInput] = useState('');
   const [unlockBusy, setUnlockBusy] = useState(false);
   const [unlockError, setUnlockError] = useState<string | null>(null);
   const [justUnlockedBanner, setJustUnlockedBanner] = useState(false);
 
-  // 跨站点检索跳转聚焦
   useEffect(() => {
     if (!focusedItemId) return;
     const target = ZHIXIA_NOTES.find((n) => n.id === focusedItemId);
@@ -107,7 +104,6 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
     return state.decryptedCache[selectedNote.encryptedVaultId] ?? null;
   }, [selectedNote, state.zhixiaDeepUnlocked, state.decryptedCache]);
 
-  // 阅读已解锁手记时同步已读、关键词与调查线索
   useEffect(() => {
     if (!selectedNote || resolvedNoteContent === null) return;
     onMarkRead(selectedNote.id);
@@ -168,24 +164,24 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
   };
 
   return (
-    <div className="min-h-[calc(100vh-7rem)] bg-[#171614] text-stone-200">
-      {/* 素雅个人云笔记顶栏 */}
-      <header className="border-b border-stone-800/90 bg-[#1d1b18] px-4 py-4">
+    <div className="min-h-[calc(100vh-7rem)] bg-[#f7f3eb] text-stone-800">
+      {/* 素雅米白纸笺个人云笔记顶栏 */}
+      <header className="border-b border-[#e5dec9] bg-[#fcfaf5] px-4 py-4">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-700/40 bg-stone-900 text-amber-300/90 shadow-inner">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-500/35 bg-amber-50 text-amber-800 shadow-2xs">
               <Feather className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h1 className="font-serif-cn text-xl font-bold tracking-widest text-stone-100">
+                <h1 className="font-serif-cn text-xl font-bold tracking-widest text-[#2c241b]">
                   夏夜拾遗
                 </h1>
-                <span className="rounded-full border border-stone-700 bg-stone-900/90 px-2.5 py-0.5 font-mono-tech text-[11px] text-stone-400">
+                <span className="rounded-full border border-[#dfd7c5] bg-[#f4efe4] px-2.5 py-0.5 font-mono-tech text-[11px] text-stone-500">
                   note.zhixia-memo.me · 只读内网映射
                 </span>
               </div>
-              <p className="mt-0.5 font-serif-cn text-xs text-stone-400">
+              <p className="mt-0.5 font-serif-cn text-xs text-stone-500">
                 “桂子落时樟木冷，莫向空龛问旧人。” —— 林知夏私人田野札记与外婆口述留存
               </p>
             </div>
@@ -200,13 +196,13 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                 setActiveTab('surface');
                 if (surfaceNotes[0]) setSelectedNoteId(surfaceNotes[0].id);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-medium transition cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-semibold transition cursor-pointer ${
                 activeTab === 'surface'
-                  ? 'border-amber-600/70 bg-amber-950/40 text-amber-200'
-                  : 'border-stone-800 bg-stone-900/70 text-stone-400 hover:border-stone-700 hover:text-stone-200'
+                  ? 'border-amber-500/70 bg-amber-50 text-amber-950 shadow-2xs'
+                  : 'border-[#ddd5c4] bg-white text-stone-600 hover:border-stone-400 hover:text-stone-900'
               }`}
             >
-              <BookOpen className="h-3.5 w-3.5" />
+              <BookOpen className="h-3.5 w-3.5 text-amber-700" />
               <span>表层手记 · 田野日常 ({surfaceNotes.length})</span>
             </button>
 
@@ -217,18 +213,18 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                 setActiveTab('deep');
                 if (deepNotes[0]) setSelectedNoteId(deepNotes[0].id);
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-medium transition cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-semibold transition cursor-pointer ${
                 activeTab === 'deep'
-                  ? 'border-rose-700/80 bg-rose-950/45 text-rose-200'
+                  ? 'border-[#9e2a2b]/60 bg-red-50 text-[#9e2a2b] shadow-2xs'
                   : isDeepAccessible
-                  ? 'border-emerald-800/70 bg-emerald-950/30 text-emerald-200 hover:border-emerald-700'
-                  : 'border-stone-800 bg-stone-900/70 text-stone-400 hover:border-rose-800/60 hover:text-rose-200'
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-900 hover:border-emerald-500'
+                  : 'border-[#ddd5c4] bg-white text-stone-600 hover:border-[#9e2a2b]/50 hover:text-[#9e2a2b]'
               }`}
             >
               {isDeepAccessible ? (
-                <Unlock className="h-3.5 w-3.5 text-emerald-400" />
+                <Unlock className="h-3.5 w-3.5 text-emerald-600" />
               ) : (
-                <Lock className="h-3.5 w-3.5 text-rose-400" />
+                <Lock className="h-3.5 w-3.5 text-[#9e2a2b]" />
               )}
               <span>深层加密夹 · 龛下遗稿 ({deepNotes.length})</span>
             </button>
@@ -237,39 +233,39 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
       </header>
 
       {justUnlockedBanner && (
-        <div className="mx-auto mt-4 flex max-w-6xl items-center justify-between rounded-xl border border-emerald-800/70 bg-emerald-950/35 px-4 py-2.5 text-xs text-emerald-200">
-          <span className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+        <div className="mx-auto mt-4 flex max-w-6xl items-center justify-between rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-xs text-emerald-900">
+          <span className="flex items-center gap-2 font-medium">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             深层记忆密保核验通过！已使用 PBKDF2 + AES-256-GCM 实时解密全部 {deepNotes.length} 篇私密手稿。
           </span>
           <button
             type="button"
             onClick={() => setJustUnlockedBanner(false)}
-            className="text-emerald-400 hover:text-emerald-200 cursor-pointer"
+            className="font-semibold text-emerald-700 hover:text-emerald-950 cursor-pointer"
           >
             收起
           </button>
         </div>
       )}
 
-      {/* 双栏素雅阅读区 */}
+      {/* 双栏素雅纸笺阅读区 */}
       <div className="mx-auto grid max-w-6xl gap-5 px-4 py-6 lg:grid-cols-12">
         {/* 左侧手记目录 */}
         <aside className="space-y-3.5 lg:col-span-4">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-stone-500" />
+            <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="在当前手记夹中检索日期、题目或词句…"
-              className="w-full rounded-xl border border-stone-800 bg-[#1f1d1a] py-2 pl-9 pr-3 text-xs text-stone-200 outline-none focus:border-amber-700/80"
+              className="w-full rounded-xl border border-[#ddd5c4] bg-white py-2 pl-9 pr-3 text-xs text-stone-800 placeholder-stone-400 shadow-2xs outline-none focus:border-[#9e2a2b]"
             />
           </div>
 
-          <div className="max-h-[68vh] space-y-2 overflow-y-auto rounded-xl border border-stone-800/90 bg-[#1c1a17] p-2.5">
+          <div className="max-h-[68vh] space-y-2 overflow-y-auto rounded-xl border border-[#e5dec9] bg-[#fcfaf5] p-2.5">
             {visibleList.length === 0 ? (
-              <div className="py-10 text-center font-serif-cn text-xs text-stone-500">
+              <div className="py-10 text-center font-serif-cn text-xs text-stone-400">
                 未检索到相符的札记条目
               </div>
             ) : (
@@ -289,35 +285,35 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                     className={`w-full rounded-lg border p-3.5 text-left transition cursor-pointer ${
                       selected
                         ? note.requiresDeepUnlock
-                          ? 'border-rose-700/80 bg-rose-950/25 shadow'
-                          : 'border-amber-700/80 bg-amber-950/25 shadow'
-                        : 'border-stone-800/80 bg-[#161513] hover:border-stone-700'
+                          ? 'border-[#9e2a2b]/60 bg-red-50/50 shadow-xs'
+                          : 'border-amber-500/70 bg-amber-50/50 shadow-xs'
+                        : 'border-[#e6dfd1] bg-white hover:border-stone-400'
                     }`}
                   >
-                    <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-stone-400">
+                    <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-stone-500">
                       <span className="inline-flex items-center gap-1 font-mono-tech">
-                        <Calendar className="h-3 w-3 text-stone-500" />
+                        <Calendar className="h-3 w-3 text-stone-400" />
                         {note.date}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         {locked ? (
-                          <span className="inline-flex items-center gap-1 text-rose-400">
+                          <span className="inline-flex items-center gap-1 font-medium text-[#9e2a2b]">
                             <Lock className="h-3 w-3" />
                             密文锁定
                           </span>
                         ) : isRead ? (
-                          <span className="text-stone-500">已批阅</span>
+                          <span className="text-stone-400">已批阅</span>
                         ) : (
-                          <span className="text-amber-400">未读</span>
+                          <span className="font-semibold text-amber-700">未读</span>
                         )}
                       </span>
                     </div>
 
-                    <div className="font-serif-cn text-sm font-bold leading-6 text-stone-100">
+                    <div className="font-serif-cn text-sm font-bold leading-6 text-[#2c241b]">
                       {locked ? `【深层私密手稿】${note.title}` : note.title}
                     </div>
 
-                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-stone-500">
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-stone-400">
                       <CloudRain className="h-3 w-3" />
                       <span>{note.weather}</span>
                     </div>
@@ -331,28 +327,28 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
         {/* 右侧信笺正文或深层密保解锁界面 */}
         <main className="lg:col-span-8">
           {activeTab === 'deep' && !isDeepAccessible ? (
-            <div className="rounded-2xl border border-rose-900/60 bg-[#1f1c19] p-6 shadow-2xl sm:p-9">
+            <div className="rounded-2xl border border-[#e3d9c8] bg-white p-6 shadow-md sm:p-9">
               <div className="mx-auto max-w-xl">
-                <div className="mb-5 flex items-center gap-3 border-b border-stone-800 pb-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-800/70 bg-rose-950/40 text-rose-300">
+                <div className="mb-5 flex items-center gap-3 border-b border-stone-200 pb-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 bg-red-50 text-[#9e2a2b]">
                     <Lock className="h-5 w-5" />
                   </div>
                   <div>
-                    <div className="font-mono-tech text-[11px] uppercase tracking-widest text-rose-400">
+                    <div className="font-mono-tech text-[11px] uppercase tracking-widest text-[#9e2a2b]">
                       CLIENT-SIDE AES-256-GCM VAULT // 私人加密手稿匣
                     </div>
-                    <h2 className="font-serif-cn text-xl font-bold text-stone-100">
+                    <h2 className="font-serif-cn text-xl font-bold text-[#2c241b]">
                       『夏夜拾遗』深层手记 · 记忆密保验证
                     </h2>
                   </div>
                 </div>
 
-                <div className="mb-6 rounded-xl border border-stone-800 bg-[#161412] p-4 font-serif-cn text-sm leading-7 text-stone-300">
-                  <p className="mb-2 font-bold text-amber-200/90">【林知夏自设密保提示语】：</p>
+                <div className="mb-6 rounded-xl border border-[#e6dfd1] bg-[#faf7f0] p-4 font-serif-cn text-sm leading-7 text-stone-700">
+                  <p className="mb-2 font-bold text-[#9e2a2b]">【林知夏自设密保提示语】：</p>
                   <p>
                     “若我被困在人文楼地下失去联络，拿到这条内网跳板的人——请不要用我的生日或学号尝试暴力破解。这五篇手稿里藏着外婆留给我的保命朱砂符编号，以及周怀瑾恩师1998年亲手抄录的真正封龛古序。”
                   </p>
-                  <div className="mt-3 rounded-lg border border-amber-900/50 bg-amber-950/20 px-3.5 py-2.5 text-xs leading-6 text-amber-200">
+                  <div className="mt-3 rounded-lg border border-amber-300/80 bg-amber-50/80 px-3.5 py-2.5 text-xs leading-6 text-amber-950 font-sans">
                     <div>
                       <strong>密保构成规则（共 6 个汉字，直接连写）：</strong>
                     </div>
@@ -367,7 +363,7 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
 
                 <form onSubmit={handleDeepUnlockSubmit} className="space-y-4">
                   <div>
-                    <label className="mb-1.5 block text-xs font-medium text-stone-300">
+                    <label className="mb-1.5 block text-xs font-semibold text-stone-700">
                       输入 6 字记忆密保口令（系统自动忽略空格与连接符）
                     </label>
                     <input
@@ -375,12 +371,12 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                       value={passInput}
                       onChange={(e) => setPassInput(e.target.value)}
                       placeholder="请输入：封水时辰(2字) + 盲傩绝唱剧目正名(4字)"
-                      className="w-full rounded-xl border border-stone-700 bg-[#141311] px-4 py-3 font-serif-cn text-sm tracking-widest text-stone-100 outline-none focus:border-rose-600"
+                      className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 font-serif-cn text-sm tracking-widest text-stone-900 placeholder-stone-400 outline-none focus:border-[#9e2a2b]"
                     />
                   </div>
 
                   {unlockError && (
-                    <div className="rounded-xl border border-red-900/80 bg-red-950/40 px-4 py-3 text-xs leading-6 text-red-200">
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs leading-6 text-[#9e2a2b]">
                       {unlockError}
                     </div>
                   )}
@@ -389,7 +385,7 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                     <button
                       type="submit"
                       disabled={unlockBusy || !passInput.trim()}
-                      className="inline-flex items-center gap-2 rounded-xl bg-rose-700 px-6 py-2.5 text-xs font-bold tracking-wider text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#9e2a2b] px-6 py-2.5 text-xs font-bold tracking-wider text-white hover:bg-[#822021] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition"
                     >
                       <KeyRound className="h-4 w-4" />
                       {unlockBusy ? '正在校验哈希并实时解密手稿……' : '验证密保并解密深层手记'}
@@ -402,7 +398,7 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                           horrorAudio.playClick('ui');
                           onNavigateSite('chronicles');
                         }}
-                        className="text-xs text-amber-300/90 underline hover:text-amber-200 cursor-pointer"
+                        className="text-xs font-medium text-[#1e3554] underline hover:text-[#9e2a2b] cursor-pointer"
                       >
                         前往「云溪县水利移民与方志网」核查时辰与剧目名 →
                       </button>
@@ -412,43 +408,43 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
               </div>
             </div>
           ) : selectedNote && resolvedNoteContent !== null ? (
-            <article className="rounded-2xl border border-stone-800 bg-[#201e1a] p-6 shadow-2xl sm:p-9">
-              <div className="border-b border-stone-800 pb-5">
-                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-400">
+            <article className="rounded-2xl border border-[#e3dac7] bg-[#fffdf9] p-6 shadow-sm sm:p-9">
+              <div className="border-b border-[#ece5d5] pb-5">
+                <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 rounded-md border border-stone-700 bg-stone-900 px-2.5 py-0.5 font-mono-tech text-stone-300">
-                      <Calendar className="h-3 w-3 text-amber-400/80" />
+                    <span className="inline-flex items-center gap-1 rounded-md border border-[#e0d8c6] bg-[#faf7f0] px-2.5 py-0.5 font-mono-tech text-stone-700">
+                      <Calendar className="h-3 w-3 text-amber-700" />
                       {selectedNote.date}
                     </span>
-                    <span className="inline-flex items-center gap-1 rounded-md border border-stone-800 bg-stone-900/60 px-2.5 py-0.5">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-[#eae3d3] bg-[#faf7f0] px-2.5 py-0.5 text-stone-600">
                       <CloudRain className="h-3 w-3 text-stone-400" />
                       {selectedNote.weather}
                     </span>
                   </div>
 
                   {selectedNote.requiresDeepUnlock && (
-                    <span className="inline-flex items-center gap-1 rounded-md border border-rose-800/70 bg-rose-950/40 px-2.5 py-0.5 font-mono-tech text-[11px] text-rose-200">
+                    <span className="inline-flex items-center gap-1 rounded-md border border-red-200 bg-red-50 px-2.5 py-0.5 font-mono-tech text-[11px] font-medium text-[#9e2a2b]">
                       <Sparkles className="h-3 w-3" />
                       深层手稿 · 已解密
                     </span>
                   )}
                 </div>
 
-                <h2 className="font-serif-cn text-2xl font-bold leading-snug tracking-wide text-stone-100">
+                <h2 className="font-serif-cn text-2xl font-bold leading-snug tracking-wide text-[#2c241b]">
                   {selectedNote.title}
                 </h2>
               </div>
 
-              <div className="mt-6 rounded-xl border border-stone-800/80 bg-[#181613] p-6 sm:p-8">
-                <EditorialProse text={resolvedNoteContent} theme="dark" />
-                <div className="mt-6 border-t border-stone-800/80 pt-3 text-[11px] text-stone-500">
+              <div className="mt-6 rounded-xl border border-[#ece5d5] bg-[#fcfaf4] p-6 sm:p-8">
+                <EditorialProse text={resolvedNoteContent} theme="journal" />
+                <div className="mt-6 border-t border-[#e8e0cf] pt-3 text-[11px] text-stone-400">
                   提示：用鼠标划选正文中的关键数字或词句，可直接摘录至右侧随身手记。
                 </div>
               </div>
 
               {selectedNote.requiresDeepUnlock && state.unlockedSites.includes('b2') && (
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-900/60 bg-rose-950/20 px-4 py-3 text-xs">
-                  <span className="text-rose-200/90">
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50/75 px-4 py-3 text-xs">
+                  <span className="text-[#7f1d1d]">
                     若已从深层遗稿中获知外婆留下的朱砂符登记号或真封龛牌位顺序，可立即前往 B2 终端执行救援与覆写。
                   </span>
                   <button
@@ -457,7 +453,7 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                       horrorAudio.playClick('ui');
                       onNavigateSite('b2');
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-700 bg-rose-900/60 px-3.5 py-1.5 font-semibold text-rose-100 hover:bg-rose-800/70 cursor-pointer transition"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#9e2a2b] px-3.5 py-1.5 font-semibold text-white hover:bg-[#822021] cursor-pointer transition"
                   >
                     <Terminal className="h-3.5 w-3.5" />
                     跳转至 B2 远程审片与救援终端

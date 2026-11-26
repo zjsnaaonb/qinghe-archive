@@ -170,7 +170,6 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
 
   const isZijing = activeBoard === 'zijing';
 
-  // 将正文中的 yunxi-chronicles.gov.cn 渲染为可点击外链
   const renderReplyContent = (text: string) => {
     const parts = text.split(/(yunxi-chronicles\.gov\.cn)/gi);
     return parts.map((part, idx) => {
@@ -180,7 +179,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
             key={idx}
             type="button"
             onClick={handleJumpExternalChronicles}
-            className="mx-1 inline-flex items-center gap-1 rounded-md border border-amber-500/50 bg-amber-500/15 px-2 py-0.5 font-mono-tech text-xs text-amber-300 underline hover:bg-amber-500/25 cursor-pointer transition"
+            className="mx-1 inline-flex items-center gap-1 rounded-md border border-[#9e2a2b]/35 bg-red-50 px-2 py-0.5 font-mono-tech text-xs font-semibold text-[#9e2a2b] underline hover:bg-red-100 cursor-pointer transition"
           >
             <span>yunxi-chronicles.gov.cn</span>
             <ExternalLink className="h-3 w-3" />
@@ -194,17 +193,17 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   return (
     <div
       className={`min-h-[calc(100vh-124px)] transition-colors duration-300 ${
-        isZijing ? 'bg-[#0f0d17] text-zinc-100' : 'bg-[#12161d] text-slate-100'
+        isZijing ? 'bg-[#f6f5fa] text-slate-800' : 'bg-[#f6f2e8] text-stone-800'
       }`}
     >
-      {/* 极简双版块切换顶栏 */}
+      {/* 清爽双版块切换顶栏 */}
       <div
         className={`border-b ${
-          isZijing ? 'border-purple-900/40 bg-[#151122]/90' : 'border-amber-900/30 bg-[#171c26]/90'
+          isZijing ? 'border-purple-200/80 bg-white/95' : 'border-[#e2d9c5] bg-[#fcfaf4]/95'
         }`}
       >
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-5 py-5">
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 p-1">
+          <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-100/80 p-1">
             <button
               type="button"
               onClick={() => {
@@ -213,17 +212,17 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 setViewMode('list');
               }}
               className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer transition ${
-                isZijing ? 'text-purple-100' : 'text-zinc-400 hover:text-zinc-200'
+                isZijing ? 'text-purple-900' : 'text-stone-500 hover:text-stone-800'
               }`}
             >
               {isZijing && (
                 <motion.span
                   layoutId="bbsBoardTab"
-                  className="absolute inset-0 rounded-lg bg-purple-600/25 border border-purple-500/40"
+                  className="absolute inset-0 rounded-lg bg-white border border-purple-300/80 shadow-2xs"
                 />
               )}
               <span className="relative z-10 flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5 text-purple-400" />
+                <MessageSquare className="h-3.5 w-3.5 text-purple-600" />
                 南大紫荆站 · 夜间树洞
               </span>
             </button>
@@ -236,17 +235,17 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 setViewMode('list');
               }}
               className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer transition ${
-                !isZijing ? 'text-amber-100' : 'text-zinc-400 hover:text-zinc-200'
+                !isZijing ? 'text-amber-950' : 'text-stone-500 hover:text-stone-800'
               }`}
             >
               {!isZijing && (
                 <motion.span
                   layoutId="bbsBoardTab"
-                  className="absolute inset-0 rounded-lg bg-amber-600/20 border border-amber-500/40"
+                  className="absolute inset-0 rounded-lg bg-white border border-amber-400/70 shadow-2xs"
                 />
               )}
               <span className="relative z-10 flex items-center gap-1.5">
-                <Film className="h-3.5 w-3.5 text-amber-400" />
+                <Film className="h-3.5 w-3.5 text-amber-700" />
                 显影液 · 老式 DV 胶片论坛
               </span>
             </button>
@@ -259,11 +258,11 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="搜帖子标题、楼层关键词……"
-                className="w-full rounded-xl border border-white/10 bg-black/35 py-2 pl-3.5 pr-9 text-xs text-zinc-100 placeholder-zinc-500 focus:border-amber-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-stone-300 bg-white py-2 pl-3.5 pr-9 text-xs text-stone-800 placeholder-stone-400 shadow-2xs focus:border-[#9e2a2b] focus:outline-none"
               />
               <button
                 type="submit"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-amber-300 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#9e2a2b] cursor-pointer"
               >
                 <Search className="h-3.5 w-3.5" />
               </button>
@@ -283,7 +282,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
               transition={{ duration: 0.22 }}
               className="space-y-4"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-400">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
                 <span>
                   {isZijing
                     ? '匿名校园讨论区网页镜像快照（2026年10月—11月）'
@@ -292,7 +291,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 {activeQuery && (
                   <div className="flex items-center gap-2">
                     <span>
-                      当前筛选 “{activeQuery}”（{boardThreads.length} 帖
+                      当前筛选 “<strong className="text-[#9e2a2b]">{activeQuery}</strong>”（{boardThreads.length} 帖
                       {otherBoardMatchCount > 0 ? `，另一版块另有 ${otherBoardMatchCount} 帖` : ''}）
                     </span>
                     <button
@@ -301,7 +300,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                         setActiveQuery('');
                         setSearchInput('');
                       }}
-                      className="text-amber-300 underline cursor-pointer"
+                      className="text-[#9e2a2b] font-medium underline cursor-pointer"
                     >
                       重置
                     </button>
@@ -320,10 +319,10 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: Math.min(idx * 0.03, 0.24) }}
                       onClick={() => openThread(thread)}
-                      className={`group flex w-full items-start justify-between gap-4 rounded-2xl border p-5 text-left transition cursor-pointer ${
+                      className={`group flex w-full items-start justify-between gap-4 rounded-2xl border p-5 text-left transition cursor-pointer shadow-2xs ${
                         isZijing
-                          ? 'border-purple-900/35 bg-[#171324]/80 hover:border-purple-500/50 hover:bg-[#1d182e]'
-                          : 'border-slate-800 bg-[#181e28]/90 hover:border-amber-500/45 hover:bg-[#1d2431]'
+                          ? 'border-purple-200/80 bg-white hover:border-purple-400 hover:shadow-sm'
+                          : 'border-[#e3dac7] bg-[#fffdf9] hover:border-amber-500/60 hover:shadow-sm'
                       }`}
                     >
                       <div className="min-w-0 flex-1">
@@ -331,36 +330,36 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           <span
                             className={`rounded-md px-2 py-0.5 font-medium ${
                               isZijing
-                                ? 'bg-purple-950/80 text-purple-300 border border-purple-800/50'
-                                : 'bg-amber-950/60 text-amber-300 border border-amber-800/40'
+                                ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                                : 'bg-amber-50 text-amber-900 border border-amber-200'
                             }`}
                           >
                             {thread.tag}
                           </span>
                           {thread.isHot && (
-                            <span className="inline-flex items-center gap-0.5 rounded-md bg-red-950/70 px-1.5 py-0.5 text-red-300">
+                            <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-[#9e2a2b]">
                               <Flame className="h-3 w-3" />
                               热议
                             </span>
                           )}
-                          <span className="text-zinc-400">{thread.author}</span>
-                          <span className="text-zinc-600">·</span>
-                          <span className="font-mono-tech text-zinc-500">{thread.createdAt}</span>
+                          <span className="font-medium text-stone-600">{thread.author}</span>
+                          <span className="text-stone-300">·</span>
+                          <span className="font-mono-tech text-stone-400">{thread.createdAt}</span>
                         </div>
 
-                        <h3 className="text-[15px] font-bold leading-snug text-zinc-100 group-hover:text-amber-200 transition">
+                        <h3 className="text-[15px] font-bold leading-snug text-[#16263f] group-hover:text-[#9e2a2b] transition">
                           {thread.title}
                         </h3>
-                        <p className="mt-1.5 line-clamp-1 text-xs text-zinc-400">
+                        <p className="mt-1.5 line-clamp-1 text-xs text-stone-500">
                           {thread.replies[0]?.content}
                         </p>
                       </div>
 
                       <div className="flex shrink-0 flex-col items-end gap-2 text-xs">
-                        <span className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono-tech text-[11px] text-zinc-400">
+                        <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono-tech text-[11px] text-stone-600">
                           {thread.replies.length} 楼
                         </span>
-                        <span className="inline-flex items-center gap-0.5 text-[11px] text-zinc-500 group-hover:text-amber-300">
+                        <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-stone-400 group-hover:text-[#9e2a2b]">
                           {isRead ? '已阅' : '进帖'}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </span>
@@ -380,14 +379,14 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 transition={{ duration: 0.22 }}
                 className="mx-auto max-w-3xl"
               >
-                <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                   <button
                     type="button"
                     onClick={() => {
                       horrorAudio.playClick('ui');
                       setViewMode('list');
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs text-zinc-200 hover:border-amber-500/50 cursor-pointer transition"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-xs font-medium text-[#16263f] hover:border-[#16263f] cursor-pointer transition"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                     <span>返回帖子列表</span>
@@ -397,7 +396,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                     <button
                       type="button"
                       onClick={handleJumpExternalChronicles}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/50 bg-amber-500/15 px-3.5 py-1.5 text-xs font-medium text-amber-200 hover:bg-amber-500/25 cursor-pointer transition"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#9e2a2b]/40 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-[#9e2a2b] hover:bg-red-100 cursor-pointer transition"
                     >
                       <span>访问贴内提及的「云溪水利方志网」</span>
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -406,16 +405,22 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 </div>
 
                 {/* 帖子主标题头 */}
-                <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5">
+                <div className="mb-5 rounded-2xl border border-[#dfd8ca] bg-white px-6 py-5 shadow-2xs">
                   <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-                    <span className="rounded bg-white/10 px-2 py-0.5 text-[11px] text-amber-300">
+                    <span
+                      className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+                        isZijing
+                          ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                          : 'bg-amber-50 text-amber-900 border border-amber-200'
+                      }`}
+                    >
                       {activeThread.tag}
                     </span>
-                    <span className="text-zinc-400">楼主：{activeThread.author}</span>
-                    <span className="text-zinc-600">·</span>
-                    <span className="font-mono-tech text-zinc-500">{activeThread.createdAt}</span>
+                    <span className="text-stone-600">楼主：{activeThread.author}</span>
+                    <span className="text-stone-300">·</span>
+                    <span className="font-mono-tech text-stone-400">{activeThread.createdAt}</span>
                   </div>
-                  <h2 className="font-serif-cn text-xl font-bold leading-snug text-white">
+                  <h2 className="font-serif-cn text-xl font-bold leading-snug text-[#16263f]">
                     {activeThread.title}
                   </h2>
                 </div>
@@ -431,13 +436,13 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                       return (
                         <div
                           key={reply.floor}
-                          className="rounded-2xl border border-dashed border-amber-700/50 bg-amber-950/15 p-5"
+                          className="rounded-2xl border border-dashed border-amber-500/60 bg-amber-50/75 p-5"
                         >
-                          <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-amber-300">
-                            <Lock className="h-4 w-4" />
+                          <div className="mb-2 flex items-center gap-2 text-xs font-bold text-amber-900">
+                            <Lock className="h-4 w-4 text-amber-700" />
                             <span>#{reply.floor} 楼 · 已被站务折叠的异常缓存楼层</span>
                           </div>
-                          <p className="mb-3 text-xs leading-relaxed text-zinc-400">
+                          <p className="mb-3 text-xs leading-relaxed text-stone-600">
                             该楼层已被屏蔽。输入该楼层涉及的核心技术模型英文关键词可调出网页镜像缓存：
                           </p>
                           <div className="flex gap-2">
@@ -446,19 +451,19 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                               value={hiddenFloorInput}
                               onChange={(e) => setHiddenFloorInput(e.target.value)}
                               placeholder="输入折叠索引关键词……"
-                              className="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 focus:border-amber-500 focus:outline-none"
+                              className="flex-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-stone-800 focus:border-[#9e2a2b] focus:outline-none"
                             />
                             <button
                               type="button"
                               onClick={() => handleUnlockHiddenReply(reply.hiddenKeywordRequired!)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-amber-600 px-3.5 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-amber-500 cursor-pointer"
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#16263f] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#1f3557] cursor-pointer"
                             >
                               <Unlock className="h-3.5 w-3.5" />
                               <span>调出缓存</span>
                             </button>
                           </div>
                           {hiddenFloorError && (
-                            <p className="mt-2 text-xs text-red-400">{hiddenFloorError}</p>
+                            <p className="mt-2 text-xs font-medium text-[#9e2a2b]">{hiddenFloorError}</p>
                           )}
                         </div>
                       );
@@ -467,32 +472,32 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                     return (
                       <div
                         key={reply.floor}
-                        className={`rounded-2xl border p-5 transition ${
+                        className={`rounded-2xl border p-5 shadow-2xs transition ${
                           reply.act3Appended
-                            ? 'border-red-900/60 bg-red-950/20'
+                            ? 'border-red-200 bg-[#fff6f6]'
                             : reply.isAssimilatedTone
-                            ? 'border-amber-900/40 bg-[#1a1820]'
-                            : 'border-white/8 bg-white/[0.025]'
+                            ? 'border-amber-300/80 bg-[#fcf7eb]'
+                            : 'border-[#e5dfd3] bg-white'
                         }`}
                       >
-                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-white/5 pb-2.5 text-xs">
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-2.5 text-xs">
                           <div className="flex items-center gap-2">
-                            <span className="rounded bg-white/10 px-1.5 py-0.5 font-mono-tech text-[11px] text-zinc-300">
+                            <span className="rounded bg-stone-100 px-1.5 py-0.5 font-mono-tech text-[11px] font-medium text-stone-600">
                               #{reply.floor}F
                             </span>
-                            <span className="font-semibold text-zinc-100">{reply.author}</span>
+                            <span className="font-bold text-[#16263f]">{reply.author}</span>
                             {reply.floor === 1 && (
-                              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] text-amber-300">
+                              <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-900">
                                 楼主
                               </span>
                             )}
                             {reply.act3Appended && (
-                              <span className="rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] text-red-300">
+                              <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] font-medium text-[#9e2a2b]">
                                 新同步缓存
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-[11px] text-zinc-500 font-mono-tech">
+                          <div className="flex items-center gap-3 text-[11px] text-stone-400 font-mono-tech">
                             <span className="inline-flex items-center gap-1">
                               <Clock className="h-3 w-3" />
                               {reply.time}
@@ -504,7 +509,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           </div>
                         </div>
 
-                        <div className="whitespace-pre-line text-[14px] leading-[1.9] text-zinc-200/95">
+                        <div className="whitespace-pre-line text-[14px] leading-[1.9] text-stone-800">
                           {renderReplyContent(reply.content)}
                         </div>
                       </div>
@@ -512,7 +517,6 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                   })}
                 </div>
 
-                {/* 分批展开长帖楼层，消除第一眼眼花缭乱 */}
                 {hiddenRemainingCount > 0 && (
                   <div className="mt-5 text-center">
                     <button
@@ -521,7 +525,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                         horrorAudio.playClick('ui');
                         setVisibleFloorLimit((n) => n + 10);
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-5 py-2 text-xs font-medium text-amber-200 hover:border-amber-500/60 hover:bg-white/10 cursor-pointer transition"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-5 py-2 text-xs font-semibold text-[#16263f] shadow-2xs hover:border-[#9e2a2b] hover:text-[#9e2a2b] cursor-pointer transition"
                     >
                       <ChevronDown className="h-4 w-4" />
                       <span>展开后续楼层（还有 {hiddenRemainingCount} 楼回复）</span>

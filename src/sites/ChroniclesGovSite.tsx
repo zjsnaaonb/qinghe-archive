@@ -121,18 +121,18 @@ export const ChroniclesGovSite: React.FC<CommonSiteProps> = ({
 
   return (
     <div className="min-h-[calc(100vh-124px)] bg-[#eef1f5] text-slate-800">
-      {/* 端庄清爽的地方政务与方志档案馆页眉 */}
-      <div className="border-b-4 border-[#9e2a2b] bg-[#1e3554] text-white">
+      {/* 端庄明亮的地方政务与方志档案馆白底红线页眉 */}
+      <div className="border-t-4 border-t-[#9e2a2b] border-b border-slate-300 bg-white text-slate-800">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-6">
           <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/10">
-              <Landmark className="h-5 w-5 text-amber-200" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-200 bg-red-50">
+              <Landmark className="h-5 w-5 text-[#9e2a2b]" />
             </div>
             <div>
-              <div className="text-[11px] tracking-widest text-slate-300">
+              <div className="text-[11px] font-semibold tracking-widest text-[#9e2a2b]">
                 云溪县档案馆 · 水利移民历史信息公开平台
               </div>
-              <h1 className="font-serif-cn text-xl sm:text-2xl font-bold tracking-wider">
+              <h1 className="font-serif-cn text-xl sm:text-2xl font-bold tracking-wider text-[#1e3554]">
                 云溪水利移民与地方志查询网
               </h1>
             </div>
@@ -145,11 +145,11 @@ export const ChroniclesGovSite: React.FC<CommonSiteProps> = ({
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="检索公文号、村名、人名或信访……"
-                className="w-full rounded-xl border border-white/20 bg-white/10 py-2 pl-3.5 pr-9 text-xs text-white placeholder-slate-300 focus:border-amber-300 focus:outline-none"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2 pl-3.5 pr-9 text-xs text-slate-800 placeholder-slate-400 focus:border-[#9e2a2b] focus:bg-white focus:outline-none transition"
               />
               <button
                 type="submit"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-amber-200 hover:text-white cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#1e3554] hover:text-[#9e2a2b] cursor-pointer"
               >
                 <Search className="h-4 w-4" />
               </button>

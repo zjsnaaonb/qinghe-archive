@@ -3,6 +3,8 @@
 @layer base {
   body {
     font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+    background-color: #f7f4ed;
+    color: #1f2937;
     overflow-x: hidden;
   }
 
@@ -71,18 +73,18 @@
   animation: subtle-breathe 4.5s ease-in-out infinite;
 }
 
-/* 自定义滚动条 */
+/* 自定义护眼暖色滚动条 */
 ::-webkit-scrollbar {
   width: 7px;
   height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #121215;
+  background: #efeae0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #33333d;
+  background: #c7bda9;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #525263;
+  background: #a89d86;
 }

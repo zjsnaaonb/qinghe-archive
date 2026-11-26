@@ -574,7 +574,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0b0c10] text-zinc-100">
+    <div className="min-h-screen flex flex-col bg-[#f7f4ed] text-stone-800">
       <TopInvestigatorBar
         state={state}
         activePanel={activePanel}
@@ -598,7 +598,7 @@ export const App: React.FC = () => {
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="pointer-events-none fixed left-1/2 top-24 z-[85] -translate-x-1/2 rounded-full border border-amber-500/50 bg-zinc-950/95 px-4 py-1.5 text-xs font-medium text-amber-200 shadow-2xl backdrop-blur-md"
+            className="pointer-events-none fixed left-1/2 top-24 z-[85] -translate-x-1/2 rounded-full border border-[#9e2a2b]/35 bg-white/95 px-4 py-1.5 text-xs font-medium text-[#16263f] shadow-xl shadow-stone-900/10 backdrop-blur-md"
           >
             {toastBanner}
           </motion.div>
