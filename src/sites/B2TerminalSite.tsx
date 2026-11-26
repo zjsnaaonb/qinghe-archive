@@ -121,7 +121,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
   useEffect(() => {
     const img = new Image();
-    img.src = './media/b2_corridor_cctv.jpg';
+    img.src = './media/b2_corridor_cctv.png';
     img.onload = () => {
       cctvBgImgRef.current = img;
       setCctvImgLoaded(true);

@@ -251,7 +251,7 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                         {item.id === 'qh-37-09' ? (
                           <div className="relative h-36 w-full overflow-hidden bg-zinc-900">
                             <img
-                              src="./media/threshing_1998_base.jpg"
+                              src="./media/threshing_1998_base.png"
                               alt="晒谷场收工图缩略图"
                               className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105"
                             />
