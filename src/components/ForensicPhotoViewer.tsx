@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { LiquidGlass, type LiquidGlassHandle } from 'liquid-glass-web-react';
+import { renderDisplacementMap } from 'liquid-glass-web-react';
 import {
   Search,
   Eye,
@@ -498,20 +498,99 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   onInspect,
   onAdjustContamination,
 }) => {
+  const LENS_SIZE = 200;
+  const rawId = useId();
+  const filterId = `qh-opt-lens-${rawId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
+
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const glassRef = useRef<LiquidGlassHandle | null>(null);
+  const lensWrapRef = useRef<HTMLDivElement | null>(null);
+  const lensInnerRef = useRef<HTMLDivElement | null>(null);
+  const pointerRef = useRef({ x: 0.5, y: 0.5, cw: 720, ch: 480 });
+  const rafRef = useRef<number | null>(null);
+  const windowChimeRef = useRef(false);
 
   const [loupeEnabled, setLoupeEnabled] = useState(false);
+  const [lensVisible, setLensVisible] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(2.3);
+  const zoomRef = useRef(2.3);
+  zoomRef.current = zoomLevel;
+
   const [rakingLight, setRakingLight] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [pointer, setPointer] = useState({ x: 0.5, y: 0.5, active: false });
+
+  // 一次性调用开源 liquid-glass-web-react 预计算真实球面凸透镜折射位移贴图（永久缓存，零逐帧重算！）
+  const displacementMapUrl = useMemo(() => {
+    if (typeof document === 'undefined') return '';
+    try {
+      return renderDisplacementMap({
+        size: 128,
+        halfWidth: LENS_SIZE / 2,
+        halfHeight: LENS_SIZE / 2,
+        radius: LENS_SIZE / 2,
+        depth: 34,
+        domeDepth: 34,
+        splay: 0.25,
+        glow: 0,
+        glowSpread: 0.5,
+        glowExponent: 2,
+        edgeHighlight: 0,
+        edgeWidth: 6,
+        edgeExponent: 2,
+        specularAngle: 45,
+      });
+    } catch {
+      return '';
+    }
+  }, []);
 
   // 点 2 核心修复：点击【高清重制预览】后直接在照片原地播放真实的“神经扫描线扫过 → 村民逐个转过脖子直视你”动态演化！
   const [hdState, setHdState] = useState<'idle' | 'scanning' | 'revealed'>('idle');
   const [scanProgress, setScanProgress] = useState(0);
   const [hdTriggeredOnce, setHdTriggeredOnce] = useState(false);
-  const [windowChimeDone, setWindowChimeDone] = useState(false);
+
+  const syncLensDom = () => {
+    rafRef.current = null;
+    const wrap = lensWrapRef.current;
+    const inner = lensInnerRef.current;
+    if (!wrap || !inner) return;
+
+    const { x, y, cw, ch } = pointerRef.current;
+    const z = zoomRef.current;
+    const px = x * cw;
+    const py = y * ch;
+
+    // 100% GPU translate3d 位移，彻底避免 left/top 触发布局重排与 React 重渲染
+    wrap.style.transform = `translate3d(${px - LENS_SIZE / 2}px, ${py - LENS_SIZE / 2}px, 0)`;
+    inner.style.width = `${cw}px`;
+    inner.style.transform = `translate3d(${LENS_SIZE / 2 - px * z}px, ${LENS_SIZE / 2 - py * z}px, 0) scale(${z})`;
+  };
+
+  useEffect(() => {
+    if (loupeEnabled && lensVisible) {
+      syncLensDom();
+    }
+  }, [zoomLevel, loupeEnabled, lensVisible]);
+
+  useEffect(() => {
+    if (!loupeEnabled) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const onNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoomLevel((prev) => {
+        const next = prev + (e.deltaY < 0 ? 0.3 : -0.3);
+        return Math.round(Math.max(1.6, Math.min(4.0, next)) * 10) / 10;
+      });
+    };
+    el.addEventListener('wheel', onNativeWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onNativeWheel);
+  }, [loupeEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
   const isRealPhoto =
     photoId === 'threshing_1998' ||
@@ -585,26 +664,30 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   };
 
   const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!loupeEnabled) return;
     const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (!rect || rect.width === 0 || rect.height === 0) return;
+
     const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    setPointer({ x: nx, y: ny, active: true });
-    // 60fps 驱动开源 liquid-glass-web-react 球面折射透镜位置
-    glassRef.current?.setPosition(nx, ny);
+    pointerRef.current = { x: nx, y: ny, cw: rect.width, ch: rect.height };
+
+    if (!lensVisible) setLensVisible(true);
+    if (rafRef.current === null) {
+      rafRef.current = requestAnimationFrame(syncLensDom);
+    }
 
     // 放大镜扫过《晒谷场收工图》二楼木窗（x: 54%-62%, y: 19%-30%）时轻响一声木梆
     if (
       photoId === 'threshing_1998' &&
       (act >= 3 || hdState === 'revealed') &&
-      loupeEnabled &&
-      !windowChimeDone &&
+      !windowChimeRef.current &&
       nx > 0.54 &&
       nx < 0.63 &&
       ny > 0.18 &&
       ny < 0.30
     ) {
-      setWindowChimeDone(true);
+      windowChimeRef.current = true;
       horrorAudio.playWoodenClapper();
     }
   };
@@ -743,8 +826,6 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
     );
   };
 
-  const LENS_SIZE = 216;
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -752,6 +833,38 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
       transition={{ duration: 0.35 }}
       className="my-5 overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950 text-zinc-100 shadow-2xl"
     >
+      {/* 静态永久缓存的单通道球面凸透镜折射滤镜（仅作用于 200x200 镜片内，绝不每帧重建！） */}
+      {displacementMapUrl && (
+        <svg className="pointer-events-none absolute h-0 w-0 overflow-hidden" aria-hidden="true">
+          <defs>
+            <filter
+              id={filterId}
+              x="0%"
+              y="0%"
+              width="100%"
+              height="100%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feImage
+                href={displacementMapUrl}
+                x="0"
+                y="0"
+                width={LENS_SIZE}
+                height={LENS_SIZE}
+                result="lensMap"
+                preserveAspectRatio="none"
+              />
+              <feDisplacementMap
+                in="SourceGraphic"
+                in2="lensMap"
+                scale="24"
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+          </defs>
+        </svg>
+      )}
       {/* 顶部清爽取证控制栏 */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/90 bg-zinc-900/95 px-4 py-2.5">
         <div className="min-w-0">
@@ -842,44 +955,23 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         </div>
       </div>
 
-      {/* 主取证视图区（集成 GitHub 开源 liquid-glass-web-react 真实球面光学玻璃折射！） */}
+      {/* 主取证视图区（底层零滤镜开销 + 镜片内 60~120fps GPU 合成球面折射透镜） */}
       <div
         ref={containerRef}
         onMouseMove={handlePointerMove}
-        onWheel={handleWheel}
-        onMouseEnter={() => {
-          setPointer((p) => ({ ...p, active: true }));
+        onMouseEnter={(e) => {
           onInspect?.(photoId);
+          if (loupeEnabled) {
+            setLensVisible(true);
+            handlePointerMove(e);
+          }
         }}
-        onMouseLeave={() => setPointer((p) => ({ ...p, active: false }))}
+        onMouseLeave={() => setLensVisible(false)}
         className={`relative w-full select-none overflow-hidden bg-black ${
           loupeEnabled ? 'cursor-none' : 'cursor-default'
         }`}
       >
-        {/* 未开启放大镜或开启液态光学玻璃直透时，底层内容通过 LiquidGlass 进行球面折射 */}
-        {loupeEnabled && pointer.active ? (
-          <LiquidGlass
-            ref={glassRef}
-            width={LENS_SIZE}
-            height={LENS_SIZE}
-            radius="auto"
-            curvature={1}
-            strength={0.18}
-            chromaticAberration={0.48}
-            depth={42}
-            blur={0}
-            specular={1.25}
-            edgeHighlight={0.92}
-            glow={0.32}
-            shadow="0 16px 40px rgba(0,0,0,0.75)"
-            x={pointer.x}
-            y={pointer.y}
-          >
-            {renderVisualCore(false)}
-          </LiquidGlass>
-        ) : (
-          renderVisualCore(false)
-        )}
+        {renderVisualCore(false)}
 
         {/* 坐标网格叠加 */}
         {showGrid && (
@@ -905,65 +997,48 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
           </div>
         )}
 
-        {/* 高倍光学折射放大镜悬浮透镜（集成 LiquidGlass 真实球面色散 + 高倍光学放大 + 铜框反光高光！） */}
-        {loupeEnabled && pointer.active && (
+        {/* 零卡顿光学球面折射放大镜（translate3d 硬件合成 + 静态缓存球面折射图 + GPU 色散边与曲面高光） */}
+        {loupeEnabled && lensVisible && (
           <div
-            className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-1/2 rounded-full"
+            ref={lensWrapRef}
+            className="pointer-events-none absolute left-0 top-0 z-30 rounded-full will-change-transform"
             style={{
               width: LENS_SIZE,
               height: LENS_SIZE,
-              left: `${pointer.x * 100}%`,
-              top: `${pointer.y * 100}%`,
               boxShadow:
-                '0 18px 46px rgba(0,0,0,0.85), inset 0 0 18px rgba(255,255,255,0.22), 0 0 0 2px rgba(217,179,106,0.75), 0 0 0 5px rgba(18,18,22,0.88)',
+                '0 18px 42px rgba(0,0,0,0.82), -1.5px -1px 6px rgba(56,189,248,0.28), 1.5px 1px 6px rgba(248,113,113,0.28), 0 0 0 2px rgba(217,179,106,0.78), 0 0 0 5px rgba(14,14,18,0.88)',
             }}
           >
-            <div className="relative h-full w-full overflow-hidden rounded-full bg-black">
-              {/* 使用 LiquidGlass 包裹高倍放大内容，让放大后的像素同样产生真实凸透镜边缘球面弯曲、色散紫边与高光 */}
-              <LiquidGlass
-                width={LENS_SIZE}
-                height={LENS_SIZE}
-                radius="auto"
-                curvature={1}
-                strength={0.14}
-                chromaticAberration={0.55}
-                depth={38}
-                blur={0}
-                specular={1.35}
-                edgeHighlight={0.95}
-                glow={0.4}
-                shadow={false}
-                x={0.5}
-                y={0.5}
-                className="h-full w-full"
-              >
-                <div
-                  style={{
-                    width: containerRef.current?.clientWidth || 720,
-                    transformOrigin: `${pointer.x * 100}% ${pointer.y * 100}%`,
-                    transform: `translate(${LENS_SIZE / 2 - pointer.x * (containerRef.current?.clientWidth || 720)}px, ${
-                      LENS_SIZE / 2 - pointer.y * (containerRef.current?.clientHeight || 480)
-                    }px) scale(${zoomLevel})`,
-                  }}
-                >
-                  {renderVisualCore(true)}
-                </div>
-              </LiquidGlass>
-
-              {/* 凸透镜曲面反光月牙 + 微距十字准星 */}
+            <div
+              className="relative h-full w-full overflow-hidden rounded-full bg-black"
+              style={{
+                contain: 'strict',
+                filter: displacementMapUrl ? `url(#${filterId})` : undefined,
+              }}
+            >
               <div
-                className="pointer-events-none absolute inset-0 rounded-full"
-                style={{
-                  background:
-                    'radial-gradient(circle at 30% 24%, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.04) 30%, transparent 56%), radial-gradient(circle at 50% 50%, transparent 66%, rgba(0,0,0,0.42) 100%)',
-                }}
-              />
-              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-amber-300/30" />
-              <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-amber-300/30" />
-              <div className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-mono-tech text-amber-200 backdrop-blur-xs">
-                <ZoomIn className="h-2.5 w-2.5 text-amber-400" />
-                <span>{zoomLevel.toFixed(1)}x · 滚轮调焦</span>
+                ref={lensInnerRef}
+                className="origin-top-left will-change-transform"
+              >
+                {renderVisualCore(true)}
               </div>
+            </div>
+
+            {/* GPU 零开销凸透镜曲面玻璃高光、球面边缘色散晕与精密十字准星 */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-full"
+              style={{
+                background:
+                  'radial-gradient(circle at 28% 22%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.05) 28%, transparent 54%), radial-gradient(circle at 50% 50%, transparent 65%, rgba(0,0,0,0.45) 100%)',
+                boxShadow:
+                  'inset 2px 2px 6px rgba(56,189,248,0.22), inset -2px -2px 6px rgba(251,146,60,0.22), inset 0 0 14px rgba(255,255,255,0.16)',
+              }}
+            />
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-amber-300/25" />
+            <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-amber-300/25" />
+            <div className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-mono-tech text-amber-200">
+              <ZoomIn className="h-2.5 w-2.5 text-amber-400" />
+              <span>{zoomLevel.toFixed(1)}x · 滚轮调焦</span>
             </div>
           </div>
         )}
