@@ -13,6 +13,9 @@ import {
   MapPin,
   ChevronDown,
   ChevronRight,
+  User,
+  Camera,
+  Sparkles,
 } from 'lucide-react';
 import { BBS_THREADS } from '../data/bbsData';
 import type { BBSReply, BBSThread } from '../types/game';
@@ -36,6 +39,8 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   const [unlockedHiddenKeywords, setUnlockedHiddenKeywords] = useState<string[]>([]);
   const [hiddenFloorError, setHiddenFloorError] = useState('');
   const [visibleFloorLimit, setVisibleFloorLimit] = useState<number>(8);
+  const [onlyOp, setOnlyOp] = useState(false);
+  const [expandAllThreads, setExpandAllThreads] = useState(false);
 
   useEffect(() => {
     if (!focusedItemId) return;
@@ -44,6 +49,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
       setActiveBoard(target.board);
       setSelectedThreadId(target.id);
       setVisibleFloorLimit(12);
+      setOnlyOp(false);
       setViewMode('thread');
       onClearFocus?.();
     }
@@ -78,6 +84,18 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     });
   }, [activeBoard, activeQuery]);
 
+  // 渐进式帖列展示：第一幕未主动搜索时优先聚焦 3 条核心热议帖，其余历史水帖可一键展开，降低初期信息噪点
+  const shouldFoldMinorThreads = state.act === 1 && !activeQuery && !expandAllThreads && boardThreads.length > 3;
+  const displayedThreads = useMemo(() => {
+    if (!shouldFoldMinorThreads) return boardThreads;
+    const hot = boardThreads.filter((t) => t.isHot);
+    if (hot.length >= 3) return hot.slice(0, 3);
+    const rest = boardThreads.filter((t) => !t.isHot);
+    return [...hot, ...rest].slice(0, 3);
+  }, [boardThreads, shouldFoldMinorThreads]);
+
+  const foldedThreadCount = Math.max(0, boardThreads.length - displayedThreads.length);
+
   const otherBoardMatchCount = useMemo(() => {
     const q = activeQuery.trim().toLowerCase();
     if (!q) return 0;
@@ -109,7 +127,8 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   const openThread = (thread: BBSThread) => {
     horrorAudio.playClick('ui');
     setSelectedThreadId(thread.id);
-    setVisibleFloorLimit(8);
+    setVisibleFloorLimit(state.act >= 2 ? 12 : 8);
+    setOnlyOp(false);
     setViewMode('thread');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -138,6 +157,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
         setActiveBoard(targetThread.board);
         setSelectedThreadId(targetThread.id);
         setVisibleFloorLimit(99);
+        setOnlyOp(false);
         setViewMode('thread');
       }
     }
@@ -162,15 +182,33 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
 
   const visibleReplies: BBSReply[] = useMemo(() => {
     if (!activeThread) return [];
-    return activeThread.replies.filter((r) => !r.act3Appended || state.act >= 3);
-  }, [activeThread, state.act]);
+    return activeThread.replies.filter((r) => {
+      if (r.act3Appended && state.act < 3) return false;
+      if (onlyOp && r.author !== activeThread.author && !r.hiddenKeywordRequired) return false;
+      return true;
+    });
+  }, [activeThread, state.act, onlyOp]);
 
-  const displayedReplies = visibleReplies.slice(0, visibleFloorLimit);
-  const hiddenRemainingCount = Math.max(0, visibleReplies.length - displayedReplies.length);
+  const hiddenFloorReply = useMemo(
+    () => activeThread?.replies.find((r) => Boolean(r.hiddenKeywordRequired)),
+    [activeThread]
+  );
+
+  const displayedReplies = onlyOp ? visibleReplies : visibleReplies.slice(0, visibleFloorLimit);
+  const hiddenRemainingCount = onlyOp ? 0 : Math.max(0, visibleReplies.length - displayedReplies.length);
 
   const isZijing = activeBoard === 'zijing';
 
-  const renderReplyContent = (text: string) => {
+  const jumpToHiddenFloor = () => {
+    horrorAudio.playClick('ui');
+    setOnlyOp(false);
+    setVisibleFloorLimit(999);
+    setTimeout(() => {
+      document.getElementById('bbs-hidden-floor-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  };
+
+  const renderTextWithLinks = (text: string) => {
     const parts = text.split(/(yunxi-chronicles\.gov\.cn)/gi);
     return parts.map((part, idx) => {
       if (part.toLowerCase() === 'yunxi-chronicles.gov.cn') {
@@ -188,6 +226,13 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
       }
       return <React.Fragment key={idx}>{part}</React.Fragment>;
     });
+  };
+
+  // 自动拆分经典老论坛底部的「器材签名档」，视觉清晰醒目不淹没在长文里
+  const splitBodyAndSignature = (raw: string): { body: string; signature: string | null } => {
+    const match = raw.match(/^([\s\S]*?)\n[—─-]{6,}\n([\s\S]*签名档[\s\S]*)$/);
+    if (!match) return { body: raw, signature: null };
+    return { body: match[1].trimEnd(), signature: match[2].trim() };
   };
 
   return (
@@ -285,7 +330,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
                 <span>
                   {isZijing
-                    ? '匿名校园讨论区网页镜像快照（2026年10月—11月）'
+                    ? '匿名校园讨论区网页镜像快照（精选置顶热帖）'
                     : '民间 16mm / 老式 DV 胶片转磁技术交流版块快照'}
                 </span>
                 {activeQuery && (
@@ -309,7 +354,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
               </div>
 
               <div className="space-y-3">
-                {boardThreads.map((thread, idx) => {
+                {displayedThreads.map((thread, idx) => {
                   const isRead = state.readDocIds.includes(thread.id);
                   return (
                     <motion.button
@@ -339,7 +384,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           {thread.isHot && (
                             <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-[#9e2a2b]">
                               <Flame className="h-3 w-3" />
-                              热议
+                              热议焦点
                             </span>
                           )}
                           <span className="font-medium text-stone-600">{thread.author}</span>
@@ -368,6 +413,22 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                   );
                 })}
               </div>
+
+              {foldedThreadCount > 0 && (
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      horrorAudio.playClick('ui');
+                      setExpandAllThreads(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-xs font-medium text-stone-600 hover:border-[#16263f] hover:text-[#16263f] cursor-pointer transition"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                    <span>展开更多历史归档旧帖（其余 {foldedThreadCount} 帖）</span>
+                  </button>
+                </div>
+              )}
             </motion.div>
           ) : (
             activeThread && (
@@ -379,29 +440,61 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 transition={{ duration: 0.22 }}
                 className="mx-auto max-w-3xl"
               >
-                <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      horrorAudio.playClick('ui');
-                      setViewMode('list');
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-xs font-medium text-[#16263f] hover:border-[#16263f] cursor-pointer transition"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" />
-                    <span>返回帖子列表</span>
-                  </button>
-
-                  {activeThread.unlocksSite === 'chronicles' && (
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
-                      onClick={handleJumpExternalChronicles}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[#9e2a2b]/40 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-[#9e2a2b] hover:bg-red-100 cursor-pointer transition"
+                      onClick={() => {
+                        horrorAudio.playClick('ui');
+                        setViewMode('list');
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-xs font-medium text-[#16263f] hover:border-[#16263f] cursor-pointer transition"
                     >
-                      <span>访问贴内提及的「云溪水利方志网」</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      <span>返回帖子列表</span>
                     </button>
-                  )}
+
+                    {/* 经典 BBS「只看楼主」筛选开关 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        horrorAudio.playClick('ui');
+                        setOnlyOp((v) => !v);
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold cursor-pointer transition ${
+                        onlyOp
+                          ? 'border-[#16263f] bg-[#16263f] text-white'
+                          : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'
+                      }`}
+                    >
+                      <User className="h-3.5 w-3.5" />
+                      <span>{onlyOp ? '正在只看楼主（点击看全楼）' : '只看楼主'}</span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {hiddenFloorReply && (
+                      <button
+                        type="button"
+                        onClick={jumpToHiddenFloor}
+                        className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-950 hover:bg-amber-100 cursor-pointer transition"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-amber-700" />
+                        <span>直达末楼折叠异常层 (#{hiddenFloorReply.floor}F)</span>
+                      </button>
+                    )}
+
+                    {activeThread.unlocksSite === 'chronicles' && (
+                      <button
+                        type="button"
+                        onClick={handleJumpExternalChronicles}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#9e2a2b]/40 bg-red-50 px-3.5 py-1.5 text-xs font-semibold text-[#9e2a2b] hover:bg-red-100 cursor-pointer transition"
+                      >
+                        <span>访问贴内「云溪水利方志网」</span>
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* 帖子主标题头 */}
@@ -428,17 +521,18 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 {/* 清爽分层的楼层卡片 */}
                 <div className="space-y-3.5">
                   {displayedReplies.map((reply) => {
+                    const isHiddenTarget = Boolean(reply.hiddenKeywordRequired);
                     const locked =
-                      Boolean(reply.hiddenKeywordRequired) &&
-                      !isKeywordUnlocked(reply.hiddenKeywordRequired);
+                      isHiddenTarget && !isKeywordUnlocked(reply.hiddenKeywordRequired);
 
                     if (locked && reply.hiddenKeywordRequired) {
                       return (
                         <div
+                          id="bbs-hidden-floor-anchor"
                           key={reply.floor}
-                          className="rounded-2xl border border-dashed border-amber-500/60 bg-amber-50/75 p-5"
+                          className="rounded-2xl border-2 border-dashed border-amber-500/70 bg-amber-50/85 p-5 shadow-2xs"
                         >
-                          <div className="mb-2 flex items-center gap-2 text-xs font-bold text-amber-900">
+                          <div className="mb-2 flex items-center gap-2 text-xs font-bold text-amber-950">
                             <Lock className="h-4 w-4 text-amber-700" />
                             <span>#{reply.floor} 楼 · 已被站务折叠的异常缓存楼层</span>
                           </div>
@@ -450,7 +544,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                               type="text"
                               value={hiddenFloorInput}
                               onChange={(e) => setHiddenFloorInput(e.target.value)}
-                              placeholder="输入折叠索引关键词……"
+                              placeholder="输入折叠索引关键词（如课题组使用的超分补帧模型名）……"
                               className="flex-1 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-stone-800 focus:border-[#9e2a2b] focus:outline-none"
                             />
                             <button
@@ -469,11 +563,17 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                       );
                     }
 
+                    const { body, signature } = splitBodyAndSignature(reply.content);
+                    const isOpAuthor = reply.author === activeThread.author;
+
                     return (
                       <div
+                        id={isHiddenTarget ? 'bbs-hidden-floor-anchor' : undefined}
                         key={reply.floor}
                         className={`rounded-2xl border p-5 shadow-2xs transition ${
-                          reply.act3Appended
+                          isHiddenTarget
+                            ? 'border-emerald-400 bg-emerald-50/50'
+                            : reply.act3Appended
                             ? 'border-red-200 bg-[#fff6f6]'
                             : reply.isAssimilatedTone
                             ? 'border-amber-300/80 bg-[#fcf7eb]'
@@ -486,7 +586,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                               #{reply.floor}F
                             </span>
                             <span className="font-bold text-[#16263f]">{reply.author}</span>
-                            {reply.floor === 1 && (
+                            {isOpAuthor && (
                               <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-900">
                                 楼主
                               </span>
@@ -510,8 +610,16 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                         </div>
 
                         <div className="whitespace-pre-line text-[14px] leading-[1.9] text-stone-800">
-                          {renderReplyContent(reply.content)}
+                          {renderTextWithLinks(body)}
                         </div>
+
+                        {/* 复古论坛标志性虚线个人器材签名档 */}
+                        {signature && (
+                          <div className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-amber-400/80 bg-amber-50/65 px-3.5 py-2 font-mono-tech text-xs text-amber-950">
+                            <Camera className="h-3.5 w-3.5 shrink-0 text-amber-700" />
+                            <span>{signature}</span>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

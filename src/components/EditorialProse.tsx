@@ -4,7 +4,8 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 interface EditorialProseProps {
   text: string;
   theme?: 'paper' | 'dark' | 'gov' | 'journal';
-  defaultCollapsedChars?: number; // 若超过该长度，可折叠长附注但保持前段干净易读
+  defaultCollapsedChars?: number;
+  defaultVisibleBlocks?: number; // 随游玩阶段递进控制首屏展示段数（前期精简清爽，后期完整深读）
 }
 
 interface ParsedBlock {
@@ -12,17 +13,14 @@ interface ParsedBlock {
   text: string;
 }
 
-/**
- * 将长篇纯文本档案自动排版为清晰、有呼吸感的分段阅读视图：
- * - 自动识别【小节标题】/ 校注批注 / 表格行 / 分割线
- * - 限制单行宽度 max-w-[66ch]，增加行距与段间距，消除“字海压迫感”
- */
 export const EditorialProse: React.FC<EditorialProseProps> = ({
   text,
   theme = 'paper',
   defaultCollapsedChars,
+  defaultVisibleBlocks,
 }) => {
-  const [expanded, setExpanded] = useState(!defaultCollapsedChars);
+  const hasCollapsePolicy = Boolean(defaultCollapsedChars || defaultVisibleBlocks);
+  const [expanded, setExpanded] = useState(!hasCollapsePolicy);
 
   const blocks = useMemo<ParsedBlock[]>(() => {
     const rawParas = text
@@ -40,37 +38,57 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       if (/^【[^】]{2,32}】[：:]?$/.test(p) || (/^[一二三四五六七八九十]+[、.]/.test(p) && p.length < 36)) {
         return { type: 'heading', text: p };
       }
-      if (/^【(编目员校注|审计|批注|按语|警告|求救|附注|备忘|绝密|系统提示)/.test(p)) {
+      if (/^【[^】]*(校注|审计|批注|按语|警告|求救|附注|备忘|绝密|系统提示|核校)/.test(p)) {
         return { type: 'callout', text: p };
       }
       return { type: 'paragraph', text: p };
     });
   }, [text]);
 
-  const shouldCollapse =
-    Boolean(defaultCollapsedChars) && !expanded && text.length > (defaultCollapsedChars ?? 99999) && blocks.length > 4;
-  const visibleBlocks = shouldCollapse ? blocks.slice(0, 4) : blocks;
+  const cutoff = defaultVisibleBlocks ?? 4;
+  const exceedsBlocks = Boolean(defaultVisibleBlocks) && blocks.length > cutoff + 1;
+  const exceedsChars =
+    Boolean(defaultCollapsedChars) && text.length > (defaultCollapsedChars ?? 99999) && blocks.length > 4;
+
+  const shouldCollapse = !expanded && (exceedsBlocks || exceedsChars);
+
+  // 折叠状态下：仅展示前 cutoff 段精要内容，但始终保留底部的紧急求救/核校批注（绝不漏掉关键校注！）
+  const { visibleBlocks, hiddenCount } = useMemo(() => {
+    if (!shouldCollapse) {
+      return { visibleBlocks: blocks, hiddenCount: 0 };
+    }
+    const head = blocks.slice(0, cutoff);
+    const tailCallouts = blocks.slice(cutoff).filter((b) => b.type === 'callout');
+    const hidden = Math.max(0, blocks.length - cutoff - tailCallouts.length);
+    if (hidden === 0) {
+      return { visibleBlocks: blocks, hiddenCount: 0 };
+    }
+    return {
+      visibleBlocks: [...head, ...tailCallouts],
+      hiddenCount: hidden,
+    };
+  }, [blocks, cutoff, shouldCollapse]);
 
   const palette = {
     paper: {
       body: 'text-stone-700',
       heading: 'text-[#1b2a4a] border-l-2 border-[#9e2a2b] pl-3 font-serif-cn font-bold text-[15px]',
-      callout: 'rounded-lg border border-amber-800/20 bg-amber-50/75 px-4 py-3 text-stone-800 text-[13.5px]',
+      callout: 'rounded-lg border border-amber-800/20 bg-amber-50/80 px-4 py-3 text-stone-800 text-[13.5px]',
       table: 'rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2.5 font-mono-tech text-xs text-stone-700 overflow-x-auto',
       divider: 'border-stone-200',
     },
     gov: {
       body: 'text-slate-800',
       heading: 'text-[#1b365d] border-l-2 border-[#9e2a2b] pl-3 font-serif-cn font-bold text-[15px]',
-      callout: 'rounded border border-red-900/25 bg-red-50/60 px-4 py-3 text-slate-900 text-[13.5px]',
-      table: 'rounded border border-slate-300 bg-slate-50 px-3.5 py-2.5 font-mono-tech text-xs text-slate-800 overflow-x-auto',
-      divider: 'border-slate-300',
+      callout: 'rounded-lg border border-red-900/25 bg-red-50/65 px-4 py-3 text-slate-900 text-[13.5px]',
+      table: 'rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 font-mono-tech text-xs text-slate-800 overflow-x-auto',
+      divider: 'border-slate-200',
     },
     journal: {
       body: 'text-stone-700 font-serif-cn',
       heading: 'text-stone-900 font-serif-cn font-bold text-base tracking-wide',
       callout: 'rounded-lg border border-stone-300/80 bg-[#f3ede2] px-4 py-3 text-stone-800 text-[13.5px]',
-      table: 'rounded border border-stone-300 bg-stone-100/70 px-3.5 py-2.5 font-mono-tech text-xs text-stone-700 overflow-x-auto',
+      table: 'rounded-lg border border-stone-300 bg-stone-100/70 px-3.5 py-2.5 font-mono-tech text-xs text-stone-700 overflow-x-auto',
       divider: 'border-stone-300/70',
     },
     dark: {
@@ -116,28 +134,30 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
         );
       })}
 
-      {defaultCollapsedChars && blocks.length > 4 && text.length > defaultCollapsedChars && (
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium cursor-pointer transition ${
-            theme === 'dark'
-              ? 'border-zinc-700 bg-zinc-900 text-amber-300 hover:border-amber-500/60'
-              : 'border-stone-300 bg-white text-stone-700 hover:border-stone-500'
-          }`}
-        >
-          {expanded ? (
-            <>
-              <ChevronUp className="h-3.5 w-3.5" />
-              <span>收起后半段记录</span>
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-3.5 w-3.5" />
-              <span>展开完整档案正文（余下 {blocks.length - 4} 段，建议细读附注）</span>
-            </>
-          )}
-        </button>
+      {(hiddenCount > 0 || (expanded && hasCollapsePolicy && blocks.length > cutoff + 1)) && (
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-xs font-medium cursor-pointer transition ${
+              theme === 'dark'
+                ? 'border-zinc-700 bg-zinc-900 text-amber-300 hover:border-amber-500/60'
+                : 'border-[#d6cebe] bg-[#faf8f3] text-[#16263f] hover:border-[#9e2a2b] hover:text-[#9e2a2b]'
+            }`}
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5" />
+                <span>收起详细考据长卷</span>
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" />
+                <span>展开完整原始卷宗（另有 {hiddenCount} 段田野详录）</span>
+              </>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );

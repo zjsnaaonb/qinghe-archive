@@ -119,6 +119,14 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
   const cctvBgImgRef = useRef<HTMLImageElement | null>(null);
   const [cctvImgLoaded, setCctvImgLoaded] = useState(false);
 
+  const reelImgsRef = useRef<Record<string, HTMLImageElement | null>>({
+    r04_7: null,
+    r04_6: null,
+    r09: null,
+    r12: null,
+  });
+  const [reelImgsReadyCount, setReelImgsReadyCount] = useState(0);
+
   useEffect(() => {
     const img = new Image();
     img.src = './media/b2_corridor_cctv.png';
@@ -126,6 +134,21 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
       cctvBgImgRef.current = img;
       setCctvImgLoaded(true);
     };
+
+    const reelSources: Array<[string, string]> = [
+      ['r04_7', './media/b2_reel04_7ppl.png'],
+      ['r04_6', './media/b2_reel04_6ppl.png'],
+      ['r09', './media/b2_reel09_gong.png'],
+      ['r12', './media/b2_reel12_pillars.png'],
+    ];
+    reelSources.forEach(([key, src]) => {
+      const rImg = new Image();
+      rImg.src = src;
+      rImg.onload = () => {
+        reelImgsRef.current[key] = rImg;
+        setReelImgsReadyCount((c) => c + 1);
+      };
+    });
   }, []);
 
   // ==================== ② 多轨音频取证台状态 ====================
@@ -251,98 +274,46 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
     ctx.fillRect(fx, fy, fw, fh);
 
     if (selectedReel === 'QH-38-04') {
-      // 《迎社入祠》：宗祠石阶与 7人 -> 6人 背身剪影
-      ctx.fillStyle = '#141518';
-      ctx.fillRect(fx + 90, fy + 38, fw - 180, 135); // 宗祠黑门洞
-      ctx.strokeStyle = '#52525b';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(fx + 90, fy + 38, fw - 180, 135);
-
-      ctx.fillStyle = '#3f3f46';
-      ctx.font = 'bold 15px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('龛 下 宗 祠', W / 2, fy + 62);
-
-      // 石板地面
-      ctx.fillStyle = '#202126';
-      ctx.fillRect(fx, fy + 175, fw, fh - 175);
-
       const passed = state.b2Progress.reel04Passed;
       const count = passed ? 6 : reel04SubFrame === 1 ? 7 : 6;
-      const totalSlots = 7;
-      for (let i = 0; i < totalSlots; i++) {
-        const px = fx + 78 + i * 66;
-        const py = fy + 168;
+      const frameImg = count === 7 ? reelImgsRef.current.r04_7 : reelImgsRef.current.r04_6;
 
-        if (i === 6 && count === 6) {
-          // 第7人消失处残留朝向镜头的湿脚印
-          ctx.fillStyle = 'rgba(10, 10, 12, 0.85)';
-          ctx.beginPath();
-          ctx.ellipse(px - 6, py + 95, 5, 11, 0.1, 0, Math.PI * 2);
-          ctx.ellipse(px + 8, py + 102, 5, 11, -0.1, 0, Math.PI * 2);
-          ctx.fill();
+      if (frameImg) {
+        ctx.drawImage(frameImg, fx, fy, fw, fh);
+      }
 
-          if (!passed) {
-            ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
-            ctx.setLineDash([4, 3]);
-            ctx.strokeRect(px - 22, py - 24, 44, 118);
-            ctx.setLineDash([]);
-          }
-          continue;
-        }
-
-        // 背身村民粗布剪影（无面部特征，仅后脑发髻/草帽与深色布衫）
-        ctx.fillStyle = '#09090b';
-        ctx.beginPath();
-        ctx.arc(px, py - 6, 11, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.moveTo(px - 19, py + 8);
-        ctx.lineTo(px + 19, py + 8);
-        ctx.lineTo(px + 23, py + 82);
-        ctx.lineTo(px - 23, py + 82);
-        ctx.closePath();
-        ctx.fill();
+      if (count === 6 && !passed) {
+        // 标记右侧第 7 人消失后留下的湿泥脚印异常区
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.78)';
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([5, 3]);
+        ctx.strokeRect(fx + fw - 104, fy + fh - 196, 82, 184);
+        ctx.setLineDash([]);
       }
 
       if (passed) {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.16)';
-        ctx.fillRect(fx + 14, fy + fh - 54, 240, 38);
+        ctx.fillStyle = 'rgba(6, 78, 59, 0.85)';
+        ctx.fillRect(fx + 14, fy + fh - 48, 286, 34);
         ctx.strokeStyle = '#10b981';
-        ctx.strokeRect(fx + 14, fy + fh - 54, 240, 38);
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(fx + 14, fy + fh - 48, 286, 34);
         ctx.fillStyle = '#a7f3d0';
-        ctx.font = '13px monospace';
+        ctx.font = 'bold 12px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText('已跳至安全帧 #0108 | 础石暗刻: kan', fx + 24, fy + fh - 30);
+        ctx.fillText('✓ 安全跳至 #0108 | 石础暗刻: kan', fx + 24, fy + fh - 27);
       }
     } else if (selectedReel === 'QH-38-09') {
-      // 《锣响三声》：空神龛 + 震颤铜锣 + 白底黑字剧目牌
-      // 中央空神龛
-      ctx.fillStyle = '#070709';
-      ctx.fillRect(W / 2 - 68, fy + 45, 136, 175);
-      ctx.strokeStyle = '#52525b';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(W / 2 - 68, fy + 45, 136, 175);
-      ctx.fillStyle = '#52525b';
-      ctx.font = '12px serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('【 空 神 龛 · 禁 久 视 】', W / 2, fy + 238);
+      const frameImg = reelImgsRef.current.r09;
+      if (frameImg) {
+        ctx.drawImage(frameImg, fx, fy, fw, fh);
+      }
 
-      // 左侧铜锣与声波纹
-      const gx = fx + 95;
-      const gy = fy + 135;
-      ctx.fillStyle = '#785c2a';
-      ctx.beginPath();
-      ctx.arc(gx, gy, 34, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#4d3815';
-      ctx.beginPath();
-      ctx.arc(gx, gy, 11, 0, Math.PI * 2);
-      ctx.fill();
-
+      // 未静音时叠加左侧大铜锣低频声波震颤环
       if (!reelAudioMuted) {
-        for (let r = 46; r <= 82; r += 18) {
-          ctx.strokeStyle = 'rgba(245, 158, 11, 0.42)';
+        const gx = fx + 82;
+        const gy = fy + fh * 0.52;
+        for (let r = 42; r <= 78; r += 18) {
+          ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
           ctx.lineWidth = 1.5;
           ctx.beginPath();
           ctx.arc(gx, gy, r, 0, Math.PI * 2);
@@ -350,59 +321,38 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
         }
       }
 
-      // 右侧白底黑字剧目木牌
-      const bx = W - fx - 125;
-      const by = fy + 52;
-      ctx.fillStyle = '#e4e4e7';
-      ctx.fillRect(bx, by, 68, 188);
-      ctx.strokeStyle = '#18181b';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(bx + 4, by + 4, 60, 180);
-
-      ctx.fillStyle = '#09090b';
-      ctx.font = 'bold 17px serif';
-      ctx.textAlign = 'center';
-      const chars = state.b2Progress.reel09Passed ? ['龛', '下', '旧', '社'] : ['辞', '社', '勿', '顾'];
-      chars.forEach((ch, idx) => {
-        ctx.fillText(ch, bx + 34, by + 38 + idx * 34);
-      });
-
       if (state.b2Progress.reel09Passed) {
-        ctx.fillStyle = '#991b1b';
-        ctx.font = 'bold 13px monospace';
-        ctx.fillText('[xia]', bx + 34, by + 172);
+        ctx.fillStyle = 'rgba(6, 78, 59, 0.85)';
+        ctx.fillRect(fx + 14, fy + fh - 48, 298, 34);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(fx + 14, fy + fh - 48, 298, 34);
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('✓ 静音拓读白底水牌 | 牌底暗刻: xia', fx + 24, fy + fh - 27);
       }
     } else {
-      // 《QH-38-12 戏台柱联》：左右樟木台柱与柱联刻字
-      const leftX = fx + 95;
-      const rightX = W - fx - 155;
-      ctx.fillStyle = '#1c1917';
-      ctx.fillRect(leftX, fy + 24, 60, fh - 48);
-      ctx.fillRect(rightX, fy + 24, 60, fh - 48);
-      ctx.strokeStyle = '#57534e';
-      ctx.strokeRect(leftX, fy + 24, 60, fh - 48);
-      ctx.strokeRect(rightX, fy + 24, 60, fh - 48);
+      const frameImg = reelImgsRef.current.r12;
+      if (frameImg) {
+        ctx.drawImage(frameImg, fx, fy, fw, fh);
+      }
 
-      const passed = state.b2Progress.reel12Passed;
-      ctx.fillStyle = passed ? '#fde68a' : '#78716c';
-      ctx.font = 'bold 16px serif';
-      ctx.textAlign = 'center';
-      const rightCouplet = ['龛', '下', '无', '眸', '观', '百', '戏'];
-      const leftCouplet = ['祠', '前', '背', '立', '送', '千', '魂'];
-      rightCouplet.forEach((ch, i) => ctx.fillText(ch, rightX + 30, fy + 58 + i * 34));
-      leftCouplet.forEach((ch, i) => ctx.fillText(ch, leftX + 30, fy + 58 + i * 34));
-
-      ctx.fillStyle = '#292524';
-      ctx.fillRect(W / 2 - 90, fy + 115, 180, 90);
-      ctx.strokeStyle = '#44403c';
-      ctx.strokeRect(W / 2 - 90, fy + 115, 180, 90);
-      ctx.fillStyle = passed ? '#34d399' : '#a8a29e';
-      ctx.font = '13px monospace';
-      ctx.fillText(passed ? '柱础纪年拓片: 1998' : '柱础纪年模糊 [待检视]', W / 2, fy + 165);
+      if (state.b2Progress.reel12Passed) {
+        ctx.fillStyle = 'rgba(6, 78, 59, 0.85)';
+        ctx.fillRect(fx + 14, fy + fh - 48, 304, 34);
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(fx + 14, fy + fh - 48, 304, 34);
+        ctx.fillStyle = '#a7f3d0';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText('✓ 台柱础石纪年已拓清: 1998', fx + 24, fy + fh - 27);
+      }
     }
 
-    // 胶片竖向划痕与时间码叠加
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    // 胶片竖向细划痕与时间码叠加
+    ctx.strokeStyle = 'rgba(255,255,255,0.09)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(fx + 142, fy);
@@ -411,8 +361,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
     ctx.lineTo(W - 182, fy + fh);
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(0,0,0,0.68)';
-    ctx.fillRect(fx + 10, fy + 10, 268, 24);
+    ctx.fillStyle = 'rgba(0,0,0,0.72)';
+    ctx.fillRect(fx + 10, fy + 10, 274, 24);
     ctx.fillStyle = '#e4e4e7';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
@@ -432,6 +382,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
     selectedReel,
     reel04SubFrame,
     reelAudioMuted,
+    reelImgsReadyCount,
     state.b2Progress.reel04Passed,
     state.b2Progress.reel09Passed,
     state.b2Progress.reel12Passed,
@@ -1521,6 +1472,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   <p className="mt-2 text-xs leading-5 text-slate-600">
                     苏晓棠反锁于无反光介质的「B1-09 古籍恒温善本库」。输入她在青禾民俗馆 12 / 24 / 36 号馆藏校注中分段留下的 <strong>4 位纯数字隔离断屏码</strong>，切断 WS-B2-04 高透镜面屏电源。
                   </p>
+                  {!state.rescued.suXiaotang && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        horrorAudio.playClick('ui');
+                        onNavigateSite('qinghe', 'qh-12-03');
+                      }}
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 underline hover:text-[#9e2a2b] cursor-pointer"
+                    >
+                      去青禾民俗馆查阅 QH-12-03 求救校注 →
+                    </button>
+                  )}
                 </div>
 
                 <form onSubmit={handleRescueSu} className="mt-4 space-y-2.5">
@@ -1562,6 +1525,30 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   <p className="mt-2 text-xs leading-5 text-slate-600">
                     拼接三段离线销毁密钥：①内部 OA 二级陈默 Git 工单首段 + ②显影液论坛热帖 #88 隐藏层（搜 EyeGen）中段 + ③本机顶部【底层诊断日志】末段。
                   </p>
+                  {!state.rescued.chenMo && (
+                    <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          horrorAudio.playClick('ui');
+                          onNavigateSite('oa');
+                        }}
+                        className="text-teal-800 underline hover:text-[#9e2a2b] cursor-pointer"
+                      >
+                        去内部 OA 查工单 →
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          horrorAudio.playClick('ui');
+                          onNavigateSite('bbs', 'dev-9816mm');
+                        }}
+                        className="text-teal-800 underline hover:text-[#9e2a2b] cursor-pointer"
+                      >
+                        去显影液热帖 →
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <form onSubmit={handleRescueChen} className="mt-4 space-y-2.5">
@@ -1605,6 +1592,18 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                   <p className="mt-2 text-xs leading-5 text-slate-600">
                     解锁私人云笔记『夏夜拾遗』深层加密夹，输入外婆为她留下的 <strong>朱砂符器物登记号</strong>（字母+4位数字），剥离其右眼中心视野的神龛重影。
                   </p>
+                  {!state.rescued.linZhixia && state.unlockedSites.includes('notes') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        horrorAudio.playClick('ui');
+                        onNavigateSite('notes');
+                      }}
+                      className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 underline hover:text-[#9e2a2b] cursor-pointer"
+                    >
+                      去『夏夜拾遗』云笔记查阅深层手稿 →
+                    </button>
+                  )}
                 </div>
 
                 <form onSubmit={handleRescueLin} className="mt-4 space-y-2.5">
@@ -1802,9 +1801,21 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     四道祀典木牌次序排定 &amp; 1998 粮站铁盒封存暗记核验
                   </h3>
                 </div>
-                <span className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
-                  警惕：切勿盲信被篡改的电子版方志次序！
-                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      horrorAudio.playClick('ui');
+                      onNavigateSite('chronicles', 'chr-qing-gazetteer-trap');
+                    }}
+                    className="rounded-lg border border-teal-300 bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-900 hover:bg-teal-100 cursor-pointer transition"
+                  >
+                    核对水利网《风土杂记》木刻原叶 →
+                  </button>
+                  <span className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-900">
+                    警惕：切勿盲信被篡改的电子版方志次序！
+                  </span>
+                </div>
               </div>
 
               <form onSubmit={handleRitualOverrideSubmit} className="space-y-4">

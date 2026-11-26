@@ -73,6 +73,7 @@ export const SITE_METAS: Record<SiteId, SiteMeta> = {
 
 interface TopInvestigatorBarProps {
   state: GameState;
+  unreadMailCount?: number;
   activePanel: RightPanelMode;
   onTogglePanel: (mode: Exclude<RightPanelMode, null>) => void;
   onSelectSite: (site: SiteId) => void;
@@ -82,6 +83,7 @@ interface TopInvestigatorBarProps {
 
 export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
   state,
+  unreadMailCount = 0,
   activePanel,
   onTogglePanel,
   onSelectSite,
@@ -260,6 +262,11 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
                   <span className="relative z-10 flex items-center gap-1.5">
                     {meta.icon}
                     <span>{meta.shortName}</span>
+                    {siteId === 'mail' && unreadMailCount > 0 && (
+                      <span className="rounded-full bg-[#9e2a2b] px-1.5 py-0.2 text-[10px] font-mono-tech font-bold text-white shadow-2xs">
+                        {unreadMailCount}
+                      </span>
+                    )}
                     {siteId === 'oa' && state.oaLevel > 0 && (
                       <span className="rounded bg-emerald-100 border border-emerald-300/70 px-1 text-[10px] font-mono-tech text-emerald-800">
                         Lv.{state.oaLevel}

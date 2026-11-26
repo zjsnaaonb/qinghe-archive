@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type {
   DiscoveredClue,
@@ -66,6 +66,29 @@ export const App: React.FC = () => {
       setToastBanner((curr) => (curr === msg ? null : curr));
     }, 4500);
   }, []);
+
+  // 计算当前阶段已送达的可见邮件与未读数，并在新信件抵达时主动轻提示
+  const visibleMails = useMemo(() => {
+    return MAIL_MESSAGES.filter((m) => {
+      if (m.id === 'mail-prologue') return true;
+      if (m.minAct === 1) return state.unlockedSites.includes('bbs');
+      return state.act >= m.minAct;
+    });
+  }, [state.act, state.unlockedSites]);
+
+  const unreadMailCount = useMemo(
+    () => visibleMails.filter((m) => !state.readDocIds.includes(m.id)).length,
+    [visibleMails, state.readDocIds]
+  );
+
+  const prevVisibleMailCountRef = useRef<number>(visibleMails.length);
+  useEffect(() => {
+    if (state.hasEnteredGame && visibleMails.length > prevVisibleMailCountRef.current) {
+      const added = visibleMails.length - prevVisibleMailCountRef.current;
+      flashToast(`收件箱新到 ${added} 封关联邮件，可点击左上「收件箱」查阅`);
+    }
+    prevVisibleMailCountRef.current = visibleMails.length;
+  }, [visibleMails.length, state.hasEnteredGame, flashToast]);
 
   // 持久化保存与幕次推导
   useEffect(() => {
@@ -577,6 +600,7 @@ export const App: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-[#f7f4ed] text-stone-800">
       <TopInvestigatorBar
         state={state}
+        unreadMailCount={unreadMailCount}
         activePanel={activePanel}
         onTogglePanel={(mode) => setActivePanel((prev) => (prev === mode ? null : mode))}
         onSelectSite={(s) => handleNavigateSite(s)}

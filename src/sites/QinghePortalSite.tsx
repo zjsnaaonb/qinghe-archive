@@ -55,6 +55,7 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [selectedEntryId, setSelectedEntryId] = useState<string>('qh-37-09');
   const [compareOriginalSnapshot, setCompareOriginalSnapshot] = useState(false);
+  const [fullCatalogOpen, setFullCatalogOpen] = useState(false);
 
   // 响应顶部跨站检索直达具体条目
   useEffect(() => {
@@ -164,10 +165,14 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
     activeEntry?.id === 'qh-37-09' ||
     Boolean(activeEntry?.hiddenFromList);
 
-  const featuredIds = ['qh-37-09', 'qh-overview-grant', 'qh-expense-2026'];
+  const featuredIds = ['qh-37-09', 'qh-overview-grant', 'qh-39-01'];
   const featuredEntries = featuredIds
     .map((id) => QINGHE_ARCHIVE_ENTRIES.find((e) => e.id === id))
     .filter((e): e is ArchiveEntry => Boolean(e));
+
+  const hasInspected3709 = state.readDocIds.includes('qh-37-09');
+  const showFullCatalog = hasInspected3709 || fullCatalogOpen || Boolean(submittedQuery) || category !== '全部馆藏';
+  const progressiveBlocks = state.act === 1 ? 2 : state.act === 2 ? 4 : undefined;
 
   return (
     <div className="min-h-[calc(100vh-124px)] bg-[#f6f3ec] text-[#1f2937]">
@@ -293,9 +298,35 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                 </section>
               )}
 
-              {/* 分类筛选与清爽 2 列档案卡片网格 */}
-              <section>
-                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#dfd8ca] pb-3">
+              {/* 渐进式馆藏目录：初次进入时默认折叠全量列表，避免首屏信息轰炸；核查过 QH-37-09 后自然展开并提示未挂接号段可检索 */}
+              {!showFullCatalog ? (
+                <div className="rounded-2xl border border-[#dfd8ca] bg-white/80 p-6 text-center shadow-2xs">
+                  <p className="text-xs text-stone-500">
+                    建议先调阅上方重点推荐的 <strong className="text-[#9e2a2b]">QH-37-09《晒谷场收工图》</strong>；如需直接翻阅全部三十七村历史归档卡片，可随时展开完整目录。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      horrorAudio.playClick('ui');
+                      setFullCatalogOpen(true);
+                    }}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-[#d6cebe] bg-white px-4 py-1.5 text-xs font-semibold text-[#16263f] hover:border-[#9e2a2b] hover:text-[#9e2a2b] cursor-pointer transition"
+                  >
+                    <span>展开全部公开馆藏目录（{filteredEntries.length} 卷）</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <section>
+                  {hasInspected3709 && discoveredHiddenEntries.length === 0 && !submittedQuery && (
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300/75 bg-amber-50/75 px-4 py-2.5 text-xs text-amber-950">
+                      <span>
+                        <strong>馆藏索引说明：</strong>公开列表仅列示已挂接分区（<code className="font-mono-tech">QH-01</code> 至 <code className="font-mono-tech">QH-37</code> 及特展段 <code className="font-mono-tech">QH-39</code>）。未挂接之空缺分区或采集人底稿，可在右上角检索框输入<strong>精确分区号</strong>或<strong>采集人姓名/缩写</strong>调档。
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#dfd8ca] pb-3">
                   <div className="flex flex-wrap items-center gap-1.5">
                     {CATEGORIES.map((cat) => (
                       <button
@@ -422,7 +453,8 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                     })}
                   </div>
                 )}
-              </section>
+                </section>
+              )}
             </motion.div>
           ) : (
             /* 专注无干扰的博物馆档案阅读与图像取证视图 */
@@ -507,7 +539,11 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                     </div>
                   )}
 
-                  <EditorialProse text={displayedContent} theme="paper" />
+                  <EditorialProse
+                    text={displayedContent}
+                    theme="paper"
+                    defaultVisibleBlocks={progressiveBlocks}
+                  />
                 </div>
               </div>
             </motion.article>

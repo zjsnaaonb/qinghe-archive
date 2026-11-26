@@ -298,7 +298,11 @@ export const ChroniclesGovSite: React.FC<CommonSiteProps> = ({
                       </div>
                     )}
 
-                    <EditorialProse text={activeDoc.content} theme="gov" />
+                    <EditorialProse
+                      text={activeDoc.content}
+                      theme="gov"
+                      defaultVisibleBlocks={state.act <= 2 ? 3 : undefined}
+                    />
 
                     <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-4 text-xs text-slate-400">
                       <span className="inline-flex items-center gap-1">

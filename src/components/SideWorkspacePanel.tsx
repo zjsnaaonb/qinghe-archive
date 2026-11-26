@@ -64,6 +64,11 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
   const [copyFeedback, setCopyFeedback] = useState('');
 
   const rescuedCount = Object.values(state.rescued).filter(Boolean).length;
+  const reelsDoneCount = [
+    state.b2Progress.reel04Passed,
+    state.b2Progress.reel09Passed,
+    state.b2Progress.reel12Passed,
+  ].filter(Boolean).length;
 
   const handleAddKw = (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +218,66 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* 随游玩深入自然展开的非剧透调查脉络卡 */}
+            <div className="rounded-xl border border-[#e3dccf] bg-white p-3.5 shadow-2xs">
+              <div className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+                <span>当前调查脉络</span>
+                <span className="font-mono-tech text-[#9e2a2b]">第 {state.act} 幕</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between text-stone-700">
+                  <span>核查 QH-37-09《晒谷场收工图》与编号断层</span>
+                  {state.readDocIds.includes('qh-37-09') ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                  ) : (
+                    <span className="text-[10px] text-amber-700">待查</span>
+                  )}
+                </div>
+                {state.unlockedSites.includes('bbs') && (
+                  <div className="flex items-center justify-between text-stone-700">
+                    <span>排查校园社区线索，接入水利档案网与内部 OA</span>
+                    {state.unlockedSites.includes('chronicles') && state.oaLevel >= 1 ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                    ) : (
+                      <span className="text-[10px] text-amber-700">进行中</span>
+                    )}
+                  </div>
+                )}
+                {state.act >= 2 && (
+                  <div className="flex items-center justify-between text-stone-700">
+                    <span>核实陈默考勤异常，解锁 OA 二级运维卷宗</span>
+                    {state.oaLevel >= 2 ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                    ) : (
+                      <span className="text-[10px] text-amber-700">进行中</span>
+                    )}
+                  </div>
+                )}
+                {state.act >= 3 && (
+                  <>
+                    <div className="flex items-center justify-between text-stone-700">
+                      <span>B2 逐帧台合规审看三卷母带（合成院长口令）</span>
+                      <span className={`font-mono-tech text-[11px] ${reelsDoneCount === 3 ? 'text-emerald-700 font-semibold' : 'text-amber-700'}`}>
+                        {reelsDoneCount}/3
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-stone-700">
+                      <span>切断地下锚点解救四名受困成员</span>
+                      <span className={`font-mono-tech text-[11px] ${rescuedCount === 4 ? 'text-emerald-700 font-semibold' : 'text-amber-700'}`}>
+                        {rescuedCount}/4
+                      </span>
+                    </div>
+                  </>
+                )}
+                {state.act >= 4 && (
+                  <div className="flex items-center justify-between text-stone-700">
+                    <span>核对木刻原叶真序与铁盒暗记，阻断零点推流</span>
+                    <span className="text-[10px] font-semibold text-[#9e2a2b]">终局决战</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* 第三幕以后才展示受困成员救援状态 */}

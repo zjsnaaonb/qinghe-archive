@@ -13,7 +13,8 @@ export const PROGRESSIVE_HINTS: HintItem[] = [
   {
     id: 'hint-act1-shadow',
     stageTitle: '第一幕：核查《晒谷场收工图》与缺失馆藏批次',
-    isRelevant: (s) => !s.unlockedKeywords.includes('祠下村') || !s.unlockedSites.includes('chronicles'),
+    isRelevant: (s) =>
+      s.act === 1 && (!s.readDocIds.includes('qh-37-09') || !s.unlockedSites.includes('chronicles')),
     tier1: '按照林知夏求救信的指示，先前往「青禾数字民俗馆」检索《晒谷场收工图》，仔细对比图注人数与画面中的地面影子数量，并观察馆藏编号列表是否存在跳号。',
     tier2: '查看馆藏 QH-37-09《晒谷场收工图》的摄影师缩写（周怀瑾），同时去「显影液论坛」阅读楼主【逆光底片】发的求助长帖，留意他提到的水库高程与报错域名。',
     tier3: '在顶部跨站检索或青禾馆内搜索「周怀瑾」、「QH-38」或「祠下村」可调出未公开残卷；在显影液论坛热帖中点击或检索「云溪水库」即可解锁第3个网站【云溪县水利移民与方志网】。',
