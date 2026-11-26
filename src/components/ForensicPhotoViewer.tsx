@@ -22,7 +22,19 @@ export type ForensicVisualId =
   | 'shrine_1998'
   | 'elevation_map'
   | 'woodblock_seal'
-  | 'thumbprint_ledger';
+  | 'thumbprint_ledger'
+  | 'qh_01_02'
+  | 'qh_05_08'
+  | 'qh_08_01'
+  | 'qh_10_04'
+  | 'qh_12_03'
+  | 'qh_19_02'
+  | 'qh_21_09'
+  | 'qh_23_05'
+  | 'qh_26_03'
+  | 'qh_28_08'
+  | 'qh_31_02'
+  | 'qh_38_n03';
 
 export interface ForensicPhotoViewerProps {
   photoId: ForensicVisualId;
@@ -38,7 +50,7 @@ export interface ForensicPhotoViewerProps {
   onAdjustContamination?: (delta: number) => void;
 }
 
-const VISUAL_CAPTIONS: Record<
+export const VISUAL_CAPTIONS: Record<
   ForensicVisualId,
   { code: string; label: string; meta: string; forensicHint: string; src: string }
 > = {
@@ -81,7 +93,7 @@ const VISUAL_CAPTIONS: Record<
     code: '云水勘字〔1999〕底图-07',
     label: '云溪水库淹没区 1:10000 水文高程勘测底图',
     meta: '测绘：省水利水电勘测设计院 · 1999年8月归档扫描',
-    forensicHint: '点击上方【斜射显影】切换 365nm 紫外透视，穿透右下角白色涂改液查看被抹除的高程与村名。',
+    forensicHint: '点击上方【紫外显影透视】切换 365nm 紫外透视，穿透右下角白色涂改液查看被抹除的高程与村名。',
     src: './media/elevation_map.png',
   },
   woodblock_seal: {
@@ -97,6 +109,90 @@ const VISUAL_CAPTIONS: Record<
     meta: '档案密级：内部备查 · 1999年封存影印件',
     forensicHint: '用光学放大镜细看不同户主栏的红色指模螺线及右上角缺口特征。',
     src: './media/thumbprint_ledger.png',
+  },
+  qh_01_02: {
+    code: 'QH-01-02 · 宣纸乌金拓片',
+    label: '《清嘉庆丙寅年青禾渡口镇水铁牛拓片》',
+    meta: '1997年11月09日 · 周怀瑾、林守诚合拓（纵118cm × 横185cm）',
+    forensicHint: '用光学放大镜细看铁牛眼部平滑无凹的生铁浇封痕迹，以及左侧「嘉庆丙寅年铸·铁牛封目·莫望上溪坳」铭文。',
+    src: './media/qh_01_02.png',
+  },
+  qh_05_08: {
+    code: 'QH-05-08 · 135银盐纪实照',
+    label: '《1999年10月双溪口村陈氏宗祠“迁主起龛”辞祖现场》',
+    meta: '乐凯 SHD100 黑白负片 · 1999年10月19日晨 · 云溪县移民办宣传组',
+    forensicHint: '留意族老用朱红生绸裹面正捧的先祖牌位，对照后方祠堂耳房外反常处理的无字旧木龛记载。',
+    src: './media/qh_05_08.png',
+  },
+  qh_08_01: {
+    code: 'QH-08-01 · 民国木活字书叶',
+    label: '《民国二十三年〈青禾周氏联修支谱·山禁家规〉残卷》',
+    meta: '1934年甲戌岁青禾敦睦堂印本 · 毛边竹纸线装 · 周怀瑾征集',
+    forensicHint: '放大细读卷中竖排家规条文，核对「白石滩」「反穿外褂」「倒步退出」等清代山禁遗训。',
+    src: './media/qh_08_01.png',
+  },
+  qh_10_04: {
+    code: 'QH-10-04 · 清库纪实底片',
+    label: '《1999年夏龙潭背村空心古樟、红泥草编眼罩与断碑现场》',
+    meta: '编号 YX-FOR-9907-18 · 富士 Neopan 400 · 1999年7月22日林业局清库队',
+    forensicHint: '放大检视陶瓮旁散落的十字封痕红泥麻眼罩，以及树根处半埋的青石断碑「前山有社，樵夫背行」。',
+    src: './media/qh_10_04.png',
+  },
+  qh_12_03: {
+    code: 'QH-12-03 · 馆藏实物标本照',
+    label: '《晚清樟木坑村朱漆贴金镜匣（附“十月封镜”红纸封条）》',
+    meta: '清光绪楠木胎描金镜匣 · 水银平镜十字封条 · 周怀瑾采集 / 苏晓棠校注',
+    forensicHint: '观察氧化斑驳的水银平镜与交叉粘贴的「十月封镜」朱红纸封条，切记细读条目底部的夜间紧急校注。',
+    src: './media/qh_12_03.png',
+  },
+  qh_19_02: {
+    code: 'QH-19-02 · 民间梨园手抄旧账',
+    label: '《梅树湾“福春班”戏箱行头清点册与梨园忌例》',
+    meta: '1996年冬班主饶世福捐赠 · 毛边纸蓝布包角账本 · 周怀瑾抄录建档',
+    forensicHint: '放大细看账末所录「梨园忌例」三条：严禁接演十月半深坳红帖外戏、严禁挂白底黑字水牌、三锣响后不得回首窥龛。',
+    src: './media/qh_19_02.png',
+  },
+  qh_21_09: {
+    code: 'QH-21-09 · 1999缓拆晒图蓝本',
+    label: '《青禾乡中心粮站五号苏式圆筒仓及双层防潮夹墙测绘图》',
+    meta: '图纸号 YX-GRN-1958-05 · 比例尺 1:100 · 云溪县粮食局基建科',
+    forensicHint: '放大查看图纸右侧标注的「北侧双层防潮夹墙（免予爆破平毁）」与右下角红笔批注「周怀瑾担保缓拆存照 1999.10」。',
+    src: './media/qh_21_09.png',
+  },
+  qh_23_05: {
+    code: 'QH-23-05 · 科技考古物化标本',
+    label: '《“生桐油调辰砂”封龛胶泥（S-01）与粮仓铁盒涂层（S-02）对照标本》',
+    meta: '送检号 QH-LAB-2024-19 · 532nm 拉曼光谱对照样 · 15cm 不锈钢标尺',
+    forensicHint: '对照左右瓷皿及玻璃样本瓶标签（S-01 赤水溪废祠 / S-02 五号粮仓铁盒），两处暗红封壳成分高度同源。',
+    src: './media/qh_23_05.png',
+  },
+  qh_26_03: {
+    code: 'QH-26-03 · 120中画幅银盐照',
+    label: '《1999年11月13日蓄水前夜上坪村“辞灶起火”纪实照》',
+    meta: '海鸥 DF-200 · 1999年11月13日 21:40 · 云溪县文化馆林守诚摄',
+    forensicHint: '聚焦老妇灶前掬灰的孤灯身影，同时留意敞开堂屋门外自西北库底悄然漫入的灰白浓雾。',
+    src: './media/qh_26_03.png',
+  },
+  qh_28_08: {
+    code: 'QH-28-08 · 清代石刻拓本',
+    label: '《清道光十九年茶亭坳〈过坳四戒碑〉残石乌金拓本》',
+    meta: '道光十九年（1839）茶亭坳凉亭旧石 · 1997年周怀瑾刮灰椎拓',
+    forensicHint: '放大辨识石刻四戒全文：「莫听锣、莫窥帘、莫照龛、莫点睛」——这四句正是后续进入深层档案的核心护身戒律。',
+    src: './media/qh_28_08.png',
+  },
+  qh_31_02: {
+    code: 'QH-31-02 · 1998器材借用凭证',
+    label: '《云溪县文化馆下乡工作证与美制 Wratten No.15 琥珀黄滤光镜借用单》',
+    meta: '凭据编号 98-042 · 1998年10月15日 · 领队周怀瑾签借 / 林守诚经手',
+    forensicHint: '放大细检借用单上的红印签收栏、两枚深琥珀黄色 Wratten No.15 金属压环滤镜实物及1998年进山工作证。',
+    src: './media/qh_31_02.png',
+  },
+  qh_38_n03: {
+    code: 'QH-38-N03 · 未公开绝密抢拍',
+    label: '《五号粮仓夹墙朱砂封存14号铁盒与周怀瑾绝笔戒条》',
+    meta: '林知夏夜班抢拍孤本 · 桐油辰砂厚封马口铁盒与桑皮棉纸残笺',
+    forensicHint: '放大细读铁盒盖刻字「朱砂封存14」与残笺绝笔：「一九九八年十月十七亥时，切勿撤除黄镜直拍正龛，五人泣血·铁盒永沉夹墙」。',
+    src: './media/qh_38_n03.png',
   },
 };
 

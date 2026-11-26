@@ -34,7 +34,24 @@ export interface ArchiveEntry {
   content: string;
   act3MutatedContent?: string;
   act4MutatedContent?: string;
-  specialPhotoId?: 'threshing_1998' | 'team_portraits' | 'nuo_mask' | 'village_mist' | 'shrine_1998';
+  specialPhotoId?:
+    | 'threshing_1998'
+    | 'team_portraits'
+    | 'nuo_mask'
+    | 'village_mist'
+    | 'shrine_1998'
+    | 'qh_01_02'
+    | 'qh_05_08'
+    | 'qh_08_01'
+    | 'qh_10_04'
+    | 'qh_12_03'
+    | 'qh_19_02'
+    | 'qh_21_09'
+    | 'qh_23_05'
+    | 'qh_26_03'
+    | 'qh_28_08'
+    | 'qh_31_02'
+    | 'qh_38_n03';
   clueNote?: {
     id: string;
     title: string;

@@ -16,7 +16,7 @@ import {
 import { QINGHE_ARCHIVE_ENTRIES } from '../data/qingheArchiveData';
 import type { ArchiveEntry } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
-import { ForensicPhotoViewer } from '../components/ForensicPhotoViewer';
+import { ForensicPhotoViewer, VISUAL_CAPTIONS } from '../components/ForensicPhotoViewer';
 import { EditorialProse } from '../components/EditorialProse';
 import { horrorAudio } from '../engine/audio';
 
@@ -248,15 +248,20 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                         onClick={() => openEntry(item.id)}
                         className="group flex flex-col overflow-hidden rounded-2xl border border-[#dfd8ca] bg-white text-left shadow-sm hover:border-[#9e2a2b]/50 hover:shadow-md cursor-pointer transition"
                       >
-                        {item.id === 'qh-37-09' ? (
+                        {item.specialPhotoId && VISUAL_CAPTIONS[item.specialPhotoId] ? (
                           <div className="relative h-36 w-full overflow-hidden bg-zinc-900">
                             <img
-                              src="./media/threshing_1998_base.png"
-                              alt="晒谷场收工图缩略图"
+                              src={VISUAL_CAPTIONS[item.specialPhotoId].src}
+                              alt={item.title}
+                              loading="lazy"
                               className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105"
                             />
-                            <span className="absolute left-3 top-3 rounded-md bg-[#9e2a2b] px-2 py-0.5 font-mono-tech text-[10px] font-semibold text-white">
+                            <span className="absolute left-3 top-3 rounded-md bg-[#9e2a2b] px-2 py-0.5 font-mono-tech text-[10px] font-semibold text-white shadow-sm">
                               {item.code}
+                            </span>
+                            <span className="absolute right-3 bottom-2.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] text-amber-200 backdrop-blur-xs">
+                              <Camera className="h-2.5 w-2.5" />
+                              含原片取证
                             </span>
                           </div>
                         ) : (
@@ -358,40 +363,59 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                   <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
                     {filteredEntries.map((entry) => {
                       const isRead = state.readDocIds.includes(entry.id);
+                      const thumbSrc = entry.specialPhotoId
+                        ? VISUAL_CAPTIONS[entry.specialPhotoId]?.src
+                        : undefined;
                       return (
                         <button
                           key={entry.id}
                           type="button"
                           onClick={() => openEntry(entry.id)}
-                          className="group flex flex-col justify-between rounded-xl border border-[#e3dccf] bg-white p-4 text-left hover:border-[#16263f]/40 hover:shadow-sm cursor-pointer transition"
+                          className="group flex items-stretch gap-3.5 rounded-xl border border-[#e3dccf] bg-white p-4 text-left hover:border-[#16263f]/40 hover:shadow-sm cursor-pointer transition"
                         >
-                          <div>
-                            <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`rounded px-1.5 py-0.5 font-mono-tech font-medium ${
-                                    entry.hiddenFromList
-                                      ? 'bg-red-50 text-[#9e2a2b] border border-red-200'
-                                      : 'bg-stone-100 text-stone-600'
-                                  }`}
-                                >
-                                  {entry.code}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-stone-500">
-                                  {CATEGORY_ICON[entry.category]}
-                                  {entry.category}
-                                </span>
-                              </div>
-                              <span className="text-stone-400">
-                                {isRead ? '已阅' : entry.year}
+                          {thumbSrc && (
+                            <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-zinc-900 sm:h-24 sm:w-32">
+                              <img
+                                src={thumbSrc}
+                                alt={entry.title}
+                                loading="lazy"
+                                className="h-full w-full object-cover opacity-95 transition duration-300 group-hover:scale-105"
+                              />
+                              <span className="absolute bottom-1 right-1 inline-flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 font-mono-tech text-[9px] text-amber-200">
+                                <Camera className="h-2.5 w-2.5" />
+                                底片
                               </span>
                             </div>
-                            <h3 className="font-serif-cn text-[15px] font-bold text-[#16263f] group-hover:text-[#9e2a2b] transition">
-                              {entry.title}
-                            </h3>
-                            <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-stone-500">
-                              {entry.summary}
-                            </p>
+                          )}
+                          <div className="min-w-0 flex-1 flex flex-col justify-between">
+                            <div>
+                              <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`rounded px-1.5 py-0.5 font-mono-tech font-medium ${
+                                      entry.hiddenFromList
+                                        ? 'bg-red-50 text-[#9e2a2b] border border-red-200'
+                                        : 'bg-stone-100 text-stone-600'
+                                    }`}
+                                  >
+                                    {entry.code}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 text-stone-500">
+                                    {CATEGORY_ICON[entry.category]}
+                                    {entry.category}
+                                  </span>
+                                </div>
+                                <span className="text-stone-400">
+                                  {isRead ? '已阅' : entry.year}
+                                </span>
+                              </div>
+                              <h3 className="font-serif-cn text-[15px] font-bold leading-snug text-[#16263f] group-hover:text-[#9e2a2b] transition line-clamp-2">
+                                {entry.title}
+                              </h3>
+                              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-stone-500">
+                                {entry.summary}
+                              </p>
+                            </div>
                           </div>
                         </button>
                       );
