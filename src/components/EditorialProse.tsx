@@ -37,7 +37,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       if (p.includes('|') && p.split('\n').length >= 2) {
         return { type: 'table', text: p };
       }
-      if (/^【[^】]{2,24}】$/.test(p) || /^[一二三四五六七八九十]+[、.]/.test(p) && p.length < 36) {
+      if (/^【[^】]{2,32}】[：:]?$/.test(p) || (/^[一二三四五六七八九十]+[、.]/.test(p) && p.length < 36)) {
         return { type: 'heading', text: p };
       }
       if (/^【(编目员校注|审计|批注|按语|警告|求救|附注|备忘|绝密|系统提示)/.test(p)) {
@@ -83,7 +83,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
   }[theme];
 
   return (
-    <div className="max-w-[68ch] space-y-4 text-[14.5px] leading-[1.95] tracking-[0.015em]">
+    <div className="mx-auto w-full max-w-[68ch] space-y-4 text-[14.5px] leading-[1.95] tracking-[0.015em]">
       {visibleBlocks.map((block, idx) => {
         if (block.type === 'divider') {
           return <hr key={idx} className={`my-4 ${palette.divider}`} />;
