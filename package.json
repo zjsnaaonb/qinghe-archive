@@ -12,7 +12,9 @@
     "verify-arg": "node scripts/verify-playthrough.mjs"
   },
   "dependencies": {
+    "liquid-glass-web-react": "^0.1.1",
     "lucide-react": "^0.475.0",
+    "motion": "^14.14.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

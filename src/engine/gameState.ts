@@ -6,26 +6,18 @@ export function createInitialGameState(): GameState {
   return {
     act: 1,
     currentSite: 'mail',
-    unlockedSites: ['mail', 'qinghe', 'bbs'],
+    unlockedSites: ['mail'],
     oaLevel: 0,
     zhixiaDeepUnlocked: false,
     scareMode: 'full',
     audioMuted: false,
-    contamination: 4,
-    readDocIds: ['mail-prologue'],
+    contamination: 0,
+    readDocIds: [],
     searchHistory: [],
     photoViewCounts: {},
-    discoveredClues: [
-      {
-        id: 'clue-prologue-mail',
-        title: '林知夏的定时求救信',
-        detail: '信中叮嘱：在11月26日零点特展上线前，去「青禾数字民俗馆」搜【晒谷场收工图】，核对穿黑褂子的人数与影子数，留意馆藏编号断层。切勿点击右上角的高清重制预览。',
-        sourceSite: 'mail',
-        discoveredAt: '序幕',
-      },
-    ],
-    unlockedKeywords: ['晒谷场收工图', '林知夏'],
-    playerMemo: '【调查备忘】\n- 晒谷场收工图人数/影子：\n- 省社科立项号：\n- 水库截流日期：\n- 陈默摄影机机身号：\n',
+    discoveredClues: [],
+    unlockedKeywords: [],
+    playerMemo: '',
     rescued: {
       suXiaotang: false,
       zhaoYiming: false,
@@ -43,6 +35,7 @@ export function createInitialGameState(): GameState {
     activeEnding: null,
     startedAt: Date.now(),
     totalClicks: 0,
+    hasEnteredGame: false,
   };
 }
 

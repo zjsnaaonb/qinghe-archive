@@ -116,6 +116,17 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
   const telecineCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const irMonitorCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cctvBgImgRef = useRef<HTMLImageElement | null>(null);
+  const [cctvImgLoaded, setCctvImgLoaded] = useState(false);
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = './media/b2_corridor_cctv.jpg';
+    img.onload = () => {
+      cctvBgImgRef.current = img;
+      setCctvImgLoaded(true);
+    };
+  }, []);
 
   // ==================== ② 多轨音频取证台状态 ====================
   const [playingChannel, setPlayingChannel] = useState<IntercomChannel['id'] | null>(null);
@@ -438,34 +449,27 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
     const H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // 红外夜视底色（关灯时转为深绿夜视态，开灯时为惨白过曝监控态）
-    ctx.fillStyle = roomLightsOff ? '#04130b' : '#141b18';
-    ctx.fillRect(0, 0, W, H);
-
-    // 绘制三座服务器机柜 (RACK-01, RACK-02, RACK-03)
-    const racks = ['RACK-01', 'RACK-02', '三号机柜'];
-    racks.forEach((label, idx) => {
-      const rx = 22 + idx * 92;
-      const ry = 36;
-      ctx.fillStyle = roomLightsOff ? '#072214' : '#1f2924';
-      ctx.fillRect(rx, ry, 76, 138);
-      ctx.strokeStyle = idx === 2 ? '#10b981' : '#2d4a3a';
-      ctx.lineWidth = idx === 2 ? 1.8 : 1;
-      ctx.strokeRect(rx, ry, 76, 138);
-
-      ctx.fillStyle = idx === 2 ? '#6ee7b7' : '#6b8e7b';
+    // 红外夜视底图：优先绘制 Nano Banana 真实地下 B2 机房走廊红外监控画面
+    if (cctvBgImgRef.current) {
+      ctx.save();
+      ctx.filter = roomLightsOff
+        ? 'brightness(0.45) contrast(1.35) sepia(1) hue-rotate(85deg) saturate(1.8)'
+        : 'brightness(0.92) contrast(1.22)';
+      ctx.drawImage(cctvBgImgRef.current, 0, 0, W, H);
+      ctx.restore();
+      // 轻叠三号机柜定位标示框
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.55)';
+      ctx.setLineDash([3, 3]);
+      ctx.strokeRect(185, 48, 72, 120);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#6ee7b7';
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(label, rx + 38, ry + 16);
-
-      // 阵列指示灯
-      for (let row = 0; row < 4; row++) {
-        ctx.fillStyle = idx === 2 && row === 1 ? '#f59e0b' : '#10b981';
-        ctx.fillRect(rx + 12, ry + 30 + row * 22, 6, 4);
-        ctx.fillStyle = 'rgba(16,185,129,0.18)';
-        ctx.fillRect(rx + 24, ry + 29 + row * 22, 40, 6);
-      }
-    });
+      ctx.fillText('RACK-03 三号机柜', 221, 43);
+    } else {
+      ctx.fillStyle = roomLightsOff ? '#04130b' : '#141b18';
+      ctx.fillRect(0, 0, W, H);
+    }
 
     // 当检视第12卷（或尚未通过第12卷）时绘制湿蓝布衫背影
     const showWetBlueFigure = selectedReel === 'QH-38-12' && !state.b2Progress.reel12Passed;
@@ -513,7 +517,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
       8,
       15
     );
-  }, [activeTab, selectedReel, roomLightsOff, figureWalkProgress, state.b2Progress.reel12Passed]);
+  }, [activeTab, selectedReel, roomLightsOff, figureWalkProgress, state.b2Progress.reel12Passed, cctvImgLoaded]);
 
   // ==================== ② 多轨音频取证台波形包络绘制 ====================
   useEffect(() => {

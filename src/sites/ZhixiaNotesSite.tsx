@@ -17,6 +17,7 @@ import { ZHIXIA_NOTES } from '../data/zhixiaNotesData';
 import { ENCRYPTED_VAULT, GATE_HASHES } from '../data/encryptedVault';
 import { decryptVaultBlock, verifyPassphraseHash } from '../engine/crypto';
 import { horrorAudio } from '../engine/audio';
+import { EditorialProse } from '../components/EditorialProse';
 import type { CommonSiteProps } from './siteProps';
 
 type FolderTab = 'surface' | 'deep';
@@ -438,19 +439,12 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                 </h2>
               </div>
 
-              <div className="mt-6 whitespace-pre-wrap rounded-xl border border-stone-800/80 bg-[#181613] p-5 sm:p-7 font-serif-cn text-[15.5px] leading-8 text-stone-200">
-                {resolvedNoteContent}
-              </div>
-
-              {selectedNote.clueNote && (
-                <div className="mt-5 rounded-xl border border-amber-800/60 bg-amber-950/25 p-4 text-xs leading-6 text-amber-100">
-                  <div className="mb-1 flex items-center gap-1.5 font-bold text-amber-300">
-                    <FileText className="h-4 w-4" />
-                    <span>札记关键线索已摘录：{selectedNote.clueNote.title}</span>
-                  </div>
-                  <p className="text-stone-300">{selectedNote.clueNote.detail}</p>
+              <div className="mt-6 rounded-xl border border-stone-800/80 bg-[#181613] p-6 sm:p-8">
+                <EditorialProse text={resolvedNoteContent} theme="dark" />
+                <div className="mt-6 border-t border-stone-800/80 pt-3 text-[11px] text-stone-500">
+                  提示：用鼠标划选正文中的关键数字或词句，可直接摘录至右侧随身手记。
                 </div>
-              )}
+              </div>
 
               {selectedNote.requiresDeepUnlock && state.unlockedSites.includes('b2') && (
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-900/60 bg-rose-950/20 px-4 py-3 text-xs">

@@ -21,6 +21,7 @@ import { OA_DOCUMENTS } from '../data/oaData';
 import { ENCRYPTED_VAULT, GATE_HASHES } from '../data/encryptedVault';
 import { decryptVaultBlock, verifyPassphraseHash } from '../engine/crypto';
 import { horrorAudio } from '../engine/audio';
+import { EditorialProse } from '../components/EditorialProse';
 import type { OADocument, OALevel, SiteId } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
 
@@ -980,21 +981,13 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     </div>
                   )}
 
-                  {/* 公文正文内容 */}
-                  <article className="mt-5 whitespace-pre-wrap rounded-lg border border-slate-800/90 bg-slate-950/90 p-5 font-serif-cn text-[15px] leading-8 text-slate-200">
-                    {resolvedPlaintext}
-                  </article>
-
-                  {/* 线索摘录回执 */}
-                  {selectedDoc.clueNote && (
-                    <div className="mt-4 rounded-lg border border-blue-800/60 bg-blue-950/30 p-3.5 text-xs leading-6 text-blue-200">
-                      <div className="mb-1 flex items-center gap-1.5 font-bold text-blue-300">
-                        <FileText className="h-3.5 w-3.5" />
-                        <span>已同步至调查线索簿：{selectedDoc.clueNote.title}</span>
-                      </div>
-                      <p className="text-slate-300">{selectedDoc.clueNote.detail}</p>
+                  {/* 公文正文内容（清爽分段排版，不再替玩家剧透总结谜底） */}
+                  <article className="mt-5 rounded-xl border border-slate-800/90 bg-slate-950/85 p-6 sm:p-8">
+                    <EditorialProse text={resolvedPlaintext} theme="dark" />
+                    <div className="mt-6 border-t border-slate-800/70 pt-3 text-[11px] text-slate-500">
+                      提示：阅读时发现可疑工号、日期或规则，用鼠标划选即可直接摘录进右侧随身手记。
                     </div>
-                  )}
+                  </article>
 
                   {/* 第四面墙高潮演出：在 Lv.3 院长专档中额外展示《外部视网膜校准样本 #39 实时遥测面板》 */}
                   {state.oaLevel >= 3 &&

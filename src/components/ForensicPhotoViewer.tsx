@@ -1,5 +1,16 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Search, Eye, Sliders, Sparkles, AlertTriangle, Ruler } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { LiquidGlass, type LiquidGlassHandle } from 'liquid-glass-web-react';
+import {
+  Search,
+  Eye,
+  Sliders,
+  Sparkles,
+  AlertTriangle,
+  Ruler,
+  RotateCcw,
+  ZoomIn,
+} from 'lucide-react';
 import type { ActNumber, ScareMode } from '../types/game';
 import { horrorAudio } from '../engine/audio';
 
@@ -32,1204 +43,546 @@ const VISUAL_CAPTIONS: Record<
   { code: string; label: string; meta: string; forensicHint: string }
 > = {
   threshing_1998: {
-    code: 'QH-37-09 // 135银盐黑白底片扫描',
+    code: 'QH-37-09 · 135银盐底片',
     label: '《晒谷场收工图》（1998年10月16日傍晚 · 雾中宗祠前坪）',
     meta: '机身：Nikon FM2 · 显影：D-76 (1:1) · 摄制：Z.H.J.',
-    forensicHint: '开启光学放大镜可逐一核对背身村民人数、湿石板地面拉长黑影数及宗祠二楼雕花木窗细节。',
+    forensicHint: '开启光学折射放大镜（滚轮可调倍率）细查人影数量与二楼雕花木窗。',
   },
   team_portraits: {
-    code: 'QH-ADM-01 // 课题组成员公示标准照',
-    label: '青禾民俗影像数字化保护工程核心成员证件照',
+    code: 'QH-ADM-01 · 成员证件照',
+    label: '青禾民俗影像数字化保护工程核心成员标准像',
     meta: '采集：南州大学人文高研院数字采集室 · 2025—2026',
-    forensicHint: '可用放大镜检视成员瞳孔高光区反光轮廓随调查推进的细微变化。',
+    forensicHint: '放大镜移至各成员瞳孔高光区，留意随章节深入出现的细微反光异变。',
   },
   nuo_mask: {
-    code: 'QH-38-M01 // 未编目库底器物取证照',
-    label: '清代樟木圆雕朱砂髹漆「无目盲傩」面具正视标本图',
-    meta: '出土点：原龛下坳粮站夹墙外侧泥滩 · 附 10cm 法医级比例尺',
-    forensicHint: '注意观察面具眼窝处是否留有常规傩面具的透视钻孔，以及剥落朱砂层下的封漆痕迹。',
+    code: 'QH-38-M01 · 未编目库底器物',
+    label: '清代樟木圆雕朱砂髹漆「无目盲傩」面具标本',
+    meta: '出土点：原龛下坳粮站夹墙外侧泥滩 · 10cm 取证标尺',
+    forensicHint: '注意眼窝处平滑封死的实木结构——这副面具自雕刻之初便不留透视眼孔。',
   },
   village_mist: {
-    code: 'QH-38-F02 // 田野速写手稿红外扫描',
-    label: '周怀瑾 1998 年秋《雾锁龛下坳地形与宗祠朝向速写》',
-    meta: '纸本碳素钢笔淡彩 · 320dpi 原稿扫描',
-    forensicHint: '记录了漏斗状盆地内唯一背水朝山而建的古宗祠及村民闻锣背立的习俗。',
+    code: 'QH-38-F02 · 1998库底影像',
+    label: '雾锁龛下坳（云溪壶口盆地 · 蓄水前实拍底片）',
+    meta: '高程视角：白石滩山脊俯拍 · 1998年10月',
+    forensicHint: '浓雾深处盘踞着地图上并未登记的第 38 个宗族聚落。',
   },
   shrine_1998: {
-    code: 'QH-38-S00 // 16mm 胶片残帧低清转磁样片',
-    label: '1998年10月17日夜《空神龛与背身戏台》单帧定格',
-    meta: 'Bolex H16 Reflex · Kodak Tri-X Reversal 7278 · TC 00:14:38:19',
-    forensicHint: '台上戏班全员背对台下观众，面朝黑洞洞的无目空神龛行礼。',
+    code: 'QH-38-S00 · 16mm 隔离残帧',
+    label: '1998年10月17日夜《空神龛与背身戏台》',
+    meta: 'Bolex H16 Reflex · Kodak Tri-X 7278 · TC 00:14:38:19',
+    forensicHint: '戏班背对镜头叩拜空龛，龛内泥塑面目平滑无眼。',
   },
   elevation_map: {
-    code: '云水勘字〔1999〕底图-07 // 库区等高线蓝图',
-    label: '云溪水库淹没区 1:10000 水文高程勘测底图（东南库湾局部）',
-    meta: '测绘单位：省水利水电勘测设计院 · 1999年8月归档扫描',
-    forensicHint: '切换【斜射紫外显影】并用放大镜移至右下角涂改液留白处，可辨认被抹除的原始海拔高程与旧村名。',
+    code: '云水勘字〔1999〕底图-07',
+    label: '云溪水库淹没区 1:10000 水文高程勘测底图',
+    meta: '测绘：省水利水电勘测设计院 · 1999年8月归档',
+    forensicHint: '开启【斜射紫外显影】并用放大镜移至东南库湾涂改液留白处，透视被抹除的高程与地名。',
   },
   woodblock_seal: {
-    code: '清光绪十九年刻本 // 古籍善本原叶高精度影印',
-    label: '《云溪风土杂记·卷四·祀典志》木刻雕版书叶（带骑缝破裂藏书印）',
-    meta: '半叶八行，行十八字，黑口双鱼尾 · 青禾周氏旧藏',
-    forensicHint: '放大检视右侧骑缝红印破裂处与竖排雕版原刻文字，仔细核对「封龛逆仪」四道牌位的真正先后次序！',
+    code: '清光绪十九年刻本 · 原叶影印',
+    label: '《云溪风土杂记·卷四·祀典志》木刻雕版书叶',
+    meta: '半叶八行 · 黑口双鱼尾 · 青禾周氏旧藏（带骑缝裂印）',
+    forensicHint: '放大检视右侧骑缝红印破裂处，核对原刻「封龛逆仪」四道牌位的真实先后次序。',
   },
   thumbprint_ledger: {
-    code: '云水移审〔1999〕附表38 // 移民安置签收花名册影印件',
-    label: '未编入总册《附表38：祠下村（龛下坳）124户补偿款领款红指模总览》',
+    code: '云水移审〔1999〕附表38',
+    label: '《附表38：祠下村（龛下坳）124户领款红指模总览》',
     meta: '档案密级：内部备查 · 1999年11月封存',
-    forensicHint: '用放大镜比对不同户主栏内的红色指模箕斗螺线与右上方月牙形缺口。',
+    forensicHint: '用光学放大镜比对不同户主栏内红指模的螺线纹路与右上角月牙形断疤。',
   },
 };
 
-function seededRandom(seed: number): () => number {
-  let s = seed % 2147483647;
-  if (s <= 0) s += 2147483646;
-  return () => {
-    s = (s * 16807) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
-}
+/** 精致高DPI矢量取证底图：用于需要清晰文字、等高线、红指模螺线与瞳孔反光的四类档案 */
+const FineArchivalSvg: React.FC<{
+  photoId: 'team_portraits' | 'elevation_map' | 'woodblock_seal' | 'thumbprint_ledger';
+  act: ActNumber;
+  rakingLight: boolean;
+}> = ({ photoId, act, rakingLight }) => {
+  if (photoId === 'elevation_map') {
+    return (
+      <svg viewBox="0 0 960 640" className="block h-auto w-full select-none bg-[#e8eef3]">
+        <defs>
+          <pattern id="gridMap" width="48" height="48" patternUnits="userSpaceOnUse">
+            <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#9db2c4" strokeWidth="0.6" strokeOpacity="0.45" />
+          </pattern>
+          <radialGradient id="basinDepth" cx="62%" cy="62%" r="36%">
+            <stop offset="0%" stopColor={rakingLight ? '#7c2d12' : '#4a6b82'} stopOpacity={rakingLight ? '0.32' : '0.24'} />
+            <stop offset="100%" stopColor="#e8eef3" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="960" height="640" fill={rakingLight ? '#17202e' : '#e8eef3'} />
+        <rect width="960" height="640" fill="url(#gridMap)" />
+        <rect width="960" height="640" fill="url(#basinDepth)" />
+
+        {/* 测绘图框 */}
+        <rect x="24" y="24" width="912" height="592" fill="none" stroke={rakingLight ? '#38bdf8' : '#2c4a66'} strokeWidth="2" />
+        <rect x="30" y="30" width="900" height="580" fill="none" stroke={rakingLight ? '#38bdf8' : '#2c4a66'} strokeWidth="0.6" strokeDasharray="6 4" />
+
+        {/* 优雅贝塞尔水文等高线 */}
+        {[
+          { d: 'M 70,120 C 260,55 480,75 680,105 C 830,128 905,210 895,360 C 885,510 730,585 520,575 C 310,565 110,520 75,380 C 48,270 30,150 70,120 Z', h: '165.0m', s: 1.5 },
+          { d: 'M 145,165 C 310,105 510,118 675,155 C 805,185 845,275 835,385 C 825,495 690,545 530,535 C 365,525 185,480 145,365 C 115,280 105,195 145,165 Z', h: '150.0m', s: 1.2 },
+          { d: 'M 245,220 C 380,170 555,175 680,220 C 775,255 795,335 778,415 C 760,490 650,515 545,505 C 425,492 275,455 245,365 C 222,295 215,242 245,220 Z', h: '135.0m', s: 1.1 },
+          { d: 'M 365,280 C 460,245 590,252 670,295 C 735,330 742,390 715,442 C 685,485 605,495 535,482 C 445,465 375,425 360,365 C 348,320 340,295 365,280 Z', h: '120.0m', s: 1.1 },
+        ].map((c, idx) => (
+          <g key={idx}>
+            <path d={c.d} fill="none" stroke={rakingLight ? '#7dd3fc' : '#43647f'} strokeWidth={c.s} strokeOpacity={0.75} />
+            <text x={150 + idx * 92} y={152 + idx * 54} fill={rakingLight ? '#bae6fd' : '#2b4c68'} fontSize="11" fontFamily="monospace">
+              {c.h}
+            </text>
+          </g>
+        ))}
+
+        {/* 云溪主河道 */}
+        <path
+          d="M 40,240 C 190,260 280,190 410,250 C 520,300 560,385 620,405 C 710,435 810,360 920,390"
+          fill="none"
+          stroke={rakingLight ? '#38bdf8' : '#2563eb'}
+          strokeWidth="4.5"
+          strokeOpacity="0.55"
+        />
+
+        {/* 37个常规村落坐标点 */}
+        {[
+          { x: 180, y: 195, name: 'QH-01 大坪村 (152m)' },
+          { x: 320, y: 155, name: 'QH-12 石桥村 (148m)' },
+          { x: 525, y: 175, name: 'QH-17 槐湾村 (141m)' },
+          { x: 740, y: 215, name: 'QH-29 渡口村 (138m)' },
+          { x: 255, y: 420, name: 'QH-37 白石滩 (135.2m)' },
+        ].map((v, i) => (
+          <g key={i}>
+            <circle cx={v.x} cy={v.y} r="4.5" fill={rakingLight ? '#f8fafc' : '#1e3a5f'} />
+            <text x={v.x + 10} y={v.y + 4} fill={rakingLight ? '#e2e8f0' : '#1e293b'} fontSize="12" fontFamily="serif">
+              {v.name}
+            </text>
+          </g>
+        ))}
+
+        {/* 核心秘密区域：壶口漏水暗渊 108.4m（涂改液覆盖层，开启斜射紫外显影后透出红字！） */}
+        <g transform="translate(505, 325)">
+          <ellipse
+            cx="95"
+            cy="68"
+            rx="92"
+            ry="58"
+            fill={rakingLight ? 'rgba(220, 38, 38, 0.14)' : '#f8fafc'}
+            stroke={rakingLight ? '#f87171' : '#cbd5e1'}
+            strokeWidth={rakingLight ? '1.8' : '2'}
+            strokeDasharray={rakingLight ? '5 3' : 'none'}
+          />
+          {rakingLight ? (
+            <g>
+              <ellipse cx="95" cy="68" rx="52" ry="32" fill="none" stroke="#ef4444" strokeWidth="1.2" strokeDasharray="3 3" />
+              <circle cx="95" cy="68" r="6" fill="#dc2626" />
+              <text x="95" y="48" textAnchor="middle" fill="#fecaca" fontSize="14" fontWeight="bold" fontFamily="serif">
+                第38村 · 祠下村（旧称：龛下坳）
+              </text>
+              <text x="95" y="96" textAnchor="middle" fill="#fca5a5" fontSize="13" fontWeight="bold" fontFamily="monospace">
+                漏水暗渊实测高程：108.4m [原注涂抹痕迹]
+              </text>
+              <text x="95" y="114" textAnchor="middle" fill="#fde68a" fontSize="10" fontFamily="monospace">
+                UV-365nm 显影：1999.08 化学白色修正液覆盖区
+              </text>
+            </g>
+          ) : (
+            <g>
+              <path d="M 18,45 Q 90,22 170,48 Q 180,88 158,105 Q 85,120 20,96 Z" fill="#ffffff" opacity="0.94" />
+              <text x="95" y="72" textAnchor="middle" fill="#94a3b8" fontSize="11" fontFamily="serif" opacity="0.7">
+                [ 勘测底图白液涂覆区 · 2.4km² ]
+              </text>
+              <text x="95" y="90" textAnchor="middle" fill="#cbd5e1" fontSize="10" fontFamily="monospace">
+                建议开启上方「斜射显影增强」透视涂改痕迹
+              </text>
+            </g>
+          )}
+        </g>
+
+        {/* 图签标题栏 */}
+        <g transform="translate(48, 48)">
+          <rect width="315" height="62" fill={rakingLight ? 'rgba(15,23,42,0.88)' : 'rgba(255,255,255,0.92)'} stroke={rakingLight ? '#38bdf8' : '#2c4a66'} strokeWidth="1" />
+          <text x="14" y="25" fill={rakingLight ? '#f8fafc' : '#0f172a'} fontSize="14" fontWeight="bold" fontFamily="serif">
+            云溪水库淹没区水文高程总图（1999）
+          </text>
+          <text x="14" y="46" fill={rakingLight ? '#94a3b8' : '#475569'} fontSize="11" fontFamily="monospace">
+            截流日期: 1999-11-14 · 正常蓄水位: 162.0m · 比例 1:10000
+          </text>
+        </g>
+      </svg>
+    );
+  }
+
+  if (photoId === 'woodblock_seal') {
+    // 博物馆级清光绪十九年木刻书叶 + 骑缝破裂朱砂藏书印（清晰呈现阳文原刻：退目 → 覆面 → 缄口 → 封龛）
+    const columns = [
+      '云溪风土杂记卷四·祀典志',
+      '青禾西南有洼曰龛下坳即祠下村',
+      '村祠奉无目社公泥塑不凿双瞳',
+      '凡岁迁水厄演辞社背身之傩',
+      '伶人背龛而讴合村背台而拜',
+      '三锣既响切忌回首窥龛',
+      '若欲永封空龛须依古志四牌逆仪',
+      '一曰退目二曰覆面三曰缄口四曰封龛',
+      '倒置退目于末则万目反献大祸立至',
+    ];
+    return (
+      <svg viewBox="0 0 960 640" className="block h-auto w-full select-none bg-[#e8dcc2]">
+        <defs>
+          <linearGradient id="oldPaper" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={rakingLight ? '#d8c39b' : '#efe5cf'} />
+            <stop offset="50%" stopColor={rakingLight ? '#cbb184' : '#e4d5b7'} />
+            <stop offset="100%" stopColor={rakingLight ? '#bfa272' : '#d8c5a1'} />
+          </linearGradient>
+        </defs>
+        <rect width="960" height="640" fill="url(#oldPaper)" />
+
+        {/* 古籍四周双边栏与中缝黑口双鱼尾 */}
+        <rect x="46" y="34" width="868" height="572" fill="none" stroke="#2c241b" strokeWidth="4" />
+        <rect x="54" y="42" width="852" height="556" fill="none" stroke="#2c241b" strokeWidth="1.2" />
+
+        {/* 中缝版心（黑口双鱼尾） */}
+        <line x1="470" y1="42" x2="470" y2="598" stroke="#2c241b" strokeWidth="1.4" />
+        <line x1="490" y1="42" x2="490" y2="598" stroke="#2c241b" strokeWidth="1.4" />
+        <polygon points="470,130 490,130 490,148 480,140 470,148" fill="#2c241b" />
+        <polygon points="470,480 490,480 490,462 480,470 470,462" fill="#2c241b" />
+        <text x="480" y="210" textAnchor="middle" fill="#2c241b" fontSize="14" fontFamily="serif" style={{ writingMode: 'vertical-rl' }}>
+          云溪风土杂记·卷四
+        </text>
+        <text x="480" y="535" textAnchor="middle" fill="#2c241b" fontSize="13" fontFamily="serif" style={{ writingMode: 'vertical-rl' }}>
+          光绪十九年刻
+        </text>
+
+        {/* 竖排木刻栏格与古籍阳文 */}
+        {columns.map((colText, colIdx) => {
+          // 从右向左排布（古籍阅读顺序）
+          const xPositions = [862, 772, 682, 592, 526, 424, 334, 240, 146];
+          const x = xPositions[colIdx];
+          const isTruthCol = colIdx === 7;
+          const isWarnCol = colIdx === 8;
+          return (
+            <g key={colIdx}>
+              <line x1={x - 42} y1="42" x2={x - 42} y2="598" stroke="#2c241b" strokeWidth="0.6" strokeOpacity="0.45" />
+              {colText.split('').map((ch, charIdx) => {
+                const y = 78 + charIdx * 31;
+                const highlightChar =
+                  isTruthCol && ['退', '目', '覆', '面', '缄', '口', '封', '龛'].includes(ch);
+                return (
+                  <text
+                    key={charIdx}
+                    x={x}
+                    y={y}
+                    textAnchor="middle"
+                    fill={
+                      highlightChar
+                        ? rakingLight
+                          ? '#991b1b'
+                          : '#1c1510'
+                        : isWarnCol
+                        ? '#3f1d1d'
+                        : '#251e17'
+                    }
+                    fontSize={highlightChar ? '22' : '20'}
+                    fontWeight={highlightChar ? 'bold' : 'normal'}
+                    fontFamily="'Songti SC', 'Noto Serif SC', 'SimSun', serif"
+                  >
+                    {ch}
+                  </text>
+                );
+              })}
+            </g>
+          );
+        })}
+
+        {/* 关键物证：骑缝破裂朱砂藏书印（跨骑在“退目·覆面·缄口·封龛”一列上，证明原版未被电子篡改） */}
+        <g transform="translate(198, 255) rotate(-4)">
+          <rect
+            x="0"
+            y="0"
+            width="84"
+            height="108"
+            rx="3"
+            fill="rgba(166, 36, 36, 0.14)"
+            stroke="#9e2a2b"
+            strokeWidth="3.2"
+          />
+          <rect x="6" y="6" width="72" height="96" fill="none" stroke="#9e2a2b" strokeWidth="1" />
+          <text x="58" y="34" textAnchor="middle" fill="#9e2a2b" fontSize="20" fontWeight="bold" fontFamily="serif">
+            青
+          </text>
+          <text x="58" y="62" textAnchor="middle" fill="#9e2a2b" fontSize="20" fontWeight="bold" fontFamily="serif">
+            禾
+          </text>
+          <text x="58" y="90" textAnchor="middle" fill="#9e2a2b" fontSize="20" fontWeight="bold" fontFamily="serif">
+            周
+          </text>
+          <text x="26" y="34" textAnchor="middle" fill="#9e2a2b" fontSize="20" fontWeight="bold" fontFamily="serif">
+            氏
+          </text>
+          <text x="26" y="62" textAnchor="middle" fill="#9e2a2b" fontSize="20" fontWeight="bold" fontFamily="serif">
+            珍
+          </text>
+          <text x="26" y="90" textAnchor="middle" fill="#9e2a2b" fontSize="20" fontWeight="bold" fontFamily="serif">
+            藏
+          </text>
+          {/* 藏书印木版裂纹 */}
+          <path d="M -4,44 L 36,52 L 54,48 L 88,62" stroke="#e4d5b7" strokeWidth="3.4" fill="none" />
+        </g>
+
+        {/* 朱笔眉批标注 */}
+        {rakingLight && (
+          <g transform="translate(64, 545)">
+            <rect width="388" height="36" rx="4" fill="rgba(153, 27, 27, 0.9)" />
+            <text x="194" y="23" textAnchor="middle" fill="#fef2f2" fontSize="13" fontWeight="bold" fontFamily="serif">
+              斜射校勘确认：原刻阳文真序为【退目 → 覆面 → 缄口 → 封龛】
+            </text>
+          </g>
+        )}
+      </svg>
+    );
+  }
+
+  if (photoId === 'thumbprint_ledger') {
+    const names = [
+      '001 祠氏长生', '002 祠氏守义', '003 祠氏阿福', '004 祠氏桂兰',
+      '005 祠氏永年', '006 祠氏明远', '007 祠氏玉珍', '008 祠氏德海',
+      '009 祠氏文财', '010 祠氏秀英', '011 祠氏顺喜', '012 祠氏根生',
+      '……', '122 祠氏老七', '123 祠氏幺妹', '124 祠氏无名',
+    ];
+    return (
+      <svg viewBox="0 0 960 640" className="block h-auto w-full select-none bg-[#f2ece1]">
+        <rect width="960" height="640" fill="#f2ece1" />
+        <rect x="28" y="24" width="904" height="592" fill="none" stroke="#334155" strokeWidth="1.8" />
+        <text x="480" y="64" textAnchor="middle" fill="#991b1b" fontSize="22" fontWeight="bold" fontFamily="serif" letterSpacing="4">
+          云溪水库青禾乡移民安置补偿款签收总表 · 附表38（祠下村）
+        </text>
+        <text x="480" y="88" textAnchor="middle" fill="#475569" fontSize="12" fontFamily="monospace">
+          签收日期：1998年10月17日 · 登记户数：124户 · 迁入新镇核销户数：0户 · 经手人：陆长根
+        </text>
+        <line x1="48" y1="102" x2="912" y2="102" stroke="#991b1b" strokeWidth="1.6" />
+
+        {/* 16格户主签收指模矩阵（100%完全重合的同心螺线 + 右上月牙断疤！） */}
+        {names.map((label, idx) => {
+          const col = idx % 4;
+          const row = Math.floor(idx / 4);
+          const x = 52 + col * 218;
+          const y = 118 + row * 116;
+          return (
+            <g key={idx} transform={`translate(${x}, ${y})`}>
+              <rect width="204" height="102" fill="#faf6ee" stroke="#94a3b8" strokeWidth="1" />
+              <text x="10" y="22" fill="#1e293b" fontSize="12" fontWeight="bold" fontFamily="serif">
+                {label}
+              </text>
+              <text x="10" y="40" fill="#64748b" fontSize="10" fontFamily="monospace">
+                领款: ¥8,400 · 迁入: 未报到
+              </text>
+              <text x="10" y="90" fill="#94a3b8" fontSize="10" fontFamily="serif">
+                户主按印：
+              </text>
+              {/* 完全一致的生朱砂红指模（6道同心椭圆螺线 + 同一道右上角月牙断疤） */}
+              <g transform="translate(148, 56)">
+                {[11, 16, 21, 26, 31].map((ry, rIdx) => (
+                  <ellipse
+                    key={rIdx}
+                    cx="0"
+                    cy="0"
+                    rx={ry * 0.68}
+                    ry={ry}
+                    fill="none"
+                    stroke="#b91c1c"
+                    strokeWidth={rakingLight ? '1.8' : '1.4'}
+                    strokeOpacity={0.78 - rIdx * 0.08}
+                    strokeDasharray={rIdx % 2 === 0 ? '26 3' : '18 2'}
+                  />
+                ))}
+                {/* 同一道月牙形断疤 */}
+                <path d="M 4,-22 Q 14,-14 10,-4" stroke="#faf6ee" strokeWidth="3.2" fill="none" />
+                {rakingLight && (
+                  <circle cx="10" cy="-14" r="9" fill="none" stroke="#ef4444" strokeWidth="1.2" strokeDasharray="2 2" />
+                )}
+              </g>
+            </g>
+          );
+        })}
+
+        {rakingLight && (
+          <g transform="translate(52, 584)">
+            <rect width="856" height="24" rx="3" fill="#7f1d1d" />
+            <text x="428" y="16" textAnchor="middle" fill="#fecaca" fontSize="12" fontFamily="monospace">
+              十倍镜比对异常：全部 124 枚指模右上角均存在完全重合的 3.2mm 月牙断疤（同模反复摁印）
+            </text>
+          </g>
+        )}
+      </svg>
+    );
+  }
+
+  // team_portraits：精细档案接触印相表（5位课题组成员证件照 + 第3/4幕瞳孔神龛反光异变）
+  const members = [
+    { name: '郑国栋', role: '项目首席 · 副院长', id: 'NZU-0199', eyeShift: true },
+    { name: '林知夏', role: '田野统筹 · 研三', id: 'NZU-2301', eyeShift: act >= 4 },
+    { name: '陈默', role: '胶片修复 · 研二', id: 'NZU-2408', eyeShift: act >= 3 },
+    { name: '苏晓棠', role: '古籍编目 · 研二', id: 'NZU-2412', eyeShift: act >= 3 },
+    { name: '赵一鸣', role: '方言音频 · 研一', id: 'NZU-2504', eyeShift: act >= 3 },
+  ];
+
+  return (
+    <svg viewBox="0 0 960 420" className="block h-auto w-full select-none bg-[#18191d]">
+      <rect width="960" height="420" fill="#18191d" />
+      <text x="36" y="34" fill="#a1a1aa" fontSize="11" fontFamily="monospace">
+        CONTACT SHEET // QINGHE-PROJECT-2026 // KODAK T-MAX 400 // DIGITAL ARCHIVE REGISTRY
+      </text>
+
+      {members.map((m, idx) => {
+        const x = 32 + idx * 182;
+        return (
+          <g key={m.id} transform={`translate(${x}, 54)`}>
+            <rect width="166" height="296" rx="4" fill="#23252b" stroke="#3f3f46" strokeWidth="1" />
+            {/* 证件照底色 */}
+            <rect x="13" y="14" width="140" height="196" fill={m.eyeShift && act >= 3 ? '#1f232b' : '#2c3543'} />
+            {/* 细腻人物胸像剪影 */}
+            <path d="M 32,210 C 34,166 56,154 83,154 C 110,154 132,166 134,210 Z" fill="#111318" />
+            <ellipse cx="83" cy="108" rx="33" ry="42" fill="#d4cfc7" fillOpacity="0.88" />
+            {/* 发型微区分 */}
+            <path
+              d={
+                idx % 2 === 1
+                  ? 'M 48,112 C 46,66 120,66 118,112 C 112,84 54,84 48,112 Z'
+                  : 'M 50,96 C 54,60 112,60 116,96 C 102,78 64,78 50,96 Z'
+              }
+              fill="#18181b"
+            />
+            {/* 眼睛与瞳孔高光（关键细思极恐异变点：第3/4幕瞳孔浮现微小空神龛高光！） */}
+            <g>
+              <ellipse cx="70" cy="104" rx="6.5" ry="3.6" fill="#18181b" />
+              <ellipse cx="96" cy="104" rx="6.5" ry="3.6" fill="#18181b" />
+              {m.eyeShift ? (
+                <>
+                  <rect x="68.5" y="101.8" width="3" height="4.2" fill={rakingLight ? '#ef4444' : '#f8fafc'} />
+                  <rect x="94.5" y="101.8" width="3" height="4.2" fill={rakingLight ? '#ef4444' : '#f8fafc'} />
+                </>
+              ) : (
+                <>
+                  <circle cx="71" cy="103" r="1.2" fill="#f8fafc" />
+                  <circle cx="97" cy="103" r="1.2" fill="#f8fafc" />
+                </>
+              )}
+            </g>
+            <path d="M 75,130 Q 83,134 91,130" stroke="#52525b" strokeWidth="1.4" fill="none" />
+
+            <text x="83" y="238" textAnchor="middle" fill="#f4f4f5" fontSize="14" fontWeight="bold" fontFamily="serif">
+              {m.name}
+            </text>
+            <text x="83" y="258" textAnchor="middle" fill="#a1a1aa" fontSize="11">
+              {m.role}
+            </text>
+            <text x="83" y="278" textAnchor="middle" fill={m.eyeShift ? '#f87171' : '#71717a'} fontSize="10" fontFamily="monospace">
+              {m.eyeShift && act >= 3 ? `${m.id} · RETINA SYNC` : m.id}
+            </text>
+          </g>
+        );
+      })}
+
+      <text x="36" y="388" fill={act >= 3 ? '#f87171' : '#71717a'} fontSize="11" fontFamily="monospace">
+        {act >= 3
+          ? '※ 光学放大检视提示：多位成员瞳孔高光已同步为相同的门框形神龛轮廓'
+          : '※ 点击上方「光学放大镜」可检视每位课题组成员的标准像细节'}
+      </text>
+    </svg>
+  );
+};
 
 export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   photoId,
   act,
   scareMode,
-  viewCount = 0,
+  viewCount = 1,
   onInspect,
-  onTriggerScare,
   onAdjustContamination,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const loupeCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const glassRef = useRef<LiquidGlassHandle | null>(null);
 
-  const [loupeEnabled, setLoupeEnabled] = useState(true);
+  const [loupeEnabled, setLoupeEnabled] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(2.3);
   const [rakingLight, setRakingLight] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
-  const [pointer, setPointer] = useState<{ x: number; y: number; active: boolean }>({
-    x: 0.5,
-    y: 0.5,
-    active: false,
-  });
-  const [windowScareTriggered, setWindowScareTriggered] = useState(false);
-
-  const W = 900;
-  const H = 560;
-
-  const drawScene = useCallback(
-    (ctx: CanvasRenderingContext2D) => {
-      const rand = seededRandom(
-        photoId.split('').reduce((acc, ch) => acc * 31 + ch.charCodeAt(0), 1998) + act * 17
-      );
-      ctx.save();
-      ctx.clearRect(0, 0, W, H);
-
-      if (photoId === 'threshing_1998') {
-        // 1998 银盐黑白老照片：《晒谷场收工图》
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-        skyGrad.addColorStop(0, '#cfc9be');
-        skyGrad.addColorStop(0.42, '#9e988e');
-        skyGrad.addColorStop(0.55, '#59554f');
-        skyGrad.addColorStop(1, '#201e1c');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, W, H);
-
-        // 远山与山坳浓雾
-        ctx.fillStyle = 'rgba(72, 69, 63, 0.55)';
-        ctx.beginPath();
-        ctx.moveTo(0, 220);
-        ctx.quadraticCurveTo(180, 120, 360, 195);
-        ctx.quadraticCurveTo(590, 130, 900, 210);
-        ctx.lineTo(900, 310);
-        ctx.lineTo(0, 310);
-        ctx.closePath();
-        ctx.fill();
-
-        // 祠下古宗祠主体（马头墙 + 重檐 + 二楼雕花木窗 + 底层黑洞祠门）
-        const hallX = 270;
-        const hallW = 360;
-        const hallTop = 98;
-        const hallBottom = 292;
-
-        // 两侧马头墙阶梯
-        ctx.fillStyle = '#2d2b28';
-        ctx.fillRect(hallX, hallTop + 26, hallW, hallBottom - hallTop - 26);
-        ctx.fillStyle = '#1f1d1b';
-        // 左马头墙垛
-        ctx.fillRect(hallX - 10, hallTop + 10, 22, 182);
-        ctx.fillRect(hallX - 4, hallTop - 2, 14, 16);
-        // 右马头墙垛
-        ctx.fillRect(hallX + hallW - 12, hallTop + 10, 22, 182);
-        ctx.fillRect(hallX + hallW - 10, hallTop - 2, 14, 16);
-
-        // 飞檐黛瓦屋顶
-        ctx.fillStyle = '#171614';
-        ctx.beginPath();
-        ctx.moveTo(hallX - 36, hallTop + 34);
-        ctx.quadraticCurveTo(hallX + hallW / 2, hallTop - 16, hallX + hallW + 36, hallTop + 34);
-        ctx.lineTo(hallX + hallW + 18, hallTop + 48);
-        ctx.quadraticCurveTo(hallX + hallW / 2, hallTop + 8, hallX - 18, hallTop + 48);
-        ctx.closePath();
-        ctx.fill();
-
-        // 腰檐
-        ctx.beginPath();
-        ctx.moveTo(hallX - 20, hallTop + 112);
-        ctx.lineTo(hallX + hallW + 20, hallTop + 112);
-        ctx.lineTo(hallX + hallW + 10, hallTop + 122);
-        ctx.lineTo(hallX - 10, hallTop + 122);
-        ctx.closePath();
-        ctx.fill();
-
-        // 宗祠底层中门与深处空神龛暗影
-        ctx.fillStyle = '#090908';
-        ctx.fillRect(hallX + 138, hallTop + 132, 84, 62);
-        // 门内隐约神龛底座轮廓
-        ctx.strokeStyle = rakingLight ? 'rgba(210,185,140,0.42)' : 'rgba(130,124,114,0.22)';
-        ctx.lineWidth = 1.2;
-        ctx.strokeRect(hallX + 165, hallTop + 146, 30, 36);
-
-        // 匾额《祠下宗祠》
-        ctx.fillStyle = '#141311';
-        ctx.fillRect(hallX + 144, hallTop + 116, 72, 15);
-        ctx.fillStyle = '#9b9386';
-        ctx.font = 'bold 10px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('祠 下 宗 祠', hallX + 180, hallTop + 127);
-
-        // 二楼雕花木窗（左、中、右三扇；中央/右侧木窗在第四幕推开露出惨白无目窥视脸！）
-        const winY = hallTop + 56;
-        const winPositions = [hallX + 70, hallX + 156, hallX + 242];
-        winPositions.forEach((wx, idx) => {
-          const wWidth = 48;
-          const wHeight = 44;
-          ctx.fillStyle = '#141312';
-          ctx.fillRect(wx, winY, wWidth, wHeight);
-          ctx.strokeStyle = '#4a4640';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(wx, winY, wWidth, wHeight);
-
-          if (act >= 4 && idx === 2) {
-            // 第四幕：右侧二楼木窗推开半扇，露出惨白无目窥视面孔轮廓！
-            ctx.fillStyle = '#070707';
-            ctx.fillRect(wx + 2, winY + 2, wWidth - 4, wHeight - 4);
-
-            // 向外推开的半扇雕花窗页（透视斜出）
-            ctx.fillStyle = '#2b2824';
-            ctx.beginPath();
-            ctx.moveTo(wx, winY);
-            ctx.lineTo(wx - 14, winY + 6);
-            ctx.lineTo(wx - 14, winY + wHeight + 4);
-            ctx.lineTo(wx, winY + wHeight);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // 窗缝内贴近的苍白人脸与无眼珠黑窟窿
-            ctx.fillStyle = 'rgba(226, 222, 214, 0.84)';
-            ctx.beginPath();
-            ctx.ellipse(wx + 26, winY + 24, 11, 14, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#080808';
-            ctx.beginPath();
-            ctx.ellipse(wx + 22, winY + 21, 3.1, 2.2, 0, 0, Math.PI * 2);
-            ctx.ellipse(wx + 30, winY + 21, 3.1, 2.2, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#181615';
-            ctx.lineWidth = 1.1;
-            ctx.beginPath();
-            ctx.moveTo(wx + 23, winY + 31);
-            ctx.lineTo(wx + 29, winY + 31);
-            ctx.stroke();
-          } else {
-            // 紧闭的传统竖棂雕花木窗
-            for (let gx = 8; gx < wWidth; gx += 8) {
-              ctx.beginPath();
-              ctx.moveTo(wx + gx, winY);
-              ctx.lineTo(wx + gx, winY + wHeight);
-              ctx.stroke();
-            }
-            ctx.beginPath();
-            ctx.moveTo(wx, winY + 15);
-            ctx.lineTo(wx + wWidth, winY + 15);
-            ctx.moveTo(wx, winY + 30);
-            ctx.lineTo(wx + wWidth, winY + 30);
-            ctx.stroke();
-          }
-        });
-
-        // 宗祠前山雾缭绕带
-        const mistGrad = ctx.createLinearGradient(0, 245, 0, 325);
-        mistGrad.addColorStop(0, 'rgba(210, 206, 198, 0)');
-        mistGrad.addColorStop(0.5, 'rgba(205, 200, 192, 0.42)');
-        mistGrad.addColorStop(1, 'rgba(95, 91, 84, 0.15)');
-        ctx.fillStyle = mistGrad;
-        ctx.fillRect(0, 245, W, 80);
-
-        // 湿青石板晒谷场地坪与拼缝
-        const groundGrad = ctx.createLinearGradient(0, 290, 0, H);
-        groundGrad.addColorStop(0, '#6e6a63');
-        groundGrad.addColorStop(0.35, '#4d4a45');
-        groundGrad.addColorStop(1, '#23211e');
-        ctx.fillStyle = groundGrad;
-        ctx.fillRect(0, 292, W, H - 292);
-
-        // 青石板透视缝隙与积水反光
-        ctx.strokeStyle = 'rgba(24, 22, 20, 0.42)';
-        ctx.lineWidth = 1;
-        for (let row = 310; row < H; row += 28) {
-          ctx.beginPath();
-          ctx.moveTo(0, row);
-          ctx.lineTo(W, row);
-          ctx.stroke();
-        }
-        for (let col = -120; col <= W + 120; col += 68) {
-          ctx.beginPath();
-          ctx.moveTo(W / 2 + (col - W / 2) * 0.45, 292);
-          ctx.lineTo(col, H);
-          ctx.stroke();
-        }
-
-        // 12 道拉长黑影（对应 11 名活人 + 正中偏右第 7 道“无人空位”多出的第 12 道诡异黑影！）
-        const shadowSlots = [
-          { x: 112, y: 356, h: 150 },
-          { x: 172, y: 362, h: 155 },
-          { x: 234, y: 352, h: 148 },
-          { x: 296, y: 366, h: 158 },
-          { x: 358, y: 355, h: 152 },
-          { x: 418, y: 360, h: 156 },
-          // 第 7 道：空无一人的石板裂缝处延伸出的第 12 道细长黑影（头戴高冠傩面轮廓）！
-          { x: 478, y: 358, h: 168, isExtraGhostShadow: true },
-          { x: 538, y: 362, h: 154 },
-          { x: 600, y: 354, h: 149 },
-          { x: 662, y: 365, h: 156 },
-          { x: 724, y: 358, h: 152 },
-          { x: 792, y: 368, h: 160 },
-        ];
-
-        shadowSlots.forEach((s, idx) => {
-          ctx.save();
-          const shadowAlpha = rakingLight
-            ? s.isExtraGhostShadow
-              ? 0.88
-              : 0.72
-            : s.isExtraGhostShadow
-            ? 0.68
-            : 0.62;
-          const sGrad = ctx.createLinearGradient(s.x, s.y, s.x - 24, s.y + s.h);
-          sGrad.addColorStop(0, `rgba(10, 10, 9, ${shadowAlpha})`);
-          sGrad.addColorStop(0.75, `rgba(12, 11, 10, ${shadowAlpha * 0.78})`);
-          sGrad.addColorStop(1, 'rgba(12, 11, 10, 0.06)');
-          ctx.fillStyle = sGrad;
-
-          ctx.beginPath();
-          ctx.moveTo(s.x - 11, s.y);
-          ctx.lineTo(s.x + 11, s.y);
-          ctx.lineTo(s.x - 8, s.y + s.h - 18);
-          ctx.ellipse(s.x - 18, s.y + s.h - 8, 12, 9, 0.2, 0, Math.PI * 2);
-          ctx.lineTo(s.x - 30, s.y + s.h - 18);
-          ctx.closePath();
-          ctx.fill();
-
-          if (rakingLight) {
-            ctx.fillStyle = s.isExtraGhostShadow ? 'rgba(248, 113, 113, 0.85)' : 'rgba(251, 191, 36, 0.72)';
-            ctx.font = 'bold 10px monospace';
-            ctx.fillText(`#${idx + 1}`, s.x - 16, s.y + s.h - 24);
-          }
-          ctx.restore();
-        });
-
-        // 11 名背身深色粗布褂村民（第四幕最右侧 #11 蓝布衫老人消失，仅剩 10 人！）
-        const villagerSlots = [
-          { x: 112, y: 356, tall: 74, hat: false },
-          { x: 172, y: 362, tall: 70, hat: true },
-          { x: 234, y: 352, tall: 76, hat: false },
-          { x: 296, y: 366, tall: 68, hat: false },
-          { x: 358, y: 355, tall: 75, hat: true },
-          { x: 418, y: 360, tall: 72, hat: false },
-          // 注意 x=478 空缺，没有站人，只有地上第7道黑影！
-          { x: 538, y: 362, tall: 73, hat: false },
-          { x: 600, y: 354, tall: 77, hat: true },
-          { x: 662, y: 365, tall: 69, hat: false },
-          { x: 724, y: 358, tall: 74, hat: false },
-          { x: 792, y: 368, tall: 71, hat: false, isBlueElder: true },
-        ];
-
-        villagerSlots.forEach((v) => {
-          if (v.isBlueElder && act >= 4) {
-            // 第四幕：最右侧蓝布衫老人已消失，仅留湿脚印水渍
-            ctx.fillStyle = 'rgba(15, 16, 18, 0.55)';
-            ctx.beginPath();
-            ctx.ellipse(v.x - 5, v.y + 2, 4, 7, -0.1, 0, Math.PI * 2);
-            ctx.ellipse(v.x + 6, v.y + 2, 4, 7, 0.1, 0, Math.PI * 2);
-            ctx.fill();
-            return;
-          }
-
-          const topY = v.y - v.tall;
-          // 裤管
-          ctx.fillStyle = '#191817';
-          ctx.fillRect(v.x - 9, v.y - 24, 7, 25);
-          ctx.fillRect(v.x + 2, v.y - 24, 7, 25);
-
-          // 对襟粗布褂背影（最右侧老人穿暗蓝灰粗布衫）
-          ctx.fillStyle = v.isBlueElder ? '#242c35' : '#1f1e1c';
-          ctx.beginPath();
-          ctx.moveTo(v.x - 16, topY + 20);
-          ctx.quadraticCurveTo(v.x, topY + 14, v.x + 16, topY + 20);
-          ctx.lineTo(v.x + 14, v.y - 21);
-          ctx.lineTo(v.x - 14, v.y - 21);
-          ctx.closePath();
-          ctx.fill();
-
-          // 背部衣褶暗线
-          ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(v.x, topY + 18);
-          ctx.lineTo(v.x, v.y - 22);
-          ctx.stroke();
-
-          // 头颅与发髻/竹笠
-          if (v.isBlueElder && act === 3) {
-            // 第三幕：最右侧蓝布衫老人脖子诡异向后扭转 45°，露出惨白半边侧脸与黑眼窝！
-            ctx.save();
-            ctx.translate(v.x, topY + 10);
-            ctx.rotate(0.42);
-            ctx.fillStyle = '#beb8ad';
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 9.5, 11, 0, 0, Math.PI * 2);
-            ctx.fill();
-            // 后脑灰发遮盖左半，右半露出侧脸黑眼窝与僵硬嘴角
-            ctx.fillStyle = '#252422';
-            ctx.beginPath();
-            ctx.arc(-3, -1, 9, Math.PI * 0.55, Math.PI * 1.65);
-            ctx.fill();
-            ctx.fillStyle = '#090909';
-            ctx.beginPath();
-            ctx.ellipse(4.2, -1.5, 2.4, 1.8, 0.1, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#1b1a18';
-            ctx.beginPath();
-            ctx.moveTo(3, 4.5);
-            ctx.lineTo(7.5, 3.8);
-            ctx.stroke();
-            ctx.restore();
-          } else {
-            // 正常背身黑发后脑勺
-            ctx.fillStyle = '#181715';
-            ctx.beginPath();
-            ctx.ellipse(v.x, topY + 9, 8.5, 10, 0, 0, Math.PI * 2);
-            ctx.fill();
-            if (v.hat) {
-              ctx.fillStyle = '#3b3730';
-              ctx.beginPath();
-              ctx.moveTo(v.x - 18, topY + 11);
-              ctx.quadraticCurveTo(v.x, topY - 3, v.x + 18, topY + 11);
-              ctx.closePath();
-              ctx.fill();
-            }
-          }
-        });
-
-        // 90年代傻瓜/单反石英日期背印：右下角橙红色 `'98 10 16 Z.H.J.`
-        ctx.save();
-        ctx.font = 'bold 17px "Courier New", Consolas, monospace';
-        ctx.textAlign = 'right';
-        ctx.shadowColor = 'rgba(234, 88, 12, 0.75)';
-        ctx.shadowBlur = 5;
-        ctx.fillStyle = 'rgba(249, 115, 22, 0.88)';
-        ctx.fillText("'98 10 16  Z.H.J.", W - 32, H - 26);
-        ctx.restore();
-      } else if (photoId === 'team_portraits') {
-        // 课题组 5 人证件照（郑国栋 + 4名研究生，瞳孔反光随幕次异变为同一座神龛）
-        ctx.fillStyle = '#eef2f6';
-        ctx.fillRect(0, 0, W, H);
-
-        ctx.fillStyle = '#1e3a5f';
-        ctx.fillRect(0, 0, W, 52);
-        ctx.fillStyle = '#f8fafc';
-        ctx.font = 'bold 16px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('南州大学青禾民俗影像数字化保护工程 · 课题组登记标准照（档案批次 QH-ADM-01）', 24, 32);
-
-        const members = [
-          { name: '郑国栋', role: '课题负责人 / 副院长', code: 'PI-01', glasses: true, isDean: true },
-          { name: '林知夏', role: '首席编目 / 博士生', code: 'STU-01', glasses: false, hair: 'long' },
-          { name: '陈 默', role: '胶片数字化与AI修复', code: 'STU-02', glasses: true, hair: 'short' },
-          { name: '苏晓棠', role: '田野文本与善本校注', code: 'STU-03', glasses: false, hair: 'bob' },
-          { name: '赵一鸣', role: '多轨声学降噪与采集', code: 'STU-04', glasses: false, hair: 'short' },
-        ];
-
-        members.forEach((m, idx) => {
-          const cardW = 152;
-          const cardH = 268;
-          const gap = 20;
-          const startX = 30 + idx * (cardW + gap);
-          const startY = 92;
-
-          // 白底相纸框
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(startX, startY, cardW, cardH);
-          ctx.strokeStyle = '#cbd5e1';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(startX, startY, cardW, cardH);
-
-          // 证件照蓝灰渐变背景
-          const bg = ctx.createLinearGradient(startX, startY + 8, startX, startY + 198);
-          bg.addColorStop(0, m.isDean ? '#3b5984' : '#4a6b82');
-          bg.addColorStop(1, '#293d52');
-          ctx.fillStyle = bg;
-          ctx.fillRect(startX + 8, startY + 8, cardW - 16, 190);
-
-          const cx = startX + cardW / 2;
-          const cy = startY + 96;
-
-          // 肩膀西装/衬衫
-          ctx.fillStyle = m.isDean ? '#1e293b' : '#334155';
-          ctx.beginPath();
-          ctx.moveTo(startX + 16, startY + 198);
-          ctx.quadraticCurveTo(cx, startY + 148, startX + cardW - 16, startY + 198);
-          ctx.closePath();
-          ctx.fill();
-
-          // 脖颈与面庞
-          ctx.fillStyle = act >= 4 && !m.isDean ? '#d8d5cf' : '#e6ccb2';
-          ctx.fillRect(cx - 12, cy + 32, 24, 26);
-          ctx.beginPath();
-          ctx.ellipse(cx, cy, 34, 42, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // 发型
-          ctx.fillStyle = '#1c1917';
-          ctx.beginPath();
-          ctx.arc(cx, cy - 10, 36, Math.PI * 0.92, Math.PI * 2.08);
-          ctx.fill();
-          if (m.hair === 'long') {
-            ctx.fillRect(cx - 36, cy - 8, 10, 62);
-            ctx.fillRect(cx + 26, cy - 8, 10, 62);
-          } else if (m.hair === 'bob') {
-            ctx.fillRect(cx - 35, cy - 8, 9, 40);
-            ctx.fillRect(cx + 26, cy - 8, 9, 40);
-          }
-
-          // 双眼与瞳孔高光（核心线索：随幕次推进，4名学生瞳孔高光渐变为同一座无目神龛轮廓！）
-          [-13, 13].forEach((ox) => {
-            const ex = cx + ox;
-            const ey = cy - 2;
-            ctx.fillStyle = '#f8fafc';
-            ctx.beginPath();
-            ctx.ellipse(ex, ey, 7.5, 4.6, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#18181b';
-            ctx.beginPath();
-            ctx.arc(ex, ey, 4.1, 0, Math.PI * 2);
-            ctx.fill();
-
-            if (m.isDean) {
-              // 郑国栋镜片强烈白反光遮蔽瞳孔细节
-              ctx.fillStyle = 'rgba(255,255,255,0.65)';
-              ctx.fillRect(ex - 5, ey - 3, 8, 2.5);
-            } else if (act <= 1) {
-              // 第一幕：正常圆形眼神光
-              ctx.fillStyle = '#ffffff';
-              ctx.beginPath();
-              ctx.arc(ex - 1.3, ey - 1.2, 1.3, 0, Math.PI * 2);
-              ctx.fill();
-            } else if (act === 2) {
-              // 第二幕：高光拉长为竖向方龛初态
-              ctx.fillStyle = '#fde68a';
-              ctx.fillRect(ex - 1.5, ey - 2.4, 3, 4.6);
-            } else {
-              // 第三、四幕：放大镜下清晰可见瞳孔正中映出完全一致的「飞檐空神龛」朱砂金轮廓！
-              ctx.strokeStyle = act >= 4 ? '#ef4444' : '#fbbf24';
-              ctx.lineWidth = 0.85;
-              // 飞檐顶
-              ctx.beginPath();
-              ctx.moveTo(ex - 3.2, ey - 1.6);
-              ctx.lineTo(ex + 3.2, ey - 1.6);
-              ctx.stroke();
-              // 神龛框与底座
-              ctx.strokeRect(ex - 2.1, ey - 1.5, 4.2, 4.2);
-              ctx.fillStyle = act >= 4 ? 'rgba(239,68,68,0.55)' : 'rgba(251,191,36,0.45)';
-              ctx.fillRect(ex - 1.1, ey - 0.5, 2.2, 2.8);
-            }
-          });
-
-          if (m.glasses) {
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 1.3;
-            ctx.strokeRect(cx - 24, cy - 9, 19, 13);
-            ctx.strokeRect(cx + 5, cy - 9, 19, 13);
-            ctx.beginPath();
-            ctx.moveTo(cx - 5, cy - 3);
-            ctx.lineTo(cx + 5, cy - 3);
-            ctx.stroke();
-          }
-
-          // 鼻与唇线
-          ctx.strokeStyle = '#9a7b69';
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          ctx.moveTo(cx, cy + 2);
-          ctx.lineTo(cx - 2, cy + 12);
-          ctx.lineTo(cx + 2, cy + 12);
-          ctx.stroke();
-
-          ctx.strokeStyle = '#7f5546';
-          ctx.beginPath();
-          if (act >= 4 && !m.isDean) {
-            // 第四幕：四人嘴角弧度变得一模一样
-            ctx.arc(cx, cy + 20, 7, 0.15 * Math.PI, 0.85 * Math.PI);
-          } else {
-            ctx.moveTo(cx - 7, cy + 22);
-            ctx.lineTo(cx + 7, cy + 22);
-          }
-          ctx.stroke();
-
-          // 姓名栏
-          ctx.fillStyle = '#0f172a';
-          ctx.font = 'bold 15px "Songti SC", SimSun, serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(m.name, cx, startY + 224);
-          ctx.fillStyle = '#475569';
-          ctx.font = '11px sans-serif';
-          ctx.fillText(m.role, cx, startY + 243);
-          ctx.fillStyle = '#94a3b8';
-          ctx.font = '10px monospace';
-          ctx.fillText(m.code, cx, startY + 258);
-        });
-
-        ctx.fillStyle = '#475569';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(
-          act >= 3
-            ? '【图像校验异常提示】光学检视发现 STU-01 至 STU-04 角膜反射区呈现非自然几何同构（疑似同一木构龛体投影）。'
-            : '归档说明：标准照均于人文楼三层采集室使用同一柔光箱拍摄，供特展宣传册及内网工牌核验使用。',
-          30,
-          415
-        );
-      } else if (photoId === 'nuo_mask') {
-        // 无眼孔朱砂盲傩木雕面具 + 法医比例尺
-        ctx.fillStyle = '#121011';
-        ctx.fillRect(0, 0, W, H);
-
-        // 深暗红绒布底衬纹理
-        const velvet = ctx.createRadialGradient(W / 2, H / 2 - 20, 40, W / 2, H / 2, 460);
-        velvet.addColorStop(0, '#2b1416');
-        velvet.addColorStop(1, '#090708');
-        ctx.fillStyle = velvet;
-        ctx.fillRect(0, 0, W, H);
-
-        // 樟木圆雕面具轮廓
-        const mx = W / 2;
-        const my = H / 2 - 26;
-        const maskGrad = ctx.createRadialGradient(mx - 25, my - 35, 20, mx, my, 185);
-        maskGrad.addColorStop(0, '#8f2620'); // 残存暗朱砂漆皮
-        maskGrad.addColorStop(0.55, '#591914');
-        maskGrad.addColorStop(0.85, '#3b2416'); // 裸露老樟木胎底
-        maskGrad.addColorStop(1, '#1d110a');
-
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.85)';
-        ctx.shadowBlur = 32;
-        ctx.shadowOffsetY = 16;
-        ctx.fillStyle = maskGrad;
-        ctx.beginPath();
-        ctx.ellipse(mx, my, 128, 168, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // 剥落朱砂斑驳露木纹与纵向干裂纹
-        ctx.strokeStyle = 'rgba(28, 16, 9, 0.72)';
-        ctx.lineWidth = 1.6;
-        for (let i = -95; i <= 95; i += 19) {
-          ctx.beginPath();
-          ctx.moveTo(mx + i, my - 150 + Math.abs(i) * 0.35);
-          ctx.bezierCurveTo(mx + i - 6, my - 40, mx + i + 6, my + 40, mx + i, my + 150 - Math.abs(i) * 0.35);
-          ctx.stroke();
-        }
-
-        // 古拙粗眉弓
-        ctx.strokeStyle = '#1a0d08';
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.arc(mx - 50, my - 26, 38, Math.PI * 1.15, Math.PI * 1.88);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(mx + 50, my - 26, 38, Math.PI * 1.12, Math.PI * 1.85);
-        ctx.stroke();
-
-        // 核心取证特征：平滑封死、毫无透视钻孔的盲眼窝（绝无眼孔！）
-        [-48, 48].forEach((ox) => {
-          const ex = mx + ox;
-          const ey = my - 18;
-          const socketGrad = ctx.createRadialGradient(ex, ey, 3, ex, ey, 32);
-          socketGrad.addColorStop(0, '#6b221b'); // 平滑封死木胎凹面
-          socketGrad.addColorStop(0.7, '#421611');
-          socketGrad.addColorStop(1, '#240c09');
-          ctx.fillStyle = socketGrad;
-          ctx.beginPath();
-          ctx.ellipse(ex, ey, 32, 19, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // 眼窝内残留手工平铲刀痕与朱砂封涂纹（证明自始至终未钻孔）
-          ctx.strokeStyle = rakingLight ? 'rgba(251, 191, 36, 0.55)' : 'rgba(180, 80, 65, 0.35)';
-          ctx.lineWidth = 1.1;
-          ctx.beginPath();
-          ctx.moveTo(ex - 22, ey - 2);
-          ctx.lineTo(ex + 22, ey + 2);
-          ctx.moveTo(ex - 16, ey + 5);
-          ctx.lineTo(ex + 18, ey - 4);
-          ctx.stroke();
-        });
-
-        // 高耸山根与鼻翼
-        ctx.fillStyle = '#4c1b14';
-        ctx.beginPath();
-        ctx.moveTo(mx, my - 42);
-        ctx.lineTo(mx - 22, my + 42);
-        ctx.quadraticCurveTo(mx, my + 54, mx + 22, my + 42);
-        ctx.closePath();
-        ctx.fill();
-
-        // 紧抿封死之双唇（缄口）与一道黑漆封口线
-        ctx.strokeStyle = '#140907';
-        ctx.lineWidth = 4.5;
-        ctx.beginPath();
-        ctx.moveTo(mx - 44, my + 92);
-        ctx.quadraticCurveTo(mx, my + 88, mx + 44, my + 92);
-        ctx.stroke();
-
-        // 右侧馆藏牛皮纸系绳签条
-        ctx.fillStyle = '#d6c7a9';
-        ctx.fillRect(670, 82, 168, 92);
-        ctx.strokeStyle = '#78684c';
-        ctx.strokeRect(670, 82, 168, 92);
-        ctx.fillStyle = '#1c1917';
-        ctx.font = 'bold 13px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('标本号：QH-38-M01', 682, 106);
-        ctx.font = '11px "Songti SC", SimSun, serif';
-        ctx.fillText('名称：朱砂髹漆无目盲傩面', 682, 126);
-        ctx.fillText('特征：双目平滑封死无钻孔', 682, 145);
-        ctx.fillStyle = '#991b1b';
-        ctx.fillText('状态：未公开展出（库底残件）', 682, 163);
-
-        // 底部 10cm 法医级黑白相间取证标尺
-        const rx = 250;
-        const ry = H - 58;
-        const rw = 400;
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(rx, ry, rw, 30);
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(rx, ry, rw, 30);
-        for (let cm = 0; cm < 10; cm++) {
-          ctx.fillStyle = cm % 2 === 0 ? '#0f172a' : '#f8fafc';
-          ctx.fillRect(rx + cm * 40, ry, 40, 12);
-          ctx.fillStyle = '#0f172a';
-          ctx.font = '10px monospace';
-          ctx.fillText(`${cm}cm`, rx + cm * 40 + 4, ry + 25);
-        }
-      } else if (photoId === 'village_mist') {
-        // 周怀瑾 1998 雾锁龛下坳炭笔钢笔速写
-        ctx.fillStyle = '#dfd4b9';
-        ctx.fillRect(0, 0, W, H);
-
-        // 速写本纸张水渍与纤维感
-        ctx.strokeStyle = 'rgba(120, 98, 68, 0.16)';
-        for (let y = 24; y < H; y += 26) {
-          ctx.beginPath();
-          ctx.moveTo(40, y);
-          ctx.lineTo(W - 40, y);
-          ctx.stroke();
-        }
-
-        // 漏斗状四面环山炭笔线条（108.4m 壶口坳地）
-        ctx.strokeStyle = '#2b2620';
-        ctx.lineWidth = 2.2;
-        ctx.beginPath();
-        ctx.moveTo(55, 115);
-        ctx.quadraticCurveTo(230, 290, 390, 330);
-        ctx.moveTo(845, 105);
-        ctx.quadraticCurveTo(670, 285, 510, 330);
-        ctx.stroke();
-
-        // 炭笔排线阴影
-        ctx.lineWidth = 1;
-        for (let x = 90; x < 370; x += 10) {
-          ctx.beginPath();
-          ctx.moveTo(x, 150 + (x - 90) * 0.55);
-          ctx.lineTo(x - 22, 210 + (x - 90) * 0.55);
-          ctx.stroke();
-        }
-        for (let x = 530; x < 810; x += 10) {
-          ctx.beginPath();
-          ctx.moveTo(x, 320 - (x - 530) * 0.55);
-          ctx.lineTo(x + 22, 375 - (x - 530) * 0.55);
-          ctx.stroke();
-        }
-
-        // 坳底背水朝山而建的古宗祠速写
-        ctx.lineWidth = 2;
-        ctx.strokeRect(395, 290, 110, 68);
-        ctx.beginPath();
-        ctx.moveTo(380, 292);
-        ctx.quadraticCurveTo(450, 262, 520, 292);
-        ctx.stroke();
-
-        // 祠前背立小人速写符号
-        [415, 432, 448, 465, 482].forEach((px) => {
-          ctx.beginPath();
-          ctx.arc(px, 382, 3.5, 0, Math.PI * 2);
-          ctx.moveTo(px, 386);
-          ctx.lineTo(px, 408);
-          ctx.stroke();
-        });
-
-        // 淡墨水雾渲染
-        ctx.fillStyle = 'rgba(236, 230, 216, 0.55)';
-        ctx.fillRect(180, 235, 540, 48);
-
-        // 周怀瑾钢笔手书批注
-        ctx.fillStyle = '#231f1a';
-        ctx.font = '15px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('戊寅年九月廿七（1998.10.16）龛下坳写生备忘：', 72, 68);
-        ctx.font = '13px "Songti SC", SimSun, serif';
-        ctx.fillText('1. 四山合抱如漏斗壶口，气压极低，海拔实测仅 108.4 米，终日白雾锁坳。', 72, 96);
-        ctx.fillText('2. 奇俗：沿溪三十七村祠堂皆面水而筑，唯此第38村（祠下村）背溪面崖，戏台正对空山暗渊。', 72, 120);
-        ctx.fillText('3. 傍晚铜锣初响，全村男女老少皆垂手背身立于湿石坪，无一人敢朝戏台神龛抬眼。', 72, 468);
-        ctx.fillStyle = '#7f1d1d';
-        ctx.fillText('【补记：万不可用闪光灯直打龛内泥塑！切记切记 —— 周怀瑾】', 72, 496);
-      } else if (photoId === 'shrine_1998') {
-        // 16mm 残帧：空神龛与背身戏台
-        ctx.fillStyle = '#090909';
-        ctx.fillRect(0, 0, W, H);
-
-        // 两侧 16mm 胶片单边齿孔与片边码
-        ctx.fillStyle = '#030303';
-        ctx.fillRect(0, 0, 56, H);
-        ctx.fillRect(W - 56, 0, 56, H);
-        ctx.fillStyle = '#d4d4d8';
-        for (let py = 36; py < H; py += 92) {
-          ctx.fillRect(16, py, 24, 34);
-        }
-        ctx.save();
-        ctx.translate(W - 22, H / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillStyle = '#a1a1aa';
-        ctx.font = '11px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText('KODAK 7278 SAFETY FILM  //  BATCH QH-38-REEL00', 0, 0);
-        ctx.restore();
-
-        // 画面主体：幽暗古戏台与正中黑洞空神龛
-        const frameGrad = ctx.createRadialGradient(W / 2, 220, 30, W / 2, 260, 390);
-        frameGrad.addColorStop(0, '#57534e');
-        frameGrad.addColorStop(0.55, '#292524');
-        frameGrad.addColorStop(1, '#0c0a09');
-        ctx.fillStyle = frameGrad;
-        ctx.fillRect(56, 18, W - 112, H - 36);
-
-        // 神龛木构外框与掀开的帐幔
-        ctx.strokeStyle = '#a8a29e';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(365, 86, 170, 210);
-        ctx.fillStyle = '#050505';
-        ctx.fillRect(380, 102, 140, 194);
-
-        // 空神龛内无脸泥塑残座轮廓
-        ctx.fillStyle = '#27272a';
-        ctx.fillRect(422, 236, 56, 58);
-        ctx.fillStyle = 'rgba(168, 162, 158, 0.28)';
-        ctx.beginPath();
-        ctx.ellipse(450, 192, 24, 32, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 台上三名穿戏袍背对镜头、面朝空神龛跪拜/起舞的盲傩伶人
-        [320, 450, 580].forEach((ax, idx) => {
-          const ay = idx === 1 ? 330 : 348;
-          ctx.fillStyle = '#18181b';
-          ctx.beginPath();
-          ctx.moveTo(ax - 32, ay + 120);
-          ctx.lineTo(ax - 18, ay);
-          ctx.lineTo(ax + 18, ay);
-          ctx.lineTo(ax + 32, ay + 120);
-          ctx.closePath();
-          ctx.fill();
-          // 水袖展开背影
-          ctx.strokeStyle = '#78716c';
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(ax - 18, ay + 12);
-          ctx.lineTo(ax - 44, ay + 48);
-          ctx.moveTo(ax + 18, ay + 12);
-          ctx.lineTo(ax + 44, ay + 48);
-          ctx.stroke();
-          // 后脑戏冠
-          ctx.fillStyle = '#09090b';
-          ctx.fillRect(ax - 9, ay - 22, 18, 22);
-        });
-
-        // 16mm 转磁时间码叠加
-        ctx.fillStyle = 'rgba(250, 250, 249, 0.85)';
-        ctx.font = 'bold 14px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText('REC 1998.10.17  亥时  TC 00:14:38:19  [剧目：辞社背身]', 84, H - 42);
-      } else if (photoId === 'elevation_map') {
-        // 云溪水库 1:10000 水文等高线蓝图 + 108.4m 涂改液留白块
-        ctx.fillStyle = '#dce7f2';
-        ctx.fillRect(0, 0, W, H);
-
-        // 测绘公里网格线
-        ctx.strokeStyle = 'rgba(30, 64, 175, 0.16)';
-        ctx.lineWidth = 1;
-        for (let gx = 0; gx <= W; gx += 60) {
-          ctx.beginPath();
-          ctx.moveTo(gx, 0);
-          ctx.lineTo(gx, H);
-          ctx.stroke();
-        }
-        for (let gy = 0; gy <= H; gy += 60) {
-          ctx.beginPath();
-          ctx.moveTo(0, gy);
-          ctx.lineTo(W, gy);
-          ctx.stroke();
-        }
-
-        // 顶部蓝图图框标题
-        ctx.fillStyle = '#1e3a8a';
-        ctx.fillRect(20, 18, W - 40, 40);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 15px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('云溪水库淹没区水文等高线勘测底图（1999年正常蓄水位 165.0m 核定版）', 34, 43);
-
-        // 正常等高线群与云溪干流
-        ctx.strokeStyle = '#1d4ed8';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(30, 240);
-        ctx.bezierCurveTo(260, 190, 440, 310, 870, 210);
-        ctx.stroke();
-
-        // 多层闭合等高线
-        const centers = [
-          { cx: 250, cy: 230, radii: [155, 120, 85, 50], labels: ['165m', '150m', '138m', '126m'] },
-          { cx: 635, cy: 365, radii: [165, 130, 96, 64, 36], labels: ['160m', '145m', '130m', '118m', '108.4m'] },
-        ];
-        ctx.strokeStyle = 'rgba(29, 78, 216, 0.55)';
-        ctx.lineWidth = 1.3;
-        centers.forEach((c) => {
-          c.radii.forEach((r, idx) => {
-            ctx.beginPath();
-            ctx.ellipse(c.cx, c.cy, r * 1.25, r * 0.82, 0.22, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.fillStyle = '#1e40af';
-            ctx.font = '11px monospace';
-            ctx.fillText(c.labels[idx], c.cx - r * 1.1, c.cy - 6);
-          });
-        });
-
-        // 周边正常行政村标注
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '12px "Songti SC", SimSun, serif';
-        ctx.fillText('● QH-35 樟溪村 (134.2m)', 165, 195);
-        ctx.fillText('● QH-36 白石滩 (129.8m)', 310, 275);
-        ctx.fillText('● QH-37 上坪村 (141.0m)', 455, 185);
-
-        // 核心取证点：东南壶口盆地 (cx=635, cy=365) 被涂改液厚涂抹白的异常斑块！
-        ctx.save();
-        ctx.fillStyle = rakingLight ? 'rgba(255, 253, 245, 0.58)' : 'rgba(252, 252, 250, 0.94)';
-        ctx.beginPath();
-        ctx.ellipse(638, 368, 92, 54, -0.08, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)';
-        ctx.setLineDash([4, 3]);
-        ctx.stroke();
-        ctx.restore();
-
-        // 涂改液刮擦边缘与斜射光透出的底层蓝图原字：108.4m 祠下村（龛下坳）漏水暗渊！
-        ctx.fillStyle = rakingLight ? 'rgba(185, 28, 28, 0.92)' : 'rgba(30, 58, 138, 0.24)';
-        ctx.font = 'bold 13px "Songti SC", SimSun, serif';
-        ctx.fillText('▲ 108.4m 壶口漏水暗渊', 566, 362);
-        ctx.fillText('原址：祠下村（龛下坳 / 批次38）', 554, 384);
-
-        ctx.fillStyle = '#475569';
-        ctx.font = '11px monospace';
-        ctx.fillText(
-          rakingLight
-            ? '[紫外斜射显影已开启] 涂改液涂层下方检出原始测绘注记：海拔 108.4m 喀斯特竖井暗渊（祠下村旧址）'
-            : '提示：东南角 E118°42\' 处存在大面积白色修正液涂抹痕迹，可点击上方【斜射显影增强】透视底稿。',
-          32,
-          H - 22
-        );
-      } else if (photoId === 'woodblock_seal') {
-        // 清光绪十九年《云溪风土杂记·卷四·祀典志》竖排木刻书叶 + 骑缝破裂红印（核心终局真假顺序证据！）
-        ctx.fillStyle = '#e7d8b5';
-        ctx.fillRect(0, 0, W, H);
-
-        // 古籍竹纸虫蛀与水渍暗斑
-        ctx.fillStyle = 'rgba(133, 98, 52, 0.14)';
-        ctx.beginPath();
-        ctx.arc(120, 95, 58, 0, Math.PI * 2);
-        ctx.arc(810, 470, 74, 0, Math.PI * 2);
-        ctx.fill();
-
-        // 木刻四周双栏乌丝栏框（外粗内细）
-        ctx.strokeStyle = '#1c1712';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(56, 38, W - 112, H - 76);
-        ctx.lineWidth = 1.2;
-        ctx.strokeRect(64, 46, W - 128, H - 92);
-
-        // 竖排分栏界行（从右至左 8 列）
-        const rightStart = W - 76;
-        const colW = 88;
-        for (let c = 0; c <= 8; c++) {
-          const lx = rightStart - c * colW;
-          ctx.beginPath();
-          ctx.moveTo(lx, 46);
-          ctx.lineTo(lx, H - 46);
-          ctx.stroke();
-        }
-
-        // 版心鱼尾（最左侧装订口）
-        ctx.fillStyle = '#1c1712';
-        ctx.fillRect(64, 145, 36, 14);
-        ctx.fillRect(64, 395, 36, 14);
-
-        // 从右向左竖排雕版刻字（第1列～第7列）
-        const columns = [
-          '雲溪風土雜記卷四・祀典志',
-          '龕下社在縣東南壺口坳深處',
-          '祀無目社公泥塑不設睛珠',
-          '歲末十月十七亥時演盲儺絕唱',
-          '劇目四字正名曰【辭社背身】',
-          '封龕逆儀：退目・覆面・緘口・封龕',
-          '小注：倒置退目於末則萬目獻龕',
-        ];
-
-        columns.forEach((text, colIdx) => {
-          const cx = rightStart - colIdx * colW - colW / 2;
-          const isCrucialCol = colIdx === 5 || colIdx === 6;
-          ctx.fillStyle = isCrucialCol && rakingLight ? '#7f1d1d' : '#18130e';
-          ctx.font =
-            colIdx === 6
-              ? 'bold 16px "Songti SC", SimSun, serif'
-              : 'bold 20px "Songti SC", SimSun, serif';
-          ctx.textAlign = 'center';
-
-          const chars = Array.from(text);
-          const stepY = Math.min(28, 420 / Math.max(chars.length, 1));
-          chars.forEach((ch, i) => {
-            ctx.fillText(ch, cx, 78 + i * stepY);
-          });
-        });
-
-        // 骑缝破裂朱砂藏书印（盖在第6、7列交界处，印泥剥落裂缝恰露出「退目・覆面・緘口・封龕」原刻字口！）
-        ctx.save();
-        const sx = rightStart - 5.5 * colW - 42;
-        const sy = 195;
-        ctx.strokeStyle = 'rgba(185, 28, 28, 0.78)';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(sx, sy, 92, 118);
-        ctx.fillStyle = rakingLight ? 'rgba(185, 28, 28, 0.16)' : 'rgba(185, 28, 28, 0.30)';
-        ctx.fillRect(sx + 4, sy + 4, 84, 110);
-
-        // 纸张虫蛀与骑缝斜向破裂白痕（让底下的原刻墨字清晰透出）
-        ctx.strokeStyle = '#e7d8b5';
-        ctx.lineWidth = 7;
-        ctx.beginPath();
-        ctx.moveTo(sx - 6, sy + 28);
-        ctx.lineTo(sx + 98, sy + 78);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(153, 27, 27, 0.82)';
-        ctx.font = 'bold 13px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('青禾周氏', sx + 46, sy + 24);
-        ctx.fillText('珍藏善本', sx + 46, sy + 104);
-        ctx.restore();
-
-        // 左下角现代取证比对提示签
-        ctx.fillStyle = 'rgba(28, 25, 23, 0.88)';
-        ctx.fillRect(72, H - 92, 340, 40);
-        ctx.fillStyle = '#fde68a';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(
-          '原刻真文核验：退目 → 覆面 → 缄口 → 封龛（与2025电子录入稿完全相反！）',
-          84,
-          H - 67
-        );
-      } else if (photoId === 'thumbprint_ledger') {
-        // 1999 移民安置补偿附表38：124枚完全一致的红手印指模阵列
-        ctx.fillStyle = '#efe7d3';
-        ctx.fillRect(0, 0, W, H);
-
-        // 红线会计账页表头
-        ctx.fillStyle = '#991b1b';
-        ctx.font = 'bold 17px "Songti SC", SimSun, serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(
-          '云溪水库移民安置补偿费签收花名册 · 附表38（祠下村 / 龛下坳 · 共124户）',
-          W / 2,
-          34
-        );
-        ctx.font = '11px "Songti SC", SimSun, serif';
-        ctx.fillStyle = '#44403c';
-        ctx.fillText(
-          '制表日期：1999年10月29日    发放总额：124户（签收率100%）    新镇实际报到落户：0 户',
-          W / 2,
-          54
-        );
-
-        // 绘制 124 格密密麻麻完全一致的红指模（16列 x 8行，前124格）
-        const cols = 16;
-        const rows = 8;
-        const startX = 34;
-        const startY = 70;
-        const cellW = (W - 68) / cols;
-        const cellH = (H - 122) / rows;
-
-        ctx.strokeStyle = 'rgba(185, 28, 28, 0.45)';
-        ctx.lineWidth = 1;
-
-        let idx = 0;
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < cols; c++) {
-            idx++;
-            const x = startX + c * cellW;
-            const y = startY + r * cellH;
-            ctx.strokeRect(x, y, cellW, cellH);
-
-            if (idx <= 124) {
-              // 户号
-              ctx.fillStyle = '#57534e';
-              ctx.font = '9px monospace';
-              ctx.textAlign = 'left';
-              ctx.fillText(`38-${String(idx).padStart(3, '0')}`, x + 3, y + 11);
-
-              // 完全一致的红色斗形指模（连2点钟方向的月牙形断纹疤痕都100%分毫不差！）
-              const px = x + cellW / 2 + 2;
-              const py = y + cellH / 2 + 5;
-              ctx.save();
-              ctx.fillStyle = 'rgba(200, 30, 30, 0.24)';
-              ctx.beginPath();
-              ctx.ellipse(px, py, 10.5, 13.5, -0.08, 0, Math.PI * 2);
-              ctx.fill();
-
-              ctx.strokeStyle = 'rgba(185, 20, 20, 0.82)';
-              ctx.lineWidth = 0.9;
-              [3, 5.5, 8, 10.5].forEach((ring) => {
-                ctx.beginPath();
-                ctx.ellipse(px, py, ring * 0.82, ring * 1.08, -0.08, 0.25, Math.PI * 1.92);
-                ctx.stroke();
-              });
-              // 右上方2点钟完全一致的月牙疤痕白缺口
-              ctx.fillStyle = '#efe7d3';
-              ctx.fillRect(px + 3.2, py - 7.5, 5.5, 2.4);
-              ctx.restore();
-            } else {
-              ctx.fillStyle = '#a8a29e';
-              ctx.font = '10px "Songti SC", SimSun, serif';
-              ctx.textAlign = 'center';
-              ctx.fillText('以下空白', x + cellW / 2, y + cellH / 2 + 4);
-            }
-          }
-        }
-
-        ctx.fillStyle = rakingLight ? '#991b1b' : '#57534e';
-        ctx.font = 'bold 12px monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(
-          rakingLight
-            ? '[刑侦指模叠对比对结果] 38-001 至 38-124 共 124 枚拇指印中心斗纹与右上方 2.1mm 断疤重合率：100.00%（同一只手连按124次）'
-            : '审计批注：本表共 124 户领款指模，放大镜下可见每枚指模右上角均有同一道月牙形断纹缺口。',
-          34,
-          H - 18
-        );
-      }
-
-      // 叠加银盐颗粒、细微划痕与暗角
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
-      for (let g = 0; g < 480; g++) {
-        const gx = rand() * W;
-        const gy = rand() * H;
-        ctx.fillRect(gx, gy, 1.4, 1.4);
-      }
-
-      if (showGrid) {
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.28)';
-        ctx.lineWidth = 1;
-        for (let gx = 0; gx < W; gx += 75) {
-          ctx.beginPath();
-          ctx.moveTo(gx, 0);
-          ctx.lineTo(gx, H);
-          ctx.stroke();
-        }
-        for (let gy = 0; gy < H; gy += 70) {
-          ctx.beginPath();
-          ctx.moveTo(0, gy);
-          ctx.lineTo(W, gy);
-          ctx.stroke();
-        }
-      }
-
-      // 四周胶片暗角
-      const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.34, W / 2, H / 2, W * 0.65);
-      vig.addColorStop(0, 'rgba(0,0,0,0)');
-      vig.addColorStop(1, 'rgba(0,0,0,0.48)');
-      ctx.fillStyle = vig;
-      ctx.fillRect(0, 0, W, H);
-
-      ctx.restore();
-    },
-    [photoId, act, rakingLight, showGrid]
-  );
-
+  const [pointer, setPointer] = useState({ x: 0.5, y: 0.5, active: false });
+
+  // 点 2 核心修复：点击【高清重制预览】后直接在照片原地播放真实的“神经扫描线扫过 → 村民逐个转过脖子直视你”动态演化！
+  const [hdState, setHdState] = useState<'idle' | 'scanning' | 'revealed'>('idle');
+  const [scanProgress, setScanProgress] = useState(0);
+  const [hdTriggeredOnce, setHdTriggeredOnce] = useState(false);
+  const [windowChimeDone, setWindowChimeDone] = useState(false);
+
+  const isRealPhoto =
+    photoId === 'threshing_1998' ||
+    photoId === 'nuo_mask' ||
+    photoId === 'village_mist' ||
+    photoId === 'shrine_1998';
+
+  const basePhotoSrc = (() => {
+    switch (photoId) {
+      case 'threshing_1998':
+        return './media/threshing_1998_base.jpg';
+      case 'nuo_mask':
+        return './media/nuo_mask_artifact.jpg';
+      case 'village_mist':
+        return './media/village_mist_1998.jpg';
+      case 'shrine_1998':
+        return './media/shrine_1998.jpg';
+      default:
+        return '';
+    }
+  })();
+
+  // 切换条目时重置高清重制状态
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    drawScene(ctx);
-  }, [drawScene]);
+    setHdState('idle');
+    setScanProgress(0);
+  }, [photoId]);
 
-  // 实时绘制光学放大镜局部画布
+  // 播放高清重制扫描线动画（从 0% -> 100%，真实揭示转头直视帧 threshing_1998_turn.jpg）
   useEffect(() => {
-    if (!loupeEnabled || !pointer.active) return;
-    const srcCanvas = canvasRef.current;
-    const loupeCanvas = loupeCanvasRef.current;
-    if (!srcCanvas || !loupeCanvas) return;
-    const lctx = loupeCanvas.getContext('2d');
-    if (!lctx) return;
+    if (hdState !== 'scanning') return;
+    let raf = 0;
+    const start = performance.now();
+    const duration = scareMode === 'full' ? 2400 : 3200;
+    let stingerFired = false;
 
-    const size = 180;
-    const zoom = 2.4;
-    const srcW = size / zoom;
-    const srcH = size / zoom;
-    const sx = Math.max(0, Math.min(W - srcW, pointer.x * W - srcW / 2));
-    const sy = Math.max(0, Math.min(H - srcH, pointer.y * H - srcH / 2));
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      setScanProgress(Math.round(p * 100));
 
-    lctx.clearRect(0, 0, size, size);
-    lctx.drawImage(srcCanvas, sx, sy, srcW, srcH, 0, 0, size, size);
+      if (p >= 0.56 && !stingerFired) {
+        stingerFired = true;
+        horrorAudio.playScareStinger(scareMode);
+      }
+      if (p < 1) {
+        raf = requestAnimationFrame(tick);
+      } else {
+        setHdState('revealed');
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [hdState, scareMode]);
 
-    // 十字取证分划丝
-    lctx.strokeStyle = 'rgba(245, 158, 11, 0.65)';
-    lctx.lineWidth = 1;
-    lctx.beginPath();
-    lctx.moveTo(size / 2, 0);
-    lctx.lineTo(size / 2, size);
-    lctx.moveTo(0, size / 2);
-    lctx.lineTo(size, size / 2);
-    lctx.stroke();
-  }, [loupeEnabled, pointer, act, rakingLight, showGrid, photoId]);
+  const handleStartHdRemaster = () => {
+    if (hdState === 'scanning') return;
+    if (hdState === 'revealed') {
+      horrorAudio.playClick('film');
+      setHdState('idle');
+      setScanProgress(0);
+      return;
+    }
+    horrorAudio.playClick('film');
+    onInspect?.(photoId);
+    if (!hdTriggeredOnce) {
+      setHdTriggeredOnce(true);
+      onAdjustContamination?.(10);
+    }
+    setScanProgress(0);
+    setHdState('scanning');
+  };
 
   const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -1237,46 +590,176 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
     const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
     setPointer({ x: nx, y: ny, active: true });
+    // 60fps 驱动开源 liquid-glass-web-react 球面折射透镜位置
+    glassRef.current?.setPosition(nx, ny);
 
-    // 第四幕放大镜移至《晒谷场收工图》二楼推开的木窗时触发细微声效反馈
+    // 放大镜扫过《晒谷场收工图》二楼木窗（x: 54%-62%, y: 19%-30%）时轻响一声木梆
     if (
       photoId === 'threshing_1998' &&
-      act >= 4 &&
+      (act >= 3 || hdState === 'revealed') &&
       loupeEnabled &&
-      !windowScareTriggered &&
+      !windowChimeDone &&
       nx > 0.54 &&
-      nx < 0.64 &&
-      ny > 0.24 &&
-      ny < 0.38
+      nx < 0.63 &&
+      ny > 0.18 &&
+      ny < 0.30
     ) {
-      setWindowScareTriggered(true);
+      setWindowChimeDone(true);
       horrorAudio.playWoodenClapper();
     }
   };
 
-  const handleEyeGenTrapClick = () => {
-    horrorAudio.playScareStinger(scareMode);
-    onAdjustContamination?.(10);
-    onTriggerScare?.({
-      title: '【违规操作】已触发 EyeGen 高清补帧重制预览',
-      message:
-        '林知夏在求救信中明确警告过：切勿点击右上角的高清重制预览！\n\n在 0.3 秒的神经网络补帧画面里，晒谷场上所有背身的黑褂村民全都缓缓转过了脖子，而他们没有眼珠的眼眶正对着你的屏幕完成了一次焦距标定。（视网膜残留指数 +10%）',
-      visualType: 'peeker',
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!loupeEnabled) return;
+    e.preventDefault();
+    setZoomLevel((prev) => {
+      const next = prev + (e.deltaY < 0 ? 0.3 : -0.3);
+      return Math.round(Math.max(1.6, Math.min(4.0, next)) * 10) / 10;
     });
   };
 
   const info = VISUAL_CAPTIONS[photoId];
 
+  // 计算当前《晒谷场收工图》的转头揭示程度
+  const showTurnLayer =
+    photoId === 'threshing_1998' && (hdState === 'scanning' || hdState === 'revealed' || act >= 4);
+  const turnClipBottom =
+    hdState === 'scanning'
+      ? `${100 - scanProgress}%`
+      : hdState === 'revealed' || act >= 4
+      ? '0%'
+      : '100%';
+
+  // 渲染核心画面内容（主画布与光学放大镜内部复用同一视觉源，确保像素级同步！）
+  const renderVisualCore = (isInsideMagnifier = false) => {
+    const filterClasses = [
+      rakingLight && isRealPhoto ? 'contrast-150 brightness-110 saturate-50' : '',
+      !isInsideMagnifier && hdState === 'revealed' ? 'scale-[1.06] transition-transform duration-[2200ms] ease-out' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    if (!isRealPhoto) {
+      return (
+        <FineArchivalSvg
+          photoId={photoId as 'team_portraits' | 'elevation_map' | 'woodblock_seal' | 'thumbprint_ledger'}
+          act={act}
+          rakingLight={rakingLight}
+        />
+      );
+    }
+
+    return (
+      <div className={`relative w-full overflow-hidden bg-black ${filterClasses}`}>
+        {/* 原始 1998 银盐底片 */}
+        <img
+          src={basePhotoSrc}
+          alt={info.label}
+          draggable={false}
+          className="block h-auto w-full object-cover select-none"
+        />
+
+        {/* 点 2 核心演出：像素对齐的《晒谷场收工图》转头直视层（随红激光扫描线逐像素显现！） */}
+        {showTurnLayer && (
+          <img
+            src="./media/threshing_1998_turn.jpg"
+            alt="高清重制异常帧：村民转头直视镜头"
+            draggable={false}
+            style={{
+              clipPath: `inset(0 0 ${turnClipBottom} 0)`,
+              opacity: act >= 4 && hdState === 'idle' ? 0.88 : 1,
+            }}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+          />
+        )}
+
+        {/* 第三幕自然回访时的幽微预览：二楼窗户出现微弱反光影 */}
+        {photoId === 'threshing_1998' && act === 3 && hdState === 'idle' && (
+          <img
+            src="./media/threshing_1998_turn.jpg"
+            alt="第三幕局部异变"
+            draggable={false}
+            style={{
+              clipPath: 'inset(18% 38% 68% 54%)',
+              opacity: 0.78,
+            }}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+          />
+        )}
+
+        {/* 高清重制揭示后的红色面部焦距锁定框（直观引导视线看到他们转过脖子盯着你！） */}
+        {photoId === 'threshing_1998' && hdState === 'revealed' && !isInsideMagnifier && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="pointer-events-none absolute inset-0"
+          >
+            {/* 标记二楼木窗窥视脸 + 居中四名转头直视的村民 */}
+            {[
+              { left: '56.2%', top: '19.5%', w: '5.2%', h: '8.2%', tag: 'WINDOW' },
+              { left: '38.8%', top: '53.0%', w: '5.5%', h: '7.6%', tag: 'LOCK #06' },
+              { left: '44.8%', top: '54.2%', w: '5.5%', h: '7.6%', tag: 'LOCK #07' },
+              { left: '50.2%', top: '56.4%', w: '5.6%', h: '7.6%', tag: 'LOCK #08' },
+              { left: '56.0%', top: '57.0%', w: '5.6%', h: '7.6%', tag: 'LOCK #09' },
+            ].map((box) => (
+              <div
+                key={box.tag}
+                style={{ left: box.left, top: box.top, width: box.w, height: box.h }}
+                className="absolute border border-red-500/80 shadow-[0_0_12px_rgba(239,68,68,0.45)]"
+              >
+                <span className="absolute -top-4 left-0 whitespace-nowrap bg-red-950/90 px-1 text-[8px] font-mono-tech text-red-200">
+                  {box.tag}
+                </span>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* 1998 底片右下角真实日期戳 */}
+        {photoId === 'threshing_1998' && (
+          <div className="pointer-events-none absolute bottom-3 right-4 font-mono-tech text-xs tracking-widest text-amber-400/80 drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
+            &apos;98 10 16 · Z.H.J.
+          </div>
+        )}
+
+        {/* 盲傩面具 10cm 博物馆取证比例尺 */}
+        {photoId === 'nuo_mask' && (
+          <div className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded bg-black/65 px-3 py-1 font-mono-tech text-[10px] text-zinc-300 backdrop-blur-xs">
+            <span className="inline-block h-1.5 w-8 bg-zinc-200" />
+            <span className="inline-block h-1.5 w-8 bg-zinc-700" />
+            <span className="inline-block h-1.5 w-8 bg-zinc-200" />
+            <span className="ml-1.5">10 cm · 眼窝实木无孔</span>
+          </div>
+        )}
+
+        {/* 16mm 胶片时间码 */}
+        {photoId === 'shrine_1998' && (
+          <div className="pointer-events-none absolute bottom-3 left-4 rounded bg-black/70 px-2 py-0.5 font-mono-tech text-[11px] text-amber-300/90">
+            16mm · TC 00:14:38:19 · QH-38-S00
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const LENS_SIZE = 216;
+
   return (
-    <div className="my-4 overflow-hidden rounded-lg border border-zinc-700/90 bg-zinc-950 text-zinc-100 shadow-xl">
-      {/* 顶部取证工具栏 */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 bg-zinc-900/95 px-3.5 py-2">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded bg-amber-950/70 border border-amber-700/50 px-1.5 py-0.5 text-[10px] font-mono-tech text-amber-300">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="my-5 overflow-hidden rounded-xl border border-zinc-800/90 bg-zinc-950 text-zinc-100 shadow-2xl"
+    >
+      {/* 顶部清爽取证控制栏 */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/90 bg-zinc-900/95 px-4 py-2.5">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md border border-amber-600/40 bg-amber-950/60 px-2 py-0.5 text-[10px] font-mono-tech text-amber-300">
               {info.code}
             </span>
-            <span className="text-xs font-bold text-zinc-100">{info.label}</span>
+            <span className="text-xs font-semibold text-zinc-100">{info.label}</span>
           </div>
           <p className="mt-0.5 text-[11px] font-mono-tech text-zinc-400">{info.meta}</p>
         </div>
@@ -1289,14 +772,14 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
               setLoupeEnabled((v) => !v);
               onInspect?.(photoId);
             }}
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] cursor-pointer transition ${
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium cursor-pointer transition ${
               loupeEnabled
-                ? 'border-amber-500 bg-amber-950/50 text-amber-200'
-                : 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-zinc-500'
+                ? 'border-amber-500/80 bg-amber-500/15 text-amber-200 shadow-sm'
+                : 'border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-zinc-500 hover:text-white'
             }`}
           >
-            <Search className="h-3 w-3" />
-            <span>放大镜 {loupeEnabled ? 'ON' : 'OFF'}</span>
+            <Search className="h-3.5 w-3.5" />
+            <span>光学放大镜 {loupeEnabled ? `${zoomLevel.toFixed(1)}x` : ''}</span>
           </button>
 
           <button
@@ -1306,15 +789,14 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
               setRakingLight((v) => !v);
               onInspect?.(photoId);
             }}
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] cursor-pointer transition ${
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium cursor-pointer transition ${
               rakingLight
-                ? 'border-sky-500 bg-sky-950/50 text-sky-200'
-                : 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-zinc-500'
+                ? 'border-sky-500/80 bg-sky-500/15 text-sky-200'
+                : 'border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-zinc-500 hover:text-white'
             }`}
-            title="开启斜射紫外光/高反差取证显影，透视涂改液与阴影计数"
           >
-            <Sliders className="h-3 w-3" />
-            <span>斜射显影增强</span>
+            <Sliders className="h-3.5 w-3.5" />
+            <span>斜射显影</span>
           </button>
 
           <button
@@ -1323,69 +805,194 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
               horrorAudio.playClick('ui');
               setShowGrid((v) => !v);
             }}
-            className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] cursor-pointer transition ${
+            className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] cursor-pointer transition ${
               showGrid
-                ? 'border-emerald-500 bg-emerald-950/50 text-emerald-200'
-                : 'border-zinc-700 bg-zinc-800 text-zinc-300 hover:border-zinc-500'
+                ? 'border-emerald-500/80 bg-emerald-500/15 text-emerald-200'
+                : 'border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-zinc-500 hover:text-white'
             }`}
           >
-            <Ruler className="h-3 w-3" />
-            <span>坐标标尺</span>
+            <Ruler className="h-3.5 w-3.5" />
+            <span>网格</span>
           </button>
 
           {photoId === 'threshing_1998' && (
             <button
               type="button"
-              onClick={handleEyeGenTrapClick}
-              className="inline-flex items-center gap-1 rounded border border-red-900/70 bg-red-950/40 px-2 py-1 text-[11px] text-red-300 hover:bg-red-900/60 cursor-pointer"
-              title="实验性 EyeGen AI 4K 高清补帧重制预览"
+              onClick={handleStartHdRemaster}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium cursor-pointer transition ${
+                hdState === 'revealed'
+                  ? 'border-red-500 bg-red-600/25 text-red-100'
+                  : 'border-red-800/80 bg-red-950/50 text-red-200 hover:bg-red-900/60'
+              }`}
+              title="实验性 EyeGen-v4 神经超分补帧重制预览（林知夏曾警告切勿点击）"
             >
-              <Sparkles className="h-3 w-3 text-red-400" />
-              <span>高清重制预览</span>
+              {hdState === 'revealed' ? (
+                <>
+                  <RotateCcw className="h-3.5 w-3.5 text-red-300" />
+                  <span>切回原始底片</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5 text-red-400" />
+                  <span>{hdState === 'scanning' ? `重制中 ${scanProgress}%` : '高清重制预览'}</span>
+                </>
+              )}
             </button>
           )}
         </div>
       </div>
 
-      {/* 主画布检视区 */}
+      {/* 主取证视图区（集成 GitHub 开源 liquid-glass-web-react 真实球面光学玻璃折射！） */}
       <div
         ref={containerRef}
         onMouseMove={handlePointerMove}
+        onWheel={handleWheel}
         onMouseEnter={() => {
           setPointer((p) => ({ ...p, active: true }));
           onInspect?.(photoId);
         }}
         onMouseLeave={() => setPointer((p) => ({ ...p, active: false }))}
         className={`relative w-full select-none overflow-hidden bg-black ${
-          loupeEnabled ? 'cursor-crosshair' : 'cursor-default'
+          loupeEnabled ? 'cursor-none' : 'cursor-default'
         }`}
       >
-        <canvas
-          ref={canvasRef}
-          width={W}
-          height={H}
-          className="block h-auto w-full"
-        />
+        {/* 未开启放大镜或开启液态光学玻璃直透时，底层内容通过 LiquidGlass 进行球面折射 */}
+        {loupeEnabled && pointer.active ? (
+          <LiquidGlass
+            ref={glassRef}
+            width={LENS_SIZE}
+            height={LENS_SIZE}
+            radius="auto"
+            curvature={1}
+            strength={0.18}
+            chromaticAberration={0.48}
+            depth={42}
+            blur={0}
+            specular={1.25}
+            edgeHighlight={0.92}
+            glow={0.32}
+            shadow="0 16px 40px rgba(0,0,0,0.75)"
+            x={pointer.x}
+            y={pointer.y}
+          >
+            {renderVisualCore(false)}
+          </LiquidGlass>
+        ) : (
+          renderVisualCore(false)
+        )}
 
-        {/* 2.4x 光学取证放大镜悬浮窗 */}
+        {/* 坐标网格叠加 */}
+        {showGrid && (
+          <div
+            className="pointer-events-none absolute inset-0 z-10 opacity-35"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgba(245,158,11,0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(245,158,11,0.5) 1px, transparent 1px)',
+              backgroundSize: '64px 64px',
+            }}
+          />
+        )}
+
+        {/* EyeGen 高清重制红激光扫描线 */}
+        {hdState === 'scanning' && (
+          <div
+            className="pointer-events-none absolute inset-x-0 z-20 h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_24px_6px_rgba(239,68,68,0.85)]"
+            style={{ top: `${scanProgress}%` }}
+          >
+            <div className="absolute right-3 -top-6 rounded bg-red-950/90 px-2 py-0.5 font-mono-tech text-[10px] text-red-200 border border-red-600/60">
+              EYEGEN-v4 NEURAL RESTORE · {scanProgress}%
+            </div>
+          </div>
+        )}
+
+        {/* 高倍光学折射放大镜悬浮透镜（集成 LiquidGlass 真实球面色散 + 高倍光学放大 + 铜框反光高光！） */}
         {loupeEnabled && pointer.active && (
           <div
-            className="pointer-events-none absolute z-30 h-44 w-44 -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-2 border-amber-400/90 shadow-2xl shadow-black"
+            className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{
+              width: LENS_SIZE,
+              height: LENS_SIZE,
               left: `${pointer.x * 100}%`,
               top: `${pointer.y * 100}%`,
+              boxShadow:
+                '0 18px 46px rgba(0,0,0,0.85), inset 0 0 18px rgba(255,255,255,0.22), 0 0 0 2px rgba(217,179,106,0.75), 0 0 0 5px rgba(18,18,22,0.88)',
             }}
           >
-            <canvas ref={loupeCanvasRef} width={180} height={180} className="h-full w-full" />
-            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 rounded bg-black/80 px-1.5 py-0.5 text-[9px] font-mono-tech text-amber-300">
-              2.4x [{Math.round(pointer.x * 100)},{Math.round(pointer.y * 100)}]
+            <div className="relative h-full w-full overflow-hidden rounded-full bg-black">
+              {/* 使用 LiquidGlass 包裹高倍放大内容，让放大后的像素同样产生真实凸透镜边缘球面弯曲、色散紫边与高光 */}
+              <LiquidGlass
+                width={LENS_SIZE}
+                height={LENS_SIZE}
+                radius="auto"
+                curvature={1}
+                strength={0.14}
+                chromaticAberration={0.55}
+                depth={38}
+                blur={0}
+                specular={1.35}
+                edgeHighlight={0.95}
+                glow={0.4}
+                shadow={false}
+                x={0.5}
+                y={0.5}
+                className="h-full w-full"
+              >
+                <div
+                  style={{
+                    width: containerRef.current?.clientWidth || 720,
+                    transformOrigin: `${pointer.x * 100}% ${pointer.y * 100}%`,
+                    transform: `translate(${LENS_SIZE / 2 - pointer.x * (containerRef.current?.clientWidth || 720)}px, ${
+                      LENS_SIZE / 2 - pointer.y * (containerRef.current?.clientHeight || 480)
+                    }px) scale(${zoomLevel})`,
+                  }}
+                >
+                  {renderVisualCore(true)}
+                </div>
+              </LiquidGlass>
+
+              {/* 凸透镜曲面反光月牙 + 微距十字准星 */}
+              <div
+                className="pointer-events-none absolute inset-0 rounded-full"
+                style={{
+                  background:
+                    'radial-gradient(circle at 30% 24%, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.04) 30%, transparent 56%), radial-gradient(circle at 50% 50%, transparent 66%, rgba(0,0,0,0.42) 100%)',
+                }}
+              />
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-amber-300/30" />
+              <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px bg-amber-300/30" />
+              <div className="pointer-events-none absolute bottom-2 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-mono-tech text-amber-200 backdrop-blur-xs">
+                <ZoomIn className="h-2.5 w-2.5 text-amber-400" />
+                <span>{zoomLevel.toFixed(1)}x · 滚轮调焦</span>
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 底部取证说明栏 */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800 bg-zinc-900/90 px-3.5 py-2 text-xs text-zinc-300">
+      {/* 高清重制后的非遮挡底部惊悚提示条（让玩家清清楚楚盯着转过脖子的村民！） */}
+      <AnimatePresence>
+        {photoId === 'threshing_1998' && hdState === 'revealed' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t border-red-900/70 bg-red-950/70 px-4 py-3 text-xs text-red-100"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+                <p className="leading-relaxed">
+                  <strong>EyeGen-v4 神经超分异常：</strong>
+                  晒谷场上原本背对镜头的村民在重制帧中扭转脖颈直视屏幕，二楼雕花木窗内亦浮现窥视人影。林知夏在邮件中警告过切勿点开此预览（视网膜残留 +10%）。你可以用光学放大镜细查画面，或随时切回原始银盐底片。
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 底部精简取证说明栏 */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-zinc-800/90 bg-zinc-900/90 px-4 py-2 text-xs text-zinc-400">
         <div className="flex items-center gap-1.5">
           <Eye className="h-3.5 w-3.5 shrink-0 text-amber-400" />
           <span>{info.forensicHint}</span>
@@ -1393,10 +1000,10 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         {act >= 3 && (photoId === 'threshing_1998' || photoId === 'team_portraits') && (
           <span className="inline-flex items-center gap-1 text-[11px] font-mono-tech text-red-400">
             <AlertTriangle className="h-3 w-3" />
-            底片校验和已偏移 (阅览频次: {Math.max(1, viewCount)})
+            底片校验偏移 · 阅览 {Math.max(1, viewCount)} 次
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };

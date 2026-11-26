@@ -14,6 +14,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom', 'lucide-react'],
+          'vendor-motion': ['motion', 'liquid-glass-web-react'],
           'archive-public': ['./src/data/qingheArchiveData.ts', './src/data/bbsData.ts'],
           'archive-gov': ['./src/data/chroniclesData.ts', './src/data/mailData.ts'],
           'encrypted-vault': ['./src/data/encryptedVault.ts', './src/data/oaData.ts', './src/data/zhixiaNotesData.ts'],

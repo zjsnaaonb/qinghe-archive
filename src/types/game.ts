@@ -134,7 +134,9 @@ export interface DiscoveredClue {
   title: string;
   detail: string;
   sourceSite: SiteId;
+  sourceDocId?: string;
   discoveredAt: string;
+  isPlayerClip?: boolean;
 }
 
 export interface RescueStatus {
@@ -191,4 +193,5 @@ export interface GameState {
   activeEnding: EndingId | null;
   startedAt: number;
   totalClicks: number;
+  hasEnteredGame?: boolean;
 }

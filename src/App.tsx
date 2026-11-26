@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type {
   DiscoveredClue,
   EndingId,
@@ -15,7 +16,11 @@ import {
   saveGameState,
 } from './engine/gameState';
 import { horrorAudio } from './engine/audio';
-import { TopInvestigatorBar } from './components/TopInvestigatorBar';
+import { TopInvestigatorBar, SITE_METAS } from './components/TopInvestigatorBar';
+import { SideWorkspacePanel, type RightPanelMode } from './components/SideWorkspacePanel';
+import { InvestigationGuideRibbon } from './components/InvestigationGuideRibbon';
+import { SelectionClipPopup } from './components/SelectionClipPopup';
+import { IntroCover } from './components/IntroCover';
 import { GlobalSearchModal, type SearchHit } from './components/GlobalSearchModal';
 import { ScareOverlay } from './components/ScareOverlay';
 import { EndingScreen } from './components/EndingScreen';
@@ -38,47 +43,55 @@ import { ZHIXIA_NOTES } from './data/zhixiaNotesData';
 import { ENCRYPTED_VAULT } from './data/encryptedVault';
 
 const ACT_TITLES: Record<number, string> = {
-  1: '第一幕 · 表象裂痕（公开馆藏与都市传说）',
-  2: '第二幕 · 水下亡村（淹没台账与内网潜入）',
-  3: '第三幕 · 借目十诫（审片规则与四生救赎）',
-  4: '第四幕 · 龛中之人（视网膜校准与真伪方志）',
-  5: '第五幕 · 子时封龛（终局抉择）',
+  1: '第一幕 · 表象裂痕',
+  2: '第二幕 · 水下亡村',
+  3: '第三幕 · 借目十诫',
+  4: '第四幕 · 龛中之人',
+  5: '第五幕 · 子时封龛',
 };
 
 export const App: React.FC = () => {
   const [state, setState] = useState<GameState>(() => loadGameState());
+  const [activePanel, setActivePanel] = useState<RightPanelMode>(null);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [newlyUnlockedSite, setNewlyUnlockedSite] = useState<SiteId | null>(null);
   const [activeScare, setActiveScare] = useState<ScarePayload | null>(null);
-  const [actBanner, setActBanner] = useState<string | null>(null);
+  const [toastBanner, setToastBanner] = useState<string | null>(null);
 
-  // 持久化保存与幕次自动推导
+  const flashToast = useCallback((msg: string) => {
+    setToastBanner(msg);
+    setTimeout(() => {
+      setToastBanner((curr) => (curr === msg ? null : curr));
+    }, 4500);
+  }, []);
+
+  // 持久化保存与幕次推导
   useEffect(() => {
     const derived = computeDerivedAct(state);
     if (derived !== state.act) {
       setState((prev) => ({ ...prev, act: derived }));
       if (derived >= 2 && derived <= 4) {
         horrorAudio.playBronzeGong(1);
-        setActBanner(ACT_TITLES[derived]);
-        const t = setTimeout(() => setActBanner(null), 5000);
-        return () => clearTimeout(t);
+        flashToast(`已进入 ${ACT_TITLES[derived]}`);
       }
     }
     saveGameState(state);
-  }, [state]);
+  }, [state, flashToast]);
 
-  // 首次用户点击后唤醒环境低频声景并统计总点击次数（用于第四幕 Meta 遥测）
+  // 统计点击并唤醒声景
   useEffect(() => {
     const onAnyPointer = () => {
       horrorAudio.setMuted(state.audioMuted);
-      horrorAudio.startOrUpdateAmbient(state.act);
+      if (state.hasEnteredGame) {
+        horrorAudio.startOrUpdateAmbient(state.act);
+      }
       setState((prev) => ({ ...prev, totalClicks: prev.totalClicks + 1 }));
     };
     window.addEventListener('pointerdown', onAnyPointer);
     return () => window.removeEventListener('pointerdown', onAnyPointer);
-  }, [state.audioMuted, state.act]);
+  }, [state.audioMuted, state.act, state.hasEnteredGame]);
 
   const handleNavigateSite = useCallback((site: SiteId, targetItemId?: string) => {
     setState((prev) => ({
@@ -92,30 +105,52 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  const handleUnlockSite = useCallback((site: SiteId) => {
-    setState((prev) => {
-      if (prev.unlockedSites.includes(site)) return prev;
-      horrorAudio.playClick('unlock');
-      return {
-        ...prev,
-        unlockedSites: [...prev.unlockedSites, site],
-      };
-    });
-  }, []);
+  const handleUnlockSite = useCallback(
+    (site: SiteId) => {
+      setState((prev) => {
+        if (prev.unlockedSites.includes(site)) return prev;
+        horrorAudio.playClick('unlock');
+        flashToast(`已解锁新站点入口：${SITE_METAS[site].shortName}`);
+        return {
+          ...prev,
+          unlockedSites: [...prev.unlockedSites, site],
+        };
+      });
+    },
+    [flashToast]
+  );
 
-  const handleMarkRead = useCallback((docId: string) => {
-    setState((prev) => {
-      if (prev.readDocIds.includes(docId)) return prev;
-      return {
-        ...prev,
-        readDocIds: [...prev.readDocIds, docId],
-      };
-    });
-  }, []);
+  const handleMarkRead = useCallback(
+    (docId: string) => {
+      setState((prev) => {
+        const nextRead = prev.readDocIds.includes(docId)
+          ? prev.readDocIds
+          : [...prev.readDocIds, docId];
 
+        // 渐进式引导：查阅核心照片《晒谷场收工图》后，自然解锁【校园树洞 & 显影液BBS】
+        let nextSites = prev.unlockedSites;
+        if (docId === 'qh-37-09' && !prev.unlockedSites.includes('bbs')) {
+          nextSites = [...prev.unlockedSites, 'bbs'];
+          horrorAudio.playClick('unlock');
+          flashToast('发现异常线索，已同步接入【树洞 & 显影液BBS】快照');
+        }
+
+        if (nextRead === prev.readDocIds && nextSites === prev.unlockedSites) return prev;
+        return {
+          ...prev,
+          readDocIds: nextRead,
+          unlockedSites: nextSites,
+        };
+      });
+    },
+    [flashToast]
+  );
+
+  // 点 8 核心修改：不再由页面自动往手记灌输谜底；仅当玩家主动划词摘录（isPlayerClip）时写入手记！
   const handleAddClue = useCallback((clue: Omit<DiscoveredClue, 'discoveredAt'>) => {
+    if (!clue.isPlayerClip) return;
     setState((prev) => {
-      if (prev.discoveredClues.some((c) => c.id === clue.id)) return prev;
+      if (prev.discoveredClues.some((c) => c.detail === clue.detail)) return prev;
       return {
         ...prev,
         discoveredClues: [
@@ -129,15 +164,50 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  const handleAddKeywords = useCallback((keywords: string[]) => {
-    setState((prev) => {
-      const merged = Array.from(new Set([...prev.unlockedKeywords, ...keywords.filter(Boolean)]));
-      if (merged.length === prev.unlockedKeywords.length) return prev;
-      return {
-        ...prev,
-        unlockedKeywords: merged,
-      };
-    });
+  const handleClipSelection = useCallback(
+    (snippet: string, site: SiteId) => {
+      setState((prev) => {
+        if (prev.discoveredClues.some((c) => c.detail === snippet)) return prev;
+        return {
+          ...prev,
+          discoveredClues: [
+            ...prev.discoveredClues,
+            {
+              id: `clip-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              title: `${SITE_METAS[site].shortName} 摘录`,
+              detail: snippet,
+              sourceSite: site,
+              discoveredAt: `第${prev.act}幕`,
+              isPlayerClip: true,
+            },
+          ],
+        };
+      });
+      // 若手记未打开，保持非打扰轻提示；若已打开，立刻在右栏看到新增卡片
+      flashToast('已摘录至随身手记');
+    },
+    [flashToast]
+  );
+
+  const handleRemoveClue = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      discoveredClues: prev.discoveredClues.filter((c) => c.id !== id),
+    }));
+  }, []);
+
+  // 不再自动塞入未发现关键词，仅允许玩家手动添加或在跨站搜索命中隐藏残卷时记录
+  const handleAddKeywords = useCallback((_keywords: string[]) => {
+    // intentionally no-op for auto-dump; player collects manually via handleAddManualKeyword
+  }, []);
+
+  const handleAddManualKeyword = useCallback((kw: string) => {
+    const trimmed = kw.trim();
+    if (!trimmed) return;
+    setState((prev) => ({
+      ...prev,
+      unlockedKeywords: Array.from(new Set([...prev.unlockedKeywords, trimmed])),
+    }));
   }, []);
 
   const handleRecordPhotoView = useCallback((photoId: string) => {
@@ -192,19 +262,23 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  const handleRescueMember = useCallback((member: keyof RescueStatus) => {
-    setState((prev) => {
-      if (prev.rescued[member]) return prev;
-      horrorAudio.playClick('unlock');
-      return {
-        ...prev,
-        rescued: {
-          ...prev.rescued,
-          [member]: true,
-        },
-      };
-    });
-  }, []);
+  const handleRescueMember = useCallback(
+    (member: keyof RescueStatus) => {
+      setState((prev) => {
+        if (prev.rescued[member]) return prev;
+        horrorAudio.playClick('unlock');
+        flashToast('成员污染锚点已切断');
+        return {
+          ...prev,
+          rescued: {
+            ...prev.rescued,
+            [member]: true,
+          },
+        };
+      });
+    },
+    [flashToast]
+  );
 
   const handlePassB2Reel = useCallback((reel: 'reel04Passed' | 'reel09Passed' | 'reel12Passed') => {
     setState((prev) => {
@@ -244,7 +318,6 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
-  // 跨站全文搜索引擎（支持挖掘各站隐藏未编目残卷与自动解锁关联站点）
   const handleGlobalSearch = useCallback(
     (rawQuery: string) => {
       const q = rawQuery.trim();
@@ -266,12 +339,12 @@ export const App: React.FC = () => {
         : state.unlockedSites;
 
       const hits: SearchHit[] = [];
-      const discoveredKws: string[] = [];
 
-      // 1. 检索青禾数字民俗馆（含 hiddenFromList 深层残卷）
       if (effectiveUnlockedSites.includes('qinghe')) {
         for (const item of QINGHE_ARCHIVE_ENTRIES) {
-          const keywordMatch = item.keywords.some((k) => k.toLowerCase().includes(ql) || ql.includes(k.toLowerCase()));
+          const keywordMatch = item.keywords.some(
+            (k) => k.toLowerCase().includes(ql) || ql.includes(k.toLowerCase())
+          );
           const textMatch =
             item.title.toLowerCase().includes(ql) ||
             item.code.toLowerCase().includes(ql) ||
@@ -280,9 +353,6 @@ export const App: React.FC = () => {
             (!item.hiddenFromList && item.content.toLowerCase().includes(ql));
 
           if (keywordMatch || textMatch) {
-            if (item.hiddenFromList) {
-              discoveredKws.push(q);
-            }
             hits.push({
               id: `hit-qh-${item.id}`,
               siteId: 'qinghe',
@@ -296,15 +366,18 @@ export const App: React.FC = () => {
         }
       }
 
-      // 2. 检索紫荆树洞与显影液论坛（含隐藏 #88 楼关键词匹配）
       if (effectiveUnlockedSites.includes('bbs')) {
         for (const thread of BBS_THREADS) {
           const visibleReplies = thread.replies.filter(
             (r) =>
               (!r.act3Appended || state.act >= 3) &&
-              (!r.hiddenKeywordRequired || r.hiddenKeywordRequired.toLowerCase() === ql || ql.includes(r.hiddenKeywordRequired.toLowerCase()))
+              (!r.hiddenKeywordRequired ||
+                r.hiddenKeywordRequired.toLowerCase() === ql ||
+                ql.includes(r.hiddenKeywordRequired.toLowerCase()))
           );
-          const replyHit = visibleReplies.find((r) => r.content.toLowerCase().includes(ql) || r.author.toLowerCase().includes(ql));
+          const replyHit = visibleReplies.find(
+            (r) => r.content.toLowerCase().includes(ql) || r.author.toLowerCase().includes(ql)
+          );
           const headerHit =
             thread.title.toLowerCase().includes(ql) ||
             thread.author.toLowerCase().includes(ql) ||
@@ -317,7 +390,9 @@ export const App: React.FC = () => {
               siteId: 'bbs',
               codeOrTag: thread.board === 'zijing' ? '紫荆树洞' : '显影液BBS',
               title: thread.title,
-              snippet: replyHit ? `${replyHit.author}：${replyHit.content.slice(0, 110)}…` : (thread.replies[0]?.content.slice(0, 110) || ''),
+              snippet: replyHit
+                ? `${replyHit.author}：${replyHit.content.slice(0, 100)}…`
+                : thread.replies[0]?.content.slice(0, 100) || '',
               isHiddenDiscovery: hasHiddenFloor,
               targetItemId: thread.id,
             });
@@ -325,16 +400,17 @@ export const App: React.FC = () => {
         }
       }
 
-      // 3. 检索云溪县水利移民与方志查询网（含周怀瑾2019临终信访件等隐藏卷宗）
       if (effectiveUnlockedSites.includes('chronicles')) {
         for (const doc of CHRONICLE_DOCS) {
-          const kwMatch = doc.keywords.some((k) => k.toLowerCase().includes(ql) || ql.includes(k.toLowerCase()));
+          const kwMatch = doc.keywords.some(
+            (k) => k.toLowerCase().includes(ql) || ql.includes(k.toLowerCase())
+          );
           const bodyMatch =
             doc.title.toLowerCase().includes(ql) ||
             doc.docNumber.toLowerCase().includes(ql) ||
             (!doc.hiddenFromDefault && doc.content.toLowerCase().includes(ql));
 
-          if (kwMatch || bodyHitHelper(doc.hiddenFromDefault, kwMatch, bodyMatch)) {
+          if (kwMatch || (!doc.hiddenFromDefault && bodyMatch)) {
             hits.push({
               id: `hit-chr-${doc.id}`,
               siteId: 'chronicles',
@@ -348,7 +424,6 @@ export const App: React.FC = () => {
         }
       }
 
-      // 4. 检索内部 OA 已获权限文档
       if (effectiveUnlockedSites.includes('oa') && state.oaLevel >= 1) {
         for (const oaDoc of OA_DOCUMENTS) {
           if (oaDoc.minLevel > state.oaLevel) continue;
@@ -364,16 +439,15 @@ export const App: React.FC = () => {
             hits.push({
               id: `hit-oa-${oaDoc.id}`,
               siteId: 'oa',
-              codeOrTag: `OA-Lv.${oaDoc.minLevel} · ${oaDoc.code}`,
+              codeOrTag: `OA Lv.${oaDoc.minLevel}`,
               title: oaDoc.title,
-              snippet: plain ? `${plain.slice(0, 105)}…` : `发件/撰稿：${oaDoc.senderOrAuthor}（${oaDoc.date}）`,
+              snippet: plain ? `${plain.slice(0, 100)}…` : oaDoc.senderOrAuthor,
               targetItemId: oaDoc.id,
             });
           }
         }
       }
 
-      // 5. 检索林知夏云笔记
       if (effectiveUnlockedSites.includes('notes')) {
         for (const note of ZHIXIA_NOTES) {
           if (note.requiresDeepUnlock && !state.zhixiaDeepUnlocked) continue;
@@ -390,7 +464,7 @@ export const App: React.FC = () => {
               siteId: 'notes',
               codeOrTag: note.date,
               title: note.title,
-              snippet: text ? `${text.slice(0, 105)}…` : note.title,
+              snippet: text ? `${text.slice(0, 100)}…` : note.title,
               isHiddenDiscovery: Boolean(note.requiresDeepUnlock),
               targetItemId: note.id,
             });
@@ -398,7 +472,6 @@ export const App: React.FC = () => {
         }
       }
 
-      // 6. 检索收件箱
       for (const mail of MAIL_MESSAGES) {
         if (mail.minAct > state.act) continue;
         if (
@@ -421,7 +494,6 @@ export const App: React.FC = () => {
         ...prev,
         unlockedSites: effectiveUnlockedSites,
         searchHistory: [q, ...prev.searchHistory.filter((x) => x !== q)].slice(0, 30),
-        unlockedKeywords: Array.from(new Set([...prev.unlockedKeywords, ...discoveredKws])),
       }));
       setNewlyUnlockedSite(unlockedNow);
       setSearchHits(hits);
@@ -430,29 +502,23 @@ export const App: React.FC = () => {
     [state]
   );
 
-  const siteProps: CommonSiteProps = {
-    state,
-    focusedItemId,
-    onClearFocus: () => setFocusedItemId(null),
-    onNavigateSite: handleNavigateSite,
-    onUnlockSite: handleUnlockSite,
-    onMarkRead: handleMarkRead,
-    onAddClue: handleAddClue,
-    onAddKeywords: handleAddKeywords,
-    onRecordPhotoView: handleRecordPhotoView,
-    onAdjustContamination: handleAdjustContamination,
-    onTriggerScare: handleTriggerScare,
-    onElevateOaLevel: handleElevateOaLevel,
-    onUnlockZhixiaDeep: handleUnlockZhixiaDeep,
-    onCacheDecrypted: handleCacheDecrypted,
-    onRescueMember: handleRescueMember,
-    onPassB2Reel: handlePassB2Reel,
-    onRecordB2Violation: handleRecordB2Violation,
-    onTriggerEnding: handleTriggerEnding,
-    onGlobalSearch: handleGlobalSearch,
-  };
+  // 首次访问的清爽沉浸式开局封面（避免首屏信息过载）
+  if (!state.hasEnteredGame && !state.activeEnding) {
+    return (
+      <IntroCover
+        scareMode={state.scareMode}
+        audioMuted={state.audioMuted}
+        onChangeScareMode={(mode: ScareMode) => setState((prev) => ({ ...prev, scareMode: mode }))}
+        onToggleMute={() => {
+          const next = !state.audioMuted;
+          horrorAudio.setMuted(next);
+          setState((prev) => ({ ...prev, audioMuted: next }));
+        }}
+        onEnter={() => setState((prev) => ({ ...prev, hasEnteredGame: true }))}
+      />
+    );
+  }
 
-  // 若处于结局播放状态，渲染全屏沉浸结局组件
   if (state.activeEnding) {
     return (
       <EndingScreen
@@ -485,43 +551,155 @@ export const App: React.FC = () => {
     );
   }
 
+  const siteProps: CommonSiteProps = {
+    state,
+    focusedItemId,
+    onClearFocus: () => setFocusedItemId(null),
+    onNavigateSite: handleNavigateSite,
+    onUnlockSite: handleUnlockSite,
+    onMarkRead: handleMarkRead,
+    onAddClue: handleAddClue,
+    onAddKeywords: handleAddKeywords,
+    onRecordPhotoView: handleRecordPhotoView,
+    onAdjustContamination: handleAdjustContamination,
+    onTriggerScare: handleTriggerScare,
+    onElevateOaLevel: handleElevateOaLevel,
+    onUnlockZhixiaDeep: handleUnlockZhixiaDeep,
+    onCacheDecrypted: handleCacheDecrypted,
+    onRescueMember: handleRescueMember,
+    onPassB2Reel: handlePassB2Reel,
+    onRecordB2Violation: handleRecordB2Violation,
+    onTriggerEnding: handleTriggerEnding,
+    onGlobalSearch: handleGlobalSearch,
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen flex flex-col bg-[#0b0c10] text-zinc-100">
       <TopInvestigatorBar
         state={state}
+        activePanel={activePanel}
+        onTogglePanel={(mode) => setActivePanel((prev) => (prev === mode ? null : mode))}
         onSelectSite={(s) => handleNavigateSite(s)}
         onGlobalSearch={handleGlobalSearch}
-        onUpdateMemo={(memo) => setState((prev) => ({ ...prev, playerMemo: memo }))}
         onToggleMute={() => {
           const next = !state.audioMuted;
           horrorAudio.setMuted(next);
           setState((prev) => ({ ...prev, audioMuted: next }));
         }}
-        onChangeScareMode={(mode: ScareMode) => setState((prev) => ({ ...prev, scareMode: mode }))}
-        onImportState={(imported) => setState(imported)}
-        onResetGame={() => setState(createInitialGameState())}
-        onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
       />
 
-      {/* 幕次推进提示横幅 */}
-      {actBanner && (
-        <div className="border-b border-red-900/70 bg-red-950/80 px-4 py-2 text-center text-xs font-serif-cn tracking-widest text-red-100 animate-pulse">
-          【调查深入】已进入 {actBanner}
-        </div>
-      )}
+      {/* 克制不剧透的单行阶段引导条 */}
+      <InvestigationGuideRibbon state={state} onNavigateSite={handleNavigateSite} />
 
-      {/* 当前激活的拟真网站主体视图 */}
-      <main className="flex-1">
-        {state.currentSite === 'mail' && <MailSite {...siteProps} />}
-        {state.currentSite === 'qinghe' && <QinghePortalSite {...siteProps} />}
-        {state.currentSite === 'bbs' && <BbsSnapshotSite {...siteProps} />}
-        {state.currentSite === 'chronicles' && <ChroniclesGovSite {...siteProps} />}
-        {state.currentSite === 'oa' && <OaInternalSite {...siteProps} />}
-        {state.currentSite === 'notes' && <ZhixiaNotesSite {...siteProps} />}
-        {state.currentSite === 'b2' && <B2TerminalSite {...siteProps} />}
-      </main>
+      {/* 轻量化顶部动态提示气泡 */}
+      <AnimatePresence>
+        {toastBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="pointer-events-none fixed left-1/2 top-24 z-[85] -translate-x-1/2 rounded-full border border-amber-500/50 bg-zinc-950/95 px-4 py-1.5 text-xs font-medium text-amber-200 shadow-2xl backdrop-blur-md"
+          >
+            {toastBanner}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* 跨站检索弹窗 */}
+      {/* 点 5 核心修复：真正的分栏挤压工作台 —— 打开手记/提示/设置时，左侧主页面与图片顺滑左移，绝不遮挡！ */}
+      <div className="relative flex flex-1 w-full items-stretch">
+        <motion.main
+          layout
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="flex-1 min-w-0"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={state.currentSite}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+            >
+              {state.currentSite === 'mail' && <MailSite {...siteProps} />}
+              {state.currentSite === 'qinghe' && <QinghePortalSite {...siteProps} />}
+              {state.currentSite === 'bbs' && <BbsSnapshotSite {...siteProps} />}
+              {state.currentSite === 'chronicles' && <ChroniclesGovSite {...siteProps} />}
+              {state.currentSite === 'oa' && <OaInternalSite {...siteProps} />}
+              {state.currentSite === 'notes' && <ZhixiaNotesSite {...siteProps} />}
+              {state.currentSite === 'b2' && <B2TerminalSite {...siteProps} />}
+            </motion.div>
+          </AnimatePresence>
+        </motion.main>
+
+        <AnimatePresence initial={false}>
+          {activePanel && (
+            <motion.aside
+              key="workspace-side-panel"
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 396, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden lg:block shrink-0 overflow-hidden sticky top-[90px] h-[calc(100vh-90px)] z-40"
+            >
+              <div className="w-[396px] h-full">
+                <SideWorkspacePanel
+                  mode={activePanel}
+                  state={state}
+                  onClose={() => setActivePanel(null)}
+                  onUpdateMemo={(memo) => setState((prev) => ({ ...prev, playerMemo: memo }))}
+                  onAddManualKeyword={handleAddManualKeyword}
+                  onRemoveClue={handleRemoveClue}
+                  onGlobalSearch={handleGlobalSearch}
+                  onJumpToSite={(s, d) => handleNavigateSite(s, d)}
+                  onChangeScareMode={(mode) => setState((prev) => ({ ...prev, scareMode: mode }))}
+                  onImportState={(imported) => setState({ ...imported, hasEnteredGame: true })}
+                  onResetGame={() => setState(createInitialGameState())}
+                  onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
+                />
+              </div>
+            </motion.aside>
+          )}
+        </AnimatePresence>
+
+        {/* 小屏移动设备回退抽屉 */}
+        <AnimatePresence>
+          {activePanel && (
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-y-0 right-0 z-[90] w-full max-w-sm lg:hidden shadow-2xl"
+            >
+              <SideWorkspacePanel
+                mode={activePanel}
+                state={state}
+                onClose={() => setActivePanel(null)}
+                onUpdateMemo={(memo) => setState((prev) => ({ ...prev, playerMemo: memo }))}
+                onAddManualKeyword={handleAddManualKeyword}
+                onRemoveClue={handleRemoveClue}
+                onGlobalSearch={handleGlobalSearch}
+                onJumpToSite={(s, d) => {
+                  handleNavigateSite(s, d);
+                  setActivePanel(null);
+                }}
+                onChangeScareMode={(mode) => setState((prev) => ({ ...prev, scareMode: mode }))}
+                onImportState={(imported) => setState({ ...imported, hasEnteredGame: true })}
+                onResetGame={() => setState(createInitialGameState())}
+                onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* 全局划词摘录浮层：读到可疑文本随手一划即可摘录到手记或跨站搜索 */}
+      <SelectionClipPopup
+        currentSite={state.currentSite}
+        onClipText={handleClipSelection}
+        onSearchText={handleGlobalSearch}
+      />
+
       <GlobalSearchModal
         query={searchQuery}
         hits={searchHits}
@@ -537,7 +715,6 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 分级惊吓/认知警告遮罩 */}
       <ScareOverlay
         scareEvent={activeScare}
         scareMode={state.scareMode}
@@ -546,10 +723,5 @@ export const App: React.FC = () => {
     </div>
   );
 };
-
-function bodyHitHelper(hidden: boolean | undefined, kwMatch: boolean, bodyMatch: boolean): boolean {
-  if (hidden) return kwMatch;
-  return kwMatch || bodyMatch;
-}
 
 export default App;
