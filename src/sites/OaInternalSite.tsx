@@ -573,6 +573,40 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                     placeholder="输入对应权限口令（忽略空格与连字符）"
                     className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-mono-tech text-sm text-slate-900 outline-none focus:border-blue-600"
                   />
+                  {/* 无剧透分段字数槽位提示 */}
+                  {(() => {
+                    const u = loginUser.trim().toLowerCase();
+                    const cleanLen = loginPass.replace(/[\s\-_]/g, '').length;
+                    if (u === 'qh_guest') {
+                      return (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600">
+                          <span>格式槽位：[ 4位立项尾号 ] + [ 4位截流月日 ] = 共 8 位数字</span>
+                          <span className={`font-mono-tech font-semibold ${cleanLen === 8 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                            已填 {cleanLen} / 8 位
+                          </span>
+                        </div>
+                      );
+                    }
+                    if (u === 'chen_mo') {
+                      return (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600">
+                          <span>格式槽位：[ 4位机身钢印 ] + [ 2位村号 ] + [ 2位年份后两位 ] = 共 8 位数字</span>
+                          <span className={`font-mono-tech font-semibold ${cleanLen === 8 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                            已填 {cleanLen} / 8 位
+                          </span>
+                        </div>
+                      );
+                    }
+                    if (u === 'zheng_gd') {
+                      return (
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] text-slate-600">
+                          <span>格式槽位：[ 卷04片段 ] + [ 卷09片段 ] + [ 卷12纪年 ]（须由 B2 审片台合成）</span>
+                          <span className="font-mono-tech text-slate-500">已填 {cleanLen} 字符</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
 
                 {authError && (
@@ -713,6 +747,38 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                 </button>
               </div>
             </form>
+
+            {/* 无剧透分段字数格式槽位提示 */}
+            {(() => {
+              const u = loginUser.trim().toLowerCase();
+              const cleanLen = loginPass.replace(/[\s\-_]/g, '').length;
+              if (u === 'qh_guest') {
+                return (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-600">
+                    <span>格式槽位：[ 4位立项尾号 ] + [ 4位截流月日 ] = 共 8 位数字</span>
+                    <span className={`font-mono-tech font-semibold ${cleanLen === 8 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      已填 {cleanLen} / 8 位
+                    </span>
+                  </div>
+                );
+              }
+              if (u === 'chen_mo') {
+                return (
+                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-600">
+                    <span>格式槽位：[ 4位机身钢印 ] + [ 2位村号 ] + [ 2位年份后两位 ] = 共 8 位数字</span>
+                    <span className={`font-mono-tech font-semibold ${cleanLen === 8 ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      已填 {cleanLen} / 8 位
+                    </span>
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-600">
+                  <span>格式槽位：[ 卷04片段 ] + [ 卷09片段 ] + [ 卷12纪年 ]（由 B2 逐帧检视台三卷合规合成）</span>
+                  <span className="font-mono-tech text-slate-500">已填 {cleanLen} 字符</span>
+                </div>
+              );
+            })()}
 
             {authError && (
               <div className="mt-2.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-[#9e2a2b]">

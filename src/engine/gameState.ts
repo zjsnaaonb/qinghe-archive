@@ -36,6 +36,10 @@ export function createInitialGameState(): GameState {
     startedAt: Date.now(),
     totalClicks: 0,
     hasEnteredGame: false,
+    discoveredLensIds: [],
+    discoveredCaptureIds: [],
+    survivedEncounters: [],
+    solvedPuzzleIds: [],
   };
 }
 

@@ -10,6 +10,7 @@ import { QINGHE_ARCHIVE_ENTRIES } from '../data/qingheArchiveData';
 import type { ArchiveEntry } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
 import { ForensicPhotoViewer, VISUAL_CAPTIONS } from '../components/ForensicPhotoViewer';
+import { TornNoteJigsaw, WipeRevealBoard } from '../components/TactileDarkroomPuzzle';
 import { EditorialProse } from '../components/EditorialProse';
 import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
 import { siteUiMemory } from '../engine/siteMemory';
@@ -35,6 +36,8 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   onUnlockSite,
   onMarkRead,
   onRecordPhotoView,
+  onDiscoverLensAnomaly,
+  onSolvePuzzle,
   onAdjustContamination,
   onTriggerScare,
 }) => {
@@ -580,10 +583,53 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                         scareMode={state.scareMode}
                         viewCount={state.photoViewCounts[activeEntry.specialPhotoId] ?? 1}
                         onInspect={onRecordPhotoView}
+                        onDiscoverLensAnomaly={onDiscoverLensAnomaly}
                         onTriggerScare={onTriggerScare}
                         onAdjustContamination={onAdjustContamination}
                       />
                     </div>
+                  )}
+
+                  {activeEntry.id === 'qh-12-03' && (
+                    <WipeRevealBoard
+                      puzzleId="wipe-qh-12-03"
+                      coatType="fog"
+                      baseSrc="./media/qh_12_03.png"
+                      revealSrc="./media/qh_12_03_lens.png"
+                      title="暗房实物互动：擦拭水银镜面冷雾"
+                      subtitle="老式水银镜表层凝结着浓重冷雾，按住反复拭净以核查封条下的反光与急注"
+                      revealBadge="冷雾拭净：镜角显露苏晓棠指甲划痕与湿发窥视眼"
+                      revealDetail="擦去冷雾后，红纸封条缝隙后方浮现出一双湿发窥视眼，镜角刻着苏晓棠留下的暗记：『凌晨紧急入库40面老式木框镜，查资产入库单与B1-09断屏编号 1140！』"
+                      solved={Boolean(state.solvedPuzzleIds?.includes('wipe-qh-12-03'))}
+                      onSolved={(id) => onSolvePuzzle?.(id)}
+                    />
+                  )}
+
+                  {activeEntry.id === 'qh-consumables-audit' && (
+                    <WipeRevealBoard
+                      puzzleId="wipe-qh-consumables"
+                      coatType="mud"
+                      baseSrc="./media/horror_mirror_reflection.png"
+                      title="暗房实物互动：拭去库底淤泥污损入库副联"
+                      subtitle="该资产单副联在 B1 库房受潮沾满泥污，拭净污层以查验凌晨 03:12 隐藏入库项"
+                      revealBadge="泥污拭净：凌晨 03:12 异常采购项已显影"
+                      revealDetail="红章批注清晰浮现：『2026-11-24 03:12 紧急入库——老式木框梳妆镜 40 面（经手：郑国栋，调拨至 B1-09 善本库及 B2 走廊）』。"
+                      solved={Boolean(state.solvedPuzzleIds?.includes('wipe-qh-consumables'))}
+                      onSolved={(id) => onSolvePuzzle?.(id)}
+                    />
+                  )}
+
+                  {activeEntry.id === 'qh-38-n03' && (
+                    <TornNoteJigsaw
+                      puzzleId="jigsaw-qh-38-n03"
+                      imageSrc="./media/qh_38_n03.png"
+                      title="暗房残笺拼合台：1998 夹墙铁盒与周怀瑾绝笔"
+                      subtitle="抢拍底片与桑皮棉纸绝笔残笺已碎成 6 块，点击或拖拽互换位置拼回原貌"
+                      revealBadge="1998 绝笔残笺拼合完成：核心铁盒暗记已锁定"
+                      revealDetail="完整拼合后可见铁盒正中暗红漆字【朱砂封存14】，以及周怀瑾血书绝笔：『一九九八年十月十七亥时，切勿撤除黄镜直拍正龛，五人泣血·铁盒永沉夹墙』。"
+                      solved={Boolean(state.solvedPuzzleIds?.includes('jigsaw-qh-38-n03'))}
+                      onSolved={(id) => onSolvePuzzle?.(id)}
+                    />
                   )}
 
                   <EditorialProse

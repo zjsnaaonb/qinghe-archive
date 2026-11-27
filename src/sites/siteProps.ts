@@ -46,6 +46,8 @@ export interface CommonSiteProps {
   onAddClue: (clue: Omit<DiscoveredClue, 'discoveredAt'>) => void;
   onAddKeywords: (keywords: string[]) => void;
   onRecordPhotoView: (photoId: string) => void;
+  onDiscoverLensAnomaly?: (photoId: string) => void;
+  onSolvePuzzle?: (puzzleId: string) => void;
   onAdjustContamination: (delta: number) => void;
   onTriggerScare: (scare: ScarePayload) => void;
   onElevateOaLevel: (level: OALevel) => void;

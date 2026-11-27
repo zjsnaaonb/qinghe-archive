@@ -10,6 +10,11 @@ import { CHRONICLE_DOCS } from '../data/chroniclesData';
 import type { ChronicleDoc } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
 import { ForensicPhotoViewer } from '../components/ForensicPhotoViewer';
+import {
+  FilmOverlayLightbox,
+  TornNoteJigsaw,
+  WipeRevealBoard,
+} from '../components/TactileDarkroomPuzzle';
 import { EditorialProse } from '../components/EditorialProse';
 import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
 import { siteUiMemory } from '../engine/siteMemory';
@@ -34,6 +39,8 @@ export const ChroniclesGovSite: React.FC<CommonSiteProps> = ({
   onRecordNav,
   onMarkRead,
   onRecordPhotoView,
+  onDiscoverLensAnomaly,
+  onSolvePuzzle,
   onAdjustContamination,
   onTriggerScare,
 }) => {
@@ -377,10 +384,69 @@ export const ChroniclesGovSite: React.FC<CommonSiteProps> = ({
                           scareMode={state.scareMode}
                           viewCount={state.photoViewCounts[activeDoc.specialVisual] ?? 1}
                           onInspect={onRecordPhotoView}
+                          onDiscoverLensAnomaly={onDiscoverLensAnomaly}
                           onTriggerScare={onTriggerScare}
                           onAdjustContamination={onAdjustContamination}
                         />
                       </div>
+                    )}
+
+                    {activeDoc.id === 'chr-elevation-map' && (
+                      <FilmOverlayLightbox
+                        puzzleId="lightbox-elevation-38"
+                        overlayMode="uv"
+                        baseSrc="./media/elevation_map.png"
+                        overlaySrc="./media/elevation_map_uv.png"
+                        title="暗房透光灯箱：365nm 紫外高程透明底片叠合"
+                        subtitle="拖拽并调平上层 365nm 紫外显影底片，使红/黄十字套印准星精准重合，穿透涂改液"
+                        revealBadge="紫外光学套印锁定：被抹除的第 38 村显影"
+                        revealDetail="双层底片精准对齐！右下角白色涂改液下方清晰透出被删去的红字坐标：【高程 108.4m · 第38村：祠下村（旧称：龛下坳）】。"
+                        solved={Boolean(state.solvedPuzzleIds?.includes('lightbox-elevation-38'))}
+                        onSolved={(id) => onSolvePuzzle?.(id)}
+                      />
+                    )}
+
+                    {activeDoc.id === 'chr-migrant-appendix38' && (
+                      <WipeRevealBoard
+                        puzzleId="wipe-appendix-38"
+                        coatType="cinnabar"
+                        baseSrc="./media/thumbprint_ledger.png"
+                        revealSrc="./media/thumbprint_ledger_lens.png"
+                        title="暗房实物互动：拭去附表38 倾洒朱砂印泥"
+                        subtitle="1999 封存影印台账表层沾有大片暗红朱砂污渍，按住拭净以检视 124 户红指模破绽"
+                        revealBadge="朱砂印泥拭净：124 户同源断疤红指模曝光"
+                        revealDetail="全部 124 枚户主领款指模右上角竟呈现出完全一致的月牙形断疤——由同一根沾满朱砂的手指反复按捺伪造！请配合上方放大镜核查第 125 户异变。"
+                        solved={Boolean(state.solvedPuzzleIds?.includes('wipe-appendix-38'))}
+                        onSolved={(id) => onSolvePuzzle?.(id)}
+                      />
+                    )}
+
+                    {activeDoc.id === 'chr-qing-gazetteer-trap' && (
+                      <FilmOverlayLightbox
+                        puzzleId="lightbox-woodblock-order"
+                        overlayMode="woodblock"
+                        baseSrc="./media/woodblock_seal.png"
+                        overlaySrc="./media/woodblock_seal.png"
+                        title="暗房灯箱：清光绪雕版原叶骑缝红印套印校勘"
+                        subtitle="将上层高对比朱砂骑缝拓片与原书叶对齐重合，辨识被红印覆盖处的古籍真伪次序"
+                        revealBadge="骑缝套印校准完成：发现公开转录稿伪序陷阱"
+                        revealDetail="套印比对显示：本卷正文中的现代数字化转录本将「封龛逆仪」四牌顺序暗中颠倒！请务必对照雕版原图骑缝及林知夏深层遗稿中的周怀瑾手抄祀典核定真序。"
+                        solved={Boolean(state.solvedPuzzleIds?.includes('lightbox-woodblock-order'))}
+                        onSolved={(id) => onSolvePuzzle?.(id)}
+                      />
+                    )}
+
+                    {activeDoc.id === 'chr-2019-zhou-petition' && (
+                      <TornNoteJigsaw
+                        puzzleId="jigsaw-zhou-petition"
+                        imageSrc="./media/qh_38_n03.png"
+                        title="信访袋附卷复原台：拼合周怀瑾 1998 碎笺"
+                        subtitle="信访档案袋内夹有一张撕成 6 块的绝笔与铁盒照，点击或拖拽拼回完整原貌"
+                        revealBadge="附卷碎笺复原成功：锁定 1998 封水时辰与铁盒暗记"
+                        revealDetail="碎笺完整还原：一九九八年十月十七【亥时】封水，铁盒暗记刻作【朱砂封存14】——可与盲傩绝唱剧目正名拼接，解开林知夏深层密保。"
+                        solved={Boolean(state.solvedPuzzleIds?.includes('jigsaw-zhou-petition'))}
+                        onSolved={(id) => onSolvePuzzle?.(id)}
+                      />
                     )}
 
                     <EditorialProse

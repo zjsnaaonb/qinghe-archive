@@ -8,7 +8,24 @@ interface HauntedAtmosphereLayerProps {
   state: GameState;
   activeDocKey: string;
   onTriggerScare: (scare: ScarePayload) => void;
+  onDiscoverCapture?: (captureId: string) => void;
 }
+
+export const HORROR_CAPTURE_CATALOG: Array<{ id: string; tag: string; imageSrc: string }> = [
+  { id: 'cue-mail-step2', tag: '邮件网关镜像尾流告警', imageSrc: './media/horror_webcam_behind.png' },
+  { id: 'cue-mail-su', tag: 'B1-09 善本库防盗门镜抓拍', imageSrc: './media/horror_peephole_corridor.png' },
+  { id: 'cue-consumables', tag: '资产入库单异常反光', imageSrc: './media/horror_mirror_reflection.png' },
+  { id: 'cue-12-03', tag: 'B1-09 善本库门缝实况', imageSrc: './media/horror_door_gap.png' },
+  { id: 'cue-19-02', tag: '福春班梨园忌例异动', imageSrc: './media/qh_19_02_lens.png' },
+  { id: 'cue-24-07', tag: '当前工位桌底声学拾音', imageSrc: './media/horror_under_desk.png' },
+  { id: 'cue-36-02', tag: 'CAM-EXT-39 顶置夜视告警', imageSrc: './media/horror_webcam_behind.png' },
+  { id: 'cue-38-s00', tag: '1998 宗祠戏台残响', imageSrc: './media/horror_shrine_stare.png' },
+  { id: 'cue-appendix38', tag: '附表38 纸背印泥渗血', imageSrc: './media/thumbprint_ledger_lens.png' },
+  { id: 'cue-police-1998', tag: '协查卷宗物证袋异响', imageSrc: './media/horror_peephole_corridor.png' },
+  { id: 'cue-oa-attendance', tag: '门禁读卡器实时回传', imageSrc: './media/horror_peephole_corridor.png' },
+  { id: 'cue-oa-rules', tag: 'VLAN-B2 审片席红外抓拍', imageSrc: './media/horror_under_desk.png' },
+  { id: 'cue-notes-s3', tag: '夏夜拾遗 · 纸笺潮气渗入', imageSrc: './media/horror_under_desk.png' },
+];
 
 interface HauntCue {
   id: string;
@@ -34,6 +51,7 @@ export const HauntedAtmosphereLayer: React.FC<HauntedAtmosphereLayerProps> = ({
   state,
   activeDocKey,
   onTriggerScare,
+  onDiscoverCapture,
 }) => {
   const [activeCue, setActiveCue] = useState<HauntCue | null>(null);
   const [peripheralSide, setPeripheralSide] = useState<'left' | 'right' | null>(null);
@@ -248,6 +266,7 @@ export const HauntedAtmosphereLayer: React.FC<HauntedAtmosphereLayerProps> = ({
 
     const timer = window.setTimeout(() => {
       triggeredSetRef.current.add(spec.cue.id);
+      onDiscoverCapture?.(spec.cue.id);
       spec.runAudio();
       setActiveCue(spec.cue);
       window.setTimeout(() => {

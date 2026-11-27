@@ -211,4 +211,8 @@ export interface GameState {
   startedAt: number;
   totalClicks: number;
   hasEnteredGame?: boolean;
+  discoveredLensIds?: string[];
+  discoveredCaptureIds?: string[];
+  survivedEncounters?: string[];
+  solvedPuzzleIds?: string[];
 }

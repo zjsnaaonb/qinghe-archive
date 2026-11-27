@@ -38,6 +38,14 @@ const ENDING_LABELS: Record<EndingId, string> = {
   ending_true: '结局五：终局归档卷宗 #05',
 };
 
+const ENDING_IMAGE_SRC: Record<EndingId, string> = {
+  ending_assimilation: './media/ending_assimilation.png',
+  ending_overload: './media/ending_overload.png',
+  ending_sacrifice: './media/ending_sacrifice.png',
+  ending_mirror_leak: './media/ending_mirror_leak.png',
+  ending_true: './media/ending_true.png',
+};
+
 const FALLBACK_ENDINGS: Record<EndingId, EndingPayload> = {
   ending_assimilation: {
     id: 'ending_assimilation',
@@ -257,9 +265,24 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
             </div>
           </div>
 
-          <h1 className={`mb-6 font-serif-cn text-3xl sm:text-4xl font-bold tracking-widest ${theme.accent}`}>
+          <h1 className={`mb-5 font-serif-cn text-3xl sm:text-4xl font-bold tracking-widest ${theme.accent}`}>
             {data.title}
           </h1>
+
+          {/* 结局专属 gpt-image 实拍收束剧照 */}
+          <div className="mb-6 overflow-hidden rounded-xl border border-[#dfd8ca] bg-zinc-950 shadow-md">
+            <div className="relative aspect-[16/9] w-full overflow-hidden">
+              <img
+                src={ENDING_IMAGE_SRC[endingId]}
+                alt={data.title}
+                className="h-full w-full object-cover"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent px-4 py-3 flex items-center justify-between text-[11px] font-mono-tech text-stone-200/95">
+                <span>{data.code}</span>
+                <span>{data.subtitle}</span>
+              </div>
+            </div>
+          </div>
 
           {decrypting ? (
             <div className="py-12 text-center font-mono-tech text-sm font-medium text-[#9e2a2b] animate-pulse">

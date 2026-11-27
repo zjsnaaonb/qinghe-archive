@@ -40,6 +40,7 @@ export interface ForensicPhotoViewerProps {
   scareMode: ScareMode;
   viewCount?: number;
   onInspect?: (photoId: string) => void;
+  onDiscoverLensAnomaly?: (photoId: string) => void;
   onTriggerScare?: (event: {
     title: string;
     message: string;
@@ -214,6 +215,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   scareMode,
   viewCount = 1,
   onInspect,
+  onDiscoverLensAnomaly,
   onTriggerScare,
   onAdjustContamination,
 }) => {
@@ -222,7 +224,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const lensWrapRef = useRef<HTMLDivElement | null>(null);
   const lensInnerRef = useRef<HTMLDivElement | null>(null);
-  const pointerRef = useRef({ x: 0.5, y: 0.5, cw: 720, ch: 480 });
+  const pointerRef = useRef({ x: 0.5, y: 0.5, cw: 720, ch: 480, isTouch: false });
   const rafRef = useRef<number | null>(null);
   const windowChimeRef = useRef(false);
   const lensAnomalySoundedRef = useRef<Record<string, boolean>>({});
@@ -256,12 +258,14 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
     const inner = lensInnerRef.current;
     if (!wrap || !inner) return;
 
-    const { x, y, cw, ch } = pointerRef.current;
+    const { x, y, cw, ch, isTouch } = pointerRef.current;
     const z = zoomRef.current;
     const px = x * cw;
     const py = y * ch;
+    // 触屏端将镜框上移 76px，避免手指遮挡视野
+    const visualY = isTouch ? Math.max(LENS_SIZE / 2 + 6, py - 76) : py;
 
-    wrap.style.transform = `translate3d(${Math.round(px - LENS_SIZE / 2)}px, ${Math.round(py - LENS_SIZE / 2)}px, 0)`;
+    wrap.style.transform = `translate3d(${Math.round(px - LENS_SIZE / 2)}px, ${Math.round(visualY - LENS_SIZE / 2)}px, 0)`;
     inner.style.width = `${cw}px`;
     inner.style.height = `${ch}px`;
     inner.style.transform = `translate3d(${LENS_SIZE / 2 - px * z}px, ${LENS_SIZE / 2 - py * z}px, 0) scale(${z})`;
@@ -345,14 +349,14 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
     setHdState('scanning');
   };
 
-  const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  const inspectAtClientPos = (clientX: number, clientY: number, isTouch: boolean) => {
     if (!loupeEnabled) return;
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect || rect.width === 0 || rect.height === 0) return;
 
-    const nx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const ny = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-    pointerRef.current = { x: nx, y: ny, cw: rect.width, ch: rect.height };
+    const nx = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const ny = Math.max(0, Math.min(1, (clientY - rect.top) / rect.height));
+    pointerRef.current = { x: nx, y: ny, cw: rect.width, ch: rect.height, isTouch };
 
     if (!lensVisible) setLensVisible(true);
     if (rafRef.current === null) {
@@ -381,6 +385,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         lensAnomalySoundedRef.current.nuo_mask = true;
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(3);
+        onDiscoverLensAnomaly?.('nuo_mask');
       }
       setAnomalyIfChanged('暗房放大镜异象：实木封死的盲傩眼窝裂开横缝，木胎深处有一双充血活人眼珠正在对焦');
       return;
@@ -392,6 +397,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         lensAnomalySoundedRef.current.qh_12_03 = true;
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(3);
+        onDiscoverLensAnomaly?.('qh_12_03');
       }
       setAnomalyIfChanged('氧化水银镜面显影：「十月封镜」红纸右侧夹角处，映出了站在你身后的湿发窥视眼');
       return;
@@ -403,6 +409,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
       if (shrineHoverStartRef.current === null) {
         shrineHoverStartRef.current = now;
         horrorAudio.playMirrorChill(scareMode);
+        onDiscoverLensAnomaly?.('shrine_1998');
       } else if (now - shrineHoverStartRef.current >= 1950 && !shrineScareFiredRef.current) {
         shrineScareFiredRef.current = true;
         onAdjustContamination?.(6);
@@ -424,6 +431,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
       if (!lensAnomalySoundedRef.current.qh_26_03) {
         lensAnomalySoundedRef.current.qh_26_03 = true;
         horrorAudio.playMirrorChill(scareMode);
+        onDiscoverLensAnomaly?.('qh_26_03');
       }
       setAnomalyIfChanged('门外白雾潜影：敞开的堂屋门槛外并排站着四名浑身湿透的村民，正静静往屋里看');
       return;
@@ -434,6 +442,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
       if (!lensAnomalySoundedRef.current.village_mist) {
         lensAnomalySoundedRef.current.village_mist = true;
         horrorAudio.playMirrorChill(scareMode);
+        onDiscoverLensAnomaly?.('village_mist');
       }
       setAnomalyIfChanged('银盐底片潜影：空无一人的青石拱桥上站满了穿黑粗布褂的村民，正齐刷刷仰头望着山脊镜头');
       return;
@@ -445,6 +454,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         lensAnomalySoundedRef.current.qh_10_04 = true;
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(2);
+        onDiscoverLensAnomaly?.('qh_10_04');
       }
       setAnomalyIfChanged('古樟树洞微距显影：三百年雷击空腔深处有一双手正扒着腐木，从眼罩堆后直勾勾盯着镜头');
       return;
@@ -456,6 +466,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         lensAnomalySoundedRef.current.qh_05_08 = true;
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(2);
+        onDiscoverLensAnomaly?.('qh_05_08');
       }
       setAnomalyIfChanged('银盐暗部潜影：族老身后的宗祠黑门洞里挤满了未撤离的湿衣人影，手捧木主牌位上浮现出睁眼人脸');
       return;
@@ -468,6 +479,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         horrorAudio.playWoodenClapper();
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(3);
+        onDiscoverLensAnomaly?.('qh_19_02');
       }
       setAnomalyIfChanged('竹纸夹层透光显影：左页空白处渗出暗红血书——「十月十七夜 锣响三声 谁也走不掉 戏箱里多出一颗头」');
       return;
@@ -479,6 +491,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         lensAnomalySoundedRef.current.qh_01_02 = true;
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(2);
+        onDiscoverLensAnomaly?.('qh_01_02');
       }
       setAnomalyIfChanged('拓本破损异象：原本生铁封死的铁牛眼窝在宣纸拓片下裂开，露出一只流着铁锈血水的活体眼球');
       return;
@@ -490,12 +503,23 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         lensAnomalySoundedRef.current.thumbprint_ledger = true;
         horrorAudio.playMirrorChill(scareMode);
         onAdjustContamination?.(3);
+        onDiscoverLensAnomaly?.('thumbprint_ledger');
       }
       setAnomalyIfChanged('红印泥微距异变：124枚指模螺线中心均嵌着湿润瞳仁，且二排三列户主已被鲜红印泥涂改为「屏前调阅人」');
       return;
     }
 
     setAnomalyIfChanged(null);
+  };
+
+  const handlePointerMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    inspectAtClientPos(e.clientX, e.clientY, false);
+  };
+
+  const handleTouchInspect = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!loupeEnabled || e.touches.length === 0) return;
+    const t = e.touches[0];
+    inspectAtClientPos(t.clientX, t.clientY, true);
   };
 
   const info = VISUAL_CAPTIONS[photoId];
@@ -712,6 +736,27 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
             <span>光学放大镜 {loupeEnabled ? `${zoomLevel.toFixed(1)}x` : ''}</span>
           </button>
 
+          {loupeEnabled && (
+            <div className="inline-flex items-center overflow-hidden rounded-lg border border-amber-500/50 bg-white text-[11px] font-mono-tech">
+              <button
+                type="button"
+                onClick={() => setZoomLevel((z) => Math.max(1.6, Math.round((z - 0.3) * 10) / 10))}
+                className="px-2 py-1 text-stone-700 hover:bg-amber-50 cursor-pointer"
+                title="缩小焦距"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                onClick={() => setZoomLevel((z) => Math.min(3.8, Math.round((z + 0.3) * 10) / 10))}
+                className="border-l border-amber-500/30 px-2 py-1 text-stone-700 hover:bg-amber-50 cursor-pointer"
+                title="放大焦距"
+              >
+                +
+              </button>
+            </div>
+          )}
+
           <button
             type="button"
             onClick={() => {
@@ -772,7 +817,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         </div>
       </div>
 
-      {/* 主取证视图区 */}
+      {/* 主取证视图区（兼容键鼠与触屏手指偏移镜框） */}
       <div
         ref={containerRef}
         onMouseMove={handlePointerMove}
@@ -788,8 +833,19 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
           setAnomalyIfChanged(null);
           shrineHoverStartRef.current = null;
         }}
+        onTouchStart={(e) => {
+          if (!loupeEnabled) return;
+          onInspect?.(photoId);
+          setLensVisible(true);
+          handleTouchInspect(e);
+        }}
+        onTouchMove={handleTouchInspect}
+        onTouchEnd={() => {
+          setLensVisible(false);
+          shrineHoverStartRef.current = null;
+        }}
         className={`relative w-full select-none overflow-hidden bg-black ${
-          loupeEnabled ? 'cursor-none' : 'cursor-default'
+          loupeEnabled ? 'cursor-none touch-none' : 'cursor-default'
         }`}
       >
         {renderVisualCore(false)}

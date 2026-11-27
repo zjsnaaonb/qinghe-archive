@@ -12,13 +12,31 @@ import {
   Upload,
   RotateCcw,
   ExternalLink,
+  Camera,
+  Eye,
+  Zap,
 } from 'lucide-react';
 import type { EndingId, GameState, ScareMode, SiteId } from '../types/game';
 import { PROGRESSIVE_HINTS } from '../data/hints';
 import { exportSaveCode, importSaveCode } from '../engine/gameState';
 import { SITE_METAS } from './TopInvestigatorBar';
 import { stripInlineMarkdown } from './EditorialProse';
+import { HORROR_CAPTURE_CATALOG } from './HauntedAtmosphereLayer';
+import { ENCOUNTER_METAS, type EncounterId } from './EmergencyHorrorEncounter';
 import { horrorAudio } from '../engine/audio';
+
+const LENS_ANOMALY_CATALOG: Array<{ id: string; label: string; src: string }> = [
+  { id: 'nuo_mask', label: 'QH-38-M01 无目盲傩眼窝活眼', src: './media/nuo_mask_lens.png' },
+  { id: 'qh_12_03', label: 'QH-12-03 十月封镜湿发窥视眼', src: './media/qh_12_03_lens.png' },
+  { id: 'shrine_1998', label: 'QH-38-S00 戏台回首与泥胎睁眼', src: './media/shrine_1998_lens.png' },
+  { id: 'qh_26_03', label: 'QH-26-03 辞灶门外白雾湿衣人', src: './media/qh_26_03_lens.png' },
+  { id: 'qh_10_04', label: 'QH-10-04 空心古樟泥脸窥视', src: './media/qh_10_04_lens.png' },
+  { id: 'village_mist', label: 'QH-38-F02 拱桥整排黑褂仰望', src: './media/village_mist_lens.png' },
+  { id: 'qh_05_08', label: 'QH-05-08 宗祠黑门洞滞留人影', src: './media/qh_05_08_lens.png' },
+  { id: 'qh_19_02', label: 'QH-19-02 福春班账本暗红血书', src: './media/qh_19_02_lens.png' },
+  { id: 'qh_01_02', label: 'QH-01-02 镇水铁牛拓片泣血眼', src: './media/qh_01_02_lens.png' },
+  { id: 'thumbprint_ledger', label: '附表38 124枚红指模睁眼异变', src: './media/thumbprint_ledger_lens.png' },
+];
 
 export type RightPanelMode = 'notebook' | 'hints' | 'settings' | null;
 
@@ -43,6 +61,7 @@ interface SideWorkspacePanelProps {
   onImportState: (newState: GameState) => void;
   onResetGame: () => void;
   onViewEnding?: (ending: EndingId) => void;
+  onReplayEncounter?: (encounterId: EncounterId) => void;
 }
 
 export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
@@ -58,11 +77,19 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
   onImportState,
   onResetGame,
   onViewEnding,
+  onReplayEncounter,
 }) => {
   const [kwDraft, setKwDraft] = useState('');
   const [revealedHintTiers, setRevealedHintTiers] = useState<Record<string, number>>({});
   const [saveInput, setSaveInput] = useState('');
   const [copyFeedback, setCopyFeedback] = useState('');
+  const [codexTab, setCodexTab] = useState<'lens' | 'captures' | 'encounters'>('lens');
+  const [previewPlate, setPreviewPlate] = useState<{ title: string; src: string } | null>(null);
+
+  const discoveredLensIds = state.discoveredLensIds ?? [];
+  const discoveredCaptureIds = state.discoveredCaptureIds ?? [];
+  const survivedEncounters = state.survivedEncounters ?? [];
+  const solvedPuzzleIds = state.solvedPuzzleIds ?? [];
 
   const rescuedCount = Object.values(state.rescued).filter(Boolean).length;
   const reelsDoneCount = [
@@ -198,10 +225,15 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
                         <button
                           type="button"
                           onClick={() => onJumpToSite(clue.sourceSite, clue.sourceDocId)}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#9e2a2b] hover:underline cursor-pointer"
+                          className="inline-flex min-w-0 items-center gap-1 text-[11px] font-semibold text-[#9e2a2b] hover:underline cursor-pointer"
+                          title={clue.sourceDocId ? `直接跳回原卷宗：${clue.title}` : `返回 ${SITE_METAS[clue.sourceSite].shortName}`}
                         >
-                          <span>{SITE_METAS[clue.sourceSite].shortName}</span>
-                          <ExternalLink className="h-2.5 w-2.5" />
+                          <span className="truncate">
+                            {clue.title && !clue.title.endsWith('摘录')
+                              ? clue.title
+                              : SITE_METAS[clue.sourceSite].shortName}
+                          </span>
+                          <ExternalLink className="h-2.5 w-2.5 shrink-0" />
                         </button>
                         <button
                           type="button"
@@ -415,6 +447,165 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
               </div>
             </div>
 
+            {/* 暗房异象收集册（镜片潜影 10 + 实景抓拍 13 + 突发应对 4 + 实物互动 7） */}
+            <div className="rounded-xl border border-[#e3dccf] bg-white p-3.5 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between text-xs font-bold text-[#16263f]">
+                <span className="inline-flex items-center gap-1.5">
+                  <Camera className="h-4 w-4 text-[#9e2a2b]" />
+                  暗房异象收集册
+                </span>
+                <span className="font-mono-tech text-[11px] text-stone-500">
+                  互动解谜 {solvedPuzzleIds.length}/7
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setCodexTab('lens')}
+                  className={`rounded-lg border px-2 py-1.5 font-medium transition cursor-pointer ${
+                    codexTab === 'lens'
+                      ? 'border-[#9e2a2b]/60 bg-red-50 text-[#9e2a2b]'
+                      : 'border-stone-200 bg-stone-50 text-stone-600 hover:border-stone-300'
+                  }`}
+                >
+                  镜片潜影 {discoveredLensIds.length}/10
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCodexTab('captures')}
+                  className={`rounded-lg border px-2 py-1.5 font-medium transition cursor-pointer ${
+                    codexTab === 'captures'
+                      ? 'border-[#9e2a2b]/60 bg-red-50 text-[#9e2a2b]'
+                      : 'border-stone-200 bg-stone-50 text-stone-600 hover:border-stone-300'
+                  }`}
+                >
+                  实景抓拍 {discoveredCaptureIds.length}/13
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCodexTab('encounters')}
+                  className={`rounded-lg border px-2 py-1.5 font-medium transition cursor-pointer ${
+                    codexTab === 'encounters'
+                      ? 'border-[#9e2a2b]/60 bg-red-50 text-[#9e2a2b]'
+                      : 'border-stone-200 bg-stone-50 text-stone-600 hover:border-stone-300'
+                  }`}
+                >
+                  突发应对 {survivedEncounters.length}/4
+                </button>
+              </div>
+
+              {codexTab === 'lens' && (
+                <div className="grid grid-cols-2 gap-1.5 max-h-56 overflow-y-auto pr-0.5">
+                  {LENS_ANOMALY_CATALOG.map((item) => {
+                    const found = discoveredLensIds.includes(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        disabled={!found}
+                        onClick={() => {
+                          horrorAudio.playClick('film');
+                          setPreviewPlate({ title: item.label, src: item.src });
+                        }}
+                        className={`flex flex-col overflow-hidden rounded-lg border text-left transition ${
+                          found
+                            ? 'border-[#dcd4c4] bg-[#faf7f0] hover:border-[#9e2a2b] cursor-pointer'
+                            : 'border-stone-200 bg-stone-50 opacity-60 cursor-default'
+                        }`}
+                      >
+                        <div className="relative h-14 w-full bg-zinc-900">
+                          {found ? (
+                            <img src={item.src} alt={item.label} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-[10px] font-mono-tech text-stone-500">
+                              待放大镜显影
+                            </div>
+                          )}
+                        </div>
+                        <div className="truncate px-2 py-1 text-[10px] font-medium text-stone-700">
+                          {found ? item.label : '？？？未显影底片'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {codexTab === 'captures' && (
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+                  {HORROR_CAPTURE_CATALOG.map((cap) => {
+                    const found = discoveredCaptureIds.includes(cap.id);
+                    return (
+                      <div
+                        key={cap.id}
+                        className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 text-[11px] ${
+                          found
+                            ? 'border-[#dcd4c4] bg-[#faf7f0] text-stone-800'
+                            : 'border-stone-200 bg-stone-50 text-stone-400'
+                        }`}
+                      >
+                        <span className="truncate">{found ? cap.tag : '？？？未触发实景异象'}</span>
+                        {found && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              horrorAudio.playClick('film');
+                              setPreviewPlate({ title: cap.tag, src: cap.imageSrc });
+                            }}
+                            className="inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-[#9e2a2b] hover:underline cursor-pointer"
+                          >
+                            <Eye className="h-3 w-3" />
+                            检视
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {codexTab === 'encounters' && (
+                <div className="space-y-2">
+                  {(Object.keys(ENCOUNTER_METAS) as EncounterId[]).map((eid) => {
+                    const meta = ENCOUNTER_METAS[eid];
+                    const survived = survivedEncounters.includes(eid);
+                    return (
+                      <div
+                        key={eid}
+                        className={`rounded-lg border p-2.5 text-[11px] ${
+                          survived
+                            ? 'border-emerald-300 bg-emerald-50/60 text-emerald-950'
+                            : 'border-stone-200 bg-stone-50 text-stone-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold">{meta.title}</span>
+                          {onReplayEncounter && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                horrorAudio.playClick('film');
+                                onClose();
+                                onReplayEncounter(eid);
+                              }}
+                              className="inline-flex items-center gap-1 rounded border border-[#9e2a2b]/40 bg-white px-2 py-0.5 text-[10px] font-semibold text-[#9e2a2b] hover:bg-red-50 cursor-pointer"
+                            >
+                              <Zap className="h-2.5 w-2.5" />
+                              {survived ? '重温演练' : '立即演练'}
+                            </button>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[10.5px] leading-relaxed text-stone-500">
+                          {survived ? `✓ 已成功镇压 · ${meta.shortRule}` : meta.shortRule}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div className="rounded-xl border border-[#e3dccf] bg-white p-3.5 shadow-2xs">
               <div className="mb-2.5 flex items-center justify-between text-xs font-bold text-[#16263f]">
                 <span className="inline-flex items-center gap-1.5">
@@ -513,6 +704,35 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
           </>
         )}
       </div>
+
+      {/* 收集册高清底片全屏检视弹窗 */}
+      {previewPlate && (
+        <div
+          onClick={() => setPreviewPlate(null)}
+          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/88 p-4 backdrop-blur-sm"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl overflow-hidden rounded-2xl border border-stone-700 bg-zinc-950 shadow-2xl"
+          >
+            <div className="flex items-center justify-between border-b border-stone-800 px-4 py-3 text-xs text-stone-200">
+              <span className="font-serif-cn font-bold">{previewPlate.title}</span>
+              <button
+                type="button"
+                onClick={() => setPreviewPlate(null)}
+                className="rounded-lg border border-stone-700 px-2.5 py-1 text-[11px] text-stone-300 hover:bg-stone-800 cursor-pointer"
+              >
+                关闭
+              </button>
+            </div>
+            <img
+              src={previewPlate.src}
+              alt={previewPlate.title}
+              className="max-h-[75vh] w-full object-contain bg-black"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

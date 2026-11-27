@@ -385,6 +385,52 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
                       placeholder="请输入：封水时辰(2字) + 盲傩绝唱剧目正名(4字)"
                       className="w-full rounded-xl border border-stone-300 bg-white px-4 py-3 font-serif-cn text-sm tracking-widest text-stone-900 placeholder-stone-400 outline-none focus:border-[#9e2a2b]"
                     />
+                    {/* 6 汉字分段可视槽位（防错字/多字，零剧透） */}
+                    {(() => {
+                      const chars = Array.from(passInput.replace(/[\s\-_·《》「」]/g, ''));
+                      return (
+                        <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1 rounded-lg border border-amber-300/70 bg-amber-50/70 px-2 py-1">
+                              {[0, 1].map((i) => (
+                                <span
+                                  key={i}
+                                  className={`flex h-6 w-6 items-center justify-center rounded border font-serif-cn text-xs font-bold ${
+                                    chars[i]
+                                      ? 'border-amber-500 bg-white text-[#9e2a2b]'
+                                      : 'border-dashed border-amber-300 bg-amber-50/50 text-amber-400'
+                                  }`}
+                                >
+                                  {chars[i] || '时'}
+                                </span>
+                              ))}
+                            </div>
+                            <span className="font-mono-tech text-xs text-stone-400">+</span>
+                            <div className="flex items-center gap-1 rounded-lg border border-stone-300/80 bg-stone-50 px-2 py-1">
+                              {[2, 3, 4, 5].map((i) => (
+                                <span
+                                  key={i}
+                                  className={`flex h-6 w-6 items-center justify-center rounded border font-serif-cn text-xs font-bold ${
+                                    chars[i]
+                                      ? 'border-[#9e2a2b]/60 bg-white text-[#16263f]'
+                                      : 'border-dashed border-stone-300 bg-white/60 text-stone-300'
+                                  }`}
+                                >
+                                  {chars[i] || '戏'}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                          <span
+                            className={`font-mono-tech text-[11px] font-semibold ${
+                              chars.length === 6 ? 'text-emerald-700' : 'text-stone-500'
+                            }`}
+                          >
+                            已填 {chars.length} / 6 字
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {unlockError && (

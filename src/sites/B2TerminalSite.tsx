@@ -50,21 +50,21 @@ const INTERCOM_CHANNELS: IntercomChannel[] = [
     id: 'B2-02',
     roomTitle: 'B2-02 通风设备间',
     hasBreath: false,
-    noiseFloorLabel: '新风除湿机组底噪 -34dB · 连续发声包络（未检出吸气间隙）',
+    noiseFloorLabel: '声学通道 CH-01 · 12.0s 循环采样（请试听并对照下方波形自主辨伪）',
     transcriptSnippet: '“师姐救我我在通风间门锁死了快帮我开门师姐救我我在通风间门锁死了……”',
   },
   {
     id: 'B2-05',
     roomTitle: 'B2-05 消音录音棚',
     hasBreath: true,
-    noiseFloorLabel: '全消声尖劈底噪 -68dB · 每 4.0 秒检出断句停顿与急促换气峰值',
-    transcriptSnippet: '“有人吗……[急促吸气]……我在消音棚双层铅门后……[换气吞咽]……别信外面没有呼吸的复读声……”',
+    noiseFloorLabel: '声学通道 CH-02 · 12.0s 循环采样（请试听并对照下方波形自主辨伪）',
+    transcriptSnippet: '“有人吗……我在消音棚双层铅门后……别信外面那个声音……快帮我把门打开……”',
   },
   {
     id: 'B2-08',
     roomTitle: 'B2-08 磁带消磁室',
     hasBreath: false,
-    noiseFloorLabel: '工频退磁器嗡鸣 + 62Hz 水底暗涌调制 · 零停顿等幅低语',
+    noiseFloorLabel: '声学通道 CH-03 · 12.0s 循环采样（请试听并对照下方波形自主辨伪）',
     transcriptSnippet: '“一鸣在消磁室快断电开门快断电开门快断电开门快断电开门……”',
   },
 ];
@@ -140,7 +140,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
   const telecineCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const irMonitorCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const cctvBgImgRef = useRef<HTMLImageElement | null>(null);
-  const [cctvImgLoaded, setCctvImgLoaded] = useState(false);
+  const cctvApproachImgRef = useRef<HTMLImageElement | null>(null);
+  const [cctvImgLoaded, setCctvImgLoaded] = useState(0);
 
   const reelImgsRef = useRef<Record<string, HTMLImageElement | null>>({
     r04_7: null,
@@ -155,7 +156,14 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
     img.src = './media/b2_corridor_cctv.png';
     img.onload = () => {
       cctvBgImgRef.current = img;
-      setCctvImgLoaded(true);
+      setCctvImgLoaded((c) => c + 1);
+    };
+
+    const approachImg = new Image();
+    approachImg.src = './media/b2_corridor_cctv_approach.png';
+    approachImg.onload = () => {
+      cctvApproachImgRef.current = approachImg;
+      setCctvImgLoaded((c) => c + 1);
     };
 
     const reelSources: Array<[string, string]> = [
@@ -423,61 +431,40 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
     const H = canvas.height;
     ctx.clearRect(0, 0, W, H);
 
-    // 红外夜视底图：优先绘制 Nano Banana 真实地下 B2 机房走廊红外监控画面
+    // 红外夜视底图：100% 采用 gpt-image 像素对齐的地下 B2 走廊与湿蓝布衫逼近实拍帧
+    const showWetBlueFigure = selectedReel === 'QH-38-12' && !state.b2Progress.reel12Passed && figureWalkProgress < 1;
+
     if (cctvBgImgRef.current) {
       ctx.save();
       ctx.filter = roomLightsOff
         ? 'brightness(0.45) contrast(1.35) sepia(1) hue-rotate(85deg) saturate(1.8)'
         : 'brightness(0.92) contrast(1.22)';
       ctx.drawImage(cctvBgImgRef.current, 0, 0, W, H);
+
+      // 审看第12卷且未走过三号机柜时，无缝叠合像素对齐的实拍湿蓝布衫人影帧
+      if (showWetBlueFigure && cctvApproachImgRef.current) {
+        ctx.globalAlpha = Math.max(0.08, 1 - figureWalkProgress * 0.92);
+        ctx.drawImage(cctvApproachImgRef.current, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
       ctx.restore();
-      // 轻叠三号机柜定位标示框
-      ctx.strokeStyle = 'rgba(16, 185, 129, 0.55)';
-      ctx.setLineDash([3, 3]);
-      ctx.strokeRect(185, 48, 72, 120);
+
+      // 三号机柜红外定位框（左侧冷存储机柜组）
+      ctx.strokeStyle = showWetBlueFigure && !roomLightsOff ? 'rgba(239, 68, 68, 0.88)' : 'rgba(16, 185, 129, 0.55)';
+      ctx.setLineDash(showWetBlueFigure && !roomLightsOff ? [] : [3, 3]);
+      ctx.strokeRect(86, 54, 62, 114);
       ctx.setLineDash([]);
-      ctx.fillStyle = '#6ee7b7';
+      ctx.fillStyle = showWetBlueFigure && !roomLightsOff ? '#fca5a5' : '#6ee7b7';
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('RACK-03 三号机柜', 221, 43);
+      ctx.fillText(
+        showWetBlueFigure && !roomLightsOff ? '⚠ RACK-03 低温体征' : 'RACK-03 三号机柜',
+        117,
+        48
+      );
     } else {
       ctx.fillStyle = roomLightsOff ? '#04130b' : '#141b18';
       ctx.fillRect(0, 0, W, H);
-    }
-
-    // 当检视第12卷（或尚未通过第12卷）时绘制湿蓝布衫背影
-    const showWetBlueFigure = selectedReel === 'QH-38-12' && !state.b2Progress.reel12Passed;
-    if (showWetBlueFigure && figureWalkProgress < 1) {
-      const baseX = 228 + figureWalkProgress * 95; // 从三号机柜正前方缓缓向右走出走廊
-      const baseY = 82;
-      const alpha = 1 - figureWalkProgress * 0.85;
-
-      // 地面水渍黑影
-      ctx.fillStyle = `rgba(6, 28, 46, ${0.75 * alpha})`;
-      ctx.beginPath();
-      ctx.ellipse(baseX, 182, 24, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 湿蓝布衫佝偻背影
-      ctx.fillStyle = `rgba(30, 64, 115, ${0.92 * alpha})`;
-      ctx.beginPath();
-      ctx.moveTo(baseX - 20, baseY + 14);
-      ctx.lineTo(baseX + 20, baseY + 14);
-      ctx.lineTo(baseX + 25, baseY + 94);
-      ctx.lineTo(baseX - 25, baseY + 94);
-      ctx.closePath();
-      ctx.fill();
-
-      // 后脑轮廓
-      ctx.fillStyle = `rgba(12, 20, 28, ${0.95 * alpha})`;
-      ctx.beginPath();
-      ctx.arc(baseX - 2, baseY, 12, 0, Math.PI * 2);
-      ctx.fill();
-
-      if (!roomLightsOff) {
-        ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
-        ctx.strokeRect(baseX - 30, baseY - 18, 60, 118);
-      }
     }
 
     // 红外监控顶栏 HUD
@@ -577,12 +564,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
 
         const barH = Math.max(2, amp * (H - 22));
         const x = (i / bars) * W;
-        const isBreathSpike = ch.hasBreath && sec % 4.0 >= 3.62 && sec % 4.0 < 3.88;
-        ctx.fillStyle = isBreathSpike
-          ? '#d97706'
-          : ch.hasBreath
-          ? '#059669'
-          : '#dc2626';
+        // 统一使用中性示波器青色，避免用颜色直接剧透哪间房是真人，须靠包络断句与耳听辨伪
+        ctx.fillStyle = state.rescued.zhaoYiming && ch.hasBreath ? '#059669' : '#0f766e';
         ctx.fillRect(x, midY - barH / 2, Math.max(1.8, W / bars - 1.2), barH);
       }
 
@@ -1311,11 +1294,27 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                 </div>
 
                 <div className="rounded-xl border border-amber-200 bg-[#fcf9f0] p-4 text-xs leading-6 text-stone-700 shadow-2xs">
-                  <div className="mb-1.5 font-bold text-amber-950">《B2安全审片规程》机房贴条摘要</div>
-                  <ul className="list-disc space-y-1.5 pl-4 text-[11.5px]">
-                    <li>凡背身人数较上一帧骤减，切忌放大寻脸，须先挂【琥珀黄滤光片】再【跳帧 +3】。</li>
-                    <li>凡闻铜锣三响挂出白底剧目牌，须先切【静音音轨】再【读取牌文】，勿看空龛。</li>
-                    <li>凡红外小窗见湿蓝布衫逼近三号机柜，立点【关闭机房照明】，待其走过再读柱联。</li>
+                  <div className="mb-1.5 flex items-center justify-between font-bold text-amber-950">
+                    <span>机房墙面受潮残损便签</span>
+                    <span className="font-mono-tech text-[10px] font-normal text-stone-400">
+                      墨迹漫漶
+                    </span>
+                  </div>
+                  <p className="text-[11.5px] leading-relaxed text-stone-600">
+                    ……原纸条下半截已被冷凝水浸透模糊。上机审看 38 号异常卷前，请务必回{' '}
+                    <button
+                      type="button"
+                      onClick={() => onNavigateSite('oa', 'oa-l2-ten-rules')}
+                      className="font-semibold text-[#9e2a2b] underline hover:text-red-900 cursor-pointer"
+                    >
+                      内部 OA《安全审片十诫》
+                    </button>{' '}
+                    复核对应戒律：
+                  </p>
+                  <ul className="mt-2 list-disc space-y-1 pl-4 font-serif-cn text-[11.5px] text-stone-600">
+                    <li>第 3 诫：遇人数骤减帧……切忌放大……滤镜护目……</li>
+                    <li>第 6 诫：闻铜锣三响……先断声轨再读白牌……</li>
+                    <li>第 9 诫：红外屏见湿蓝布衫贴近三号机柜……即刻避光……</li>
                   </ul>
                 </div>
               </aside>

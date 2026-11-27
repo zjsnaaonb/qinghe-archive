@@ -31,6 +31,10 @@ import { GlobalSearchModal, type SearchHit } from './components/GlobalSearchModa
 import { ScareOverlay } from './components/ScareOverlay';
 import { EndingScreen } from './components/EndingScreen';
 import { HauntedAtmosphereLayer } from './components/HauntedAtmosphereLayer';
+import {
+  EmergencyHorrorEncounter,
+  type EncounterId,
+} from './components/EmergencyHorrorEncounter';
 import type {
   CommonSiteProps,
   NavCommand,
@@ -120,7 +124,9 @@ export const App: React.FC = () => {
   const [searchHits, setSearchHits] = useState<SearchHit[]>([]);
   const [newlyUnlockedSite, setNewlyUnlockedSite] = useState<SiteId | null>(null);
   const [activeScare, setActiveScare] = useState<ScarePayload | null>(null);
+  const [activeEncounter, setActiveEncounter] = useState<EncounterId | null>(null);
   const [toastBanner, setToastBanner] = useState<string | null>(null);
+  const firedStoryEncountersRef = useRef<Set<string>>(new Set());
 
   // 跨站/同站统一浏览历史栈 + 各站点独立滚动条与停留页记忆
   const [navStack, setNavStack] = useState<NavSnapshot[]>(() => [
@@ -425,6 +431,16 @@ export const App: React.FC = () => {
 
   const handleClipSelection = useCallback(
     (snippet: string, site: SiteId) => {
+      const currentSnap = navStack[navIdx];
+      const exactDocId =
+        currentSnap && currentSnap.site === site && !currentSnap.itemId.startsWith('__')
+          ? currentSnap.itemId
+          : undefined;
+      const exactTitle =
+        currentSnap && currentSnap.site === site
+          ? currentSnap.label
+          : `${SITE_METAS[site].shortName} 摘录`;
+
       setState((prev) => {
         if (prev.discoveredClues.some((c) => c.detail === snippet)) return prev;
         return {
@@ -433,18 +449,85 @@ export const App: React.FC = () => {
             ...prev.discoveredClues,
             {
               id: `clip-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-              title: `${SITE_METAS[site].shortName} 摘录`,
+              title: exactTitle,
               detail: snippet,
               sourceSite: site,
+              sourceDocId: exactDocId,
               discoveredAt: `第${prev.act}幕`,
               isPlayerClip: true,
             },
           ],
         };
       });
-      flashToast('已摘录至随身手记');
+      flashToast(`已摘录自「${exactTitle}」至随身手记`);
+    },
+    [flashToast, navStack, navIdx]
+  );
+
+  const handleDiscoverLensAnomaly = useCallback((photoId: string) => {
+    setState((prev) => {
+      const cur = prev.discoveredLensIds ?? [];
+      if (cur.includes(photoId)) return prev;
+      return {
+        ...prev,
+        discoveredLensIds: [...cur, photoId],
+      };
+    });
+  }, []);
+
+  const handleDiscoverCapture = useCallback((captureId: string) => {
+    setState((prev) => {
+      const cur = prev.discoveredCaptureIds ?? [];
+      if (cur.includes(captureId)) return prev;
+      return {
+        ...prev,
+        discoveredCaptureIds: [...cur, captureId],
+      };
+    });
+  }, []);
+
+  const handleSolvePuzzle = useCallback(
+    (puzzleId: string) => {
+      setState((prev) => {
+        const cur = prev.solvedPuzzleIds ?? [];
+        if (cur.includes(puzzleId)) return prev;
+        return {
+          ...prev,
+          solvedPuzzleIds: [...cur, puzzleId],
+        };
+      });
+      flashToast('暗房实物取证完成！新发现已写入当前档案页');
     },
     [flashToast]
+  );
+
+  const handleSurviveEncounter = useCallback(
+    (encounterId: EncounterId) => {
+      setActiveEncounter(null);
+      setState((prev) => {
+        const cur = prev.survivedEncounters ?? [];
+        if (cur.includes(encounterId)) return prev;
+        return {
+          ...prev,
+          survivedEncounters: [...cur, encounterId],
+        };
+      });
+      flashToast('异象已暂时镇压，记录已归档至暗房收集册');
+    },
+    [flashToast]
+  );
+
+  const handleFailEncounter = useCallback(
+    (_encounterId: EncounterId, scare: ScarePayload) => {
+      setActiveEncounter(null);
+      setState((prev) => ({
+        ...prev,
+        contamination: Math.min(100, prev.contamination + 12),
+      }));
+      horrorAudio.playScareStinger(state.scareMode);
+      setActiveScare(scare);
+    },
+    [state.scareMode]
   );
 
   const handleRemoveClue = useCallback((id: string) => {
@@ -847,6 +930,8 @@ export const App: React.FC = () => {
     onAddClue: handleAddClue,
     onAddKeywords: handleAddKeywords,
     onRecordPhotoView: handleRecordPhotoView,
+    onDiscoverLensAnomaly: handleDiscoverLensAnomaly,
+    onSolvePuzzle: handleSolvePuzzle,
     onAdjustContamination: handleAdjustContamination,
     onTriggerScare: handleTriggerScare,
     onElevateOaLevel: handleElevateOaLevel,
@@ -861,6 +946,62 @@ export const App: React.FC = () => {
 
   const activeNavSnap = navStack[navIdx];
   const activeDocKey = activeNavSnap ? `${activeNavSnap.site}:${activeNavSnap.itemId}` : '';
+
+  // 限时民俗灵异突发事件：关键剧情节点必触发（每类一次）+ 探索途中 3.5 分钟低频随机突袭（绝不打断输入密码！）
+  useEffect(() => {
+    if (!state.hasEnteredGame || state.activeEnding) return;
+
+    const milestoneMap: Record<string, EncounterId> = {
+      'qinghe:qh-12-03': 'knock_hold',
+      'chronicles:chr-elevation-map': 'fog_wipe_seal',
+      'oa:oa-l1-attendance': 'mirror_cross_seal',
+      'notes:note-s3': 'gong_freeze',
+    };
+
+    const encounterToFire = milestoneMap[activeDocKey];
+    if (!encounterToFire || firedStoryEncountersRef.current.has(encounterToFire)) return;
+
+    const timer = window.setTimeout(() => {
+      const el = document.activeElement;
+      const isTyping =
+        el instanceof HTMLElement &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+      if (isTyping || activeScare || activeEncounter || searchQuery) return;
+      firedStoryEncountersRef.current.add(encounterToFire);
+      setActiveEncounter(encounterToFire);
+    }, 8200);
+
+    return () => window.clearTimeout(timer);
+  }, [activeDocKey, state.hasEnteredGame, state.activeEnding, activeScare, activeEncounter, searchQuery]);
+
+  useEffect(() => {
+    if (!state.hasEnteredGame || state.activeEnding || !state.readDocIds.includes('qh-37-09')) return;
+
+    const interval = window.setInterval(() => {
+      const el = document.activeElement;
+      const isTyping =
+        el instanceof HTMLElement &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+      if (isTyping || activeScare || activeEncounter || searchQuery || document.hidden) return;
+
+      const allIds: EncounterId[] = ['knock_hold', 'fog_wipe_seal', 'mirror_cross_seal', 'gong_freeze'];
+      const survived = state.survivedEncounters ?? [];
+      const candidates = allIds.filter((id) => !survived.includes(id));
+      const pool = candidates.length > 0 ? candidates : allIds;
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      setActiveEncounter(picked);
+    }, 210000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    state.hasEnteredGame,
+    state.activeEnding,
+    state.readDocIds,
+    state.survivedEncounters,
+    activeScare,
+    activeEncounter,
+    searchQuery,
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f4ed] text-stone-800">
@@ -948,6 +1089,7 @@ export const App: React.FC = () => {
                     setState(createInitialGameState());
                   }}
                   onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
+                  onReplayEncounter={(eid) => setActiveEncounter(eid)}
                 />
               </div>
             </motion.aside>
@@ -983,6 +1125,7 @@ export const App: React.FC = () => {
                   setState(createInitialGameState());
                 }}
                 onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
+                onReplayEncounter={(eid) => setActiveEncounter(eid)}
               />
             </motion.div>
           )}
@@ -994,6 +1137,15 @@ export const App: React.FC = () => {
         state={state}
         activeDocKey={activeDocKey}
         onTriggerScare={handleTriggerScare}
+        onDiscoverCapture={handleDiscoverCapture}
+      />
+
+      {/* 限时突发灵异紧急应对事件层 */}
+      <EmergencyHorrorEncounter
+        encounterId={activeEncounter}
+        scareMode={state.scareMode}
+        onSurvive={handleSurviveEncounter}
+        onFail={handleFailEncounter}
       />
 
       <SelectionClipPopup

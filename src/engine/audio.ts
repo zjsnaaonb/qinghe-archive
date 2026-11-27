@@ -651,7 +651,7 @@ class FolkHorrorAudioEngine {
     src.start(startTime);
   }
 
-  /** 赵一鸣支线多轨取证音频合成 */
+  /** 赵一鸣支线多轨取证音频合成（真呼吸顿挫换气 vs 零间隙水底伪声复读） */
   public playForensicVoiceSample(hasHumanBreath: boolean) {
     const ctx = this.ensureContext();
     if (!ctx || !this.masterGain) return;
@@ -664,11 +664,24 @@ class FolkHorrorAudioEngine {
     for (let i = 0; i < bufferSize; i++) {
       const sec = i / ctx.sampleRate;
       if (hasHumanBreath) {
-        const cycle = sec % 1.4;
-        const speaking = cycle < 0.92 ? 0.55 : cycle > 1.12 ? 0.28 : 0.02;
-        data[i] = (Math.random() * 2 - 1) * speaking;
+        // 真实受惊活人：0~2.6s 断续呼救声（带音节起伏）-> 2.6~3.15s 明显停顿静音 -> 3.15~3.6s 急促倒抽气 -> 3.6~4.2s 压低余音
+        let env = 0.015;
+        if (sec < 2.6) {
+          const syllable = Math.max(0, Math.sin(sec * Math.PI * 5.2));
+          env = 0.08 + syllable * 0.56;
+        } else if (sec >= 2.6 && sec < 3.12) {
+          env = 0.012; // 清晰静音停顿间隙
+        } else if (sec >= 3.12 && sec < 3.58) {
+          const gaspPos = (sec - 3.12) / 0.46;
+          env = Math.sin(gaspPos * Math.PI) * 0.88; // 急促换气吸气峰值
+        } else {
+          env = 0.24 * Math.max(0, Math.sin((sec - 3.58) * Math.PI * 4));
+        }
+        data[i] = (Math.random() * 2 - 1) * env;
       } else {
-        data[i] = (Math.random() * 2 - 1) * 0.42 + Math.sin(sec * Math.PI * 2 * 62) * 0.25;
+        // 伪声：全程 4.2s 无任何停顿与换气的等幅水底暗涌低语
+        const flutter = 0.85 + 0.15 * Math.sin(sec * Math.PI * 2 * 7.5);
+        data[i] = ((Math.random() * 2 - 1) * 0.44 + Math.sin(sec * Math.PI * 2 * 64) * 0.28) * flutter;
       }
     }
 
@@ -677,12 +690,12 @@ class FolkHorrorAudioEngine {
 
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(hasHumanBreath ? 1150 : 760, now);
-    filter.Q.setValueAtTime(hasHumanBreath ? 2.4 : 6.5, now);
+    filter.frequency.setValueAtTime(hasHumanBreath ? 1280 : 690, now);
+    filter.Q.setValueAtTime(hasHumanBreath ? 2.1 : 6.2, now);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.14, now);
-    gain.gain.setValueAtTime(0.14, now + duration - 0.2);
+    gain.gain.setValueAtTime(0.16, now);
+    gain.gain.setValueAtTime(0.16, now + duration - 0.18);
     gain.gain.linearRampToValueAtTime(0.0001, now + duration);
 
     noise.connect(filter);
@@ -690,6 +703,11 @@ class FolkHorrorAudioEngine {
     gain.connect(this.masterGain);
     noise.start(now);
     noise.stop(now + duration);
+
+    // 为真人音轨叠加一段清晰的共振峰急促吸气声（3.12s 处），耳听即可辨别
+    if (hasHumanBreath) {
+      this.triggerGhostExhale(ctx, now + 3.12, 0.48, 0.11, 0);
+    }
   }
 
   /**
