@@ -379,7 +379,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
         }`}
       >
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-5 py-5">
-          <div className="flex items-center gap-1.5 rounded-xl border border-stone-200 bg-stone-100/80 p-1">
+          <div className="flex items-center gap-1.5 overflow-hidden rounded-xl border border-stone-200 bg-stone-100/80 p-1">
             <button
               type="button"
               onClick={() => {
@@ -388,14 +388,21 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 setViewMode('list');
                 onRecordNav?.('__list:zijing__', '紫荆站 · 夜间树洞列表');
               }}
-              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-semibold cursor-pointer outline-none transition-colors duration-150 ${
-                isZijing
-                  ? 'border-purple-300/80 bg-white text-purple-900 shadow-2xs'
-                  : 'border-transparent text-stone-500 hover:text-stone-800'
+              className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer outline-none focus:outline-none transition-colors duration-150 ${
+                isZijing ? 'text-purple-900' : 'text-stone-500 hover:text-stone-800'
               }`}
             >
-              <span className="font-mono-tech text-[10px] opacity-75">[ZIJING]</span>
-              <span>南大紫荆站 · 夜间树洞</span>
+              {isZijing && (
+                <motion.span
+                  layoutId="bbsBoardTabPill"
+                  transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                  className="pointer-events-none absolute inset-0 rounded-lg border border-purple-300/80 bg-white shadow-2xs"
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <span className="font-mono-tech text-[10px] opacity-75">[ZIJING]</span>
+                <span>南大紫荆站 · 夜间树洞</span>
+              </span>
             </button>
 
             <button
@@ -406,14 +413,21 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 setViewMode('list');
                 onRecordNav?.('__list:developer__', '显影液 · 胶片论坛列表');
               }}
-              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-semibold cursor-pointer outline-none transition-colors duration-150 ${
-                !isZijing
-                  ? 'border-amber-400/70 bg-white text-amber-950 shadow-2xs'
-                  : 'border-transparent text-stone-500 hover:text-stone-800'
+              className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer outline-none focus:outline-none transition-colors duration-150 ${
+                !isZijing ? 'text-amber-950' : 'text-stone-500 hover:text-stone-800'
               }`}
             >
-              <span className="font-mono-tech text-[10px] opacity-75">[16MM]</span>
-              <span>显影液 · 老式 DV 胶片论坛</span>
+              {!isZijing && (
+                <motion.span
+                  layoutId="bbsBoardTabPill"
+                  transition={{ type: 'spring', stiffness: 460, damping: 34 }}
+                  className="pointer-events-none absolute inset-0 rounded-lg border border-amber-400/70 bg-white shadow-2xs"
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-1.5">
+                <span className="font-mono-tech text-[10px] opacity-75">[16MM]</span>
+                <span>显影液 · 老式 DV 胶片论坛</span>
+              </span>
             </button>
           </div>
 

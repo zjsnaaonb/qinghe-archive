@@ -901,16 +901,24 @@ export const App: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 零卡顿单站点瞬切架构：仅渲染当前激活站点，由 siteUiMemory 毫秒级恢复各站原页面与原滚动位置 */}
+      {/* 120fps 丝滑切站过渡动画 + 单活动站点瞬开记忆架构 */}
       <div className="relative flex flex-1 w-full items-stretch">
-        <main className="flex-1 min-w-0">
-          {state.currentSite === 'mail' && <MailSite {...makeSiteProps('mail')} />}
-          {state.currentSite === 'qinghe' && <QinghePortalSite {...makeSiteProps('qinghe')} />}
-          {state.currentSite === 'bbs' && <BbsSnapshotSite {...makeSiteProps('bbs')} />}
-          {state.currentSite === 'chronicles' && <ChroniclesGovSite {...makeSiteProps('chronicles')} />}
-          {state.currentSite === 'oa' && <OaInternalSite {...makeSiteProps('oa')} />}
-          {state.currentSite === 'notes' && <ZhixiaNotesSite {...makeSiteProps('notes')} />}
-          {state.currentSite === 'b2' && <B2TerminalSite {...makeSiteProps('b2')} />}
+        <main className="flex-1 min-w-0 overflow-x-clip">
+          <motion.div
+            key={state.currentSite}
+            initial={{ opacity: 0, y: 12, scale: 0.994 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+            className="will-change-[transform,opacity]"
+          >
+            {state.currentSite === 'mail' && <MailSite {...makeSiteProps('mail')} />}
+            {state.currentSite === 'qinghe' && <QinghePortalSite {...makeSiteProps('qinghe')} />}
+            {state.currentSite === 'bbs' && <BbsSnapshotSite {...makeSiteProps('bbs')} />}
+            {state.currentSite === 'chronicles' && <ChroniclesGovSite {...makeSiteProps('chronicles')} />}
+            {state.currentSite === 'oa' && <OaInternalSite {...makeSiteProps('oa')} />}
+            {state.currentSite === 'notes' && <ZhixiaNotesSite {...makeSiteProps('notes')} />}
+            {state.currentSite === 'b2' && <B2TerminalSite {...makeSiteProps('b2')} />}
+          </motion.div>
         </main>
 
         <AnimatePresence initial={false}>
