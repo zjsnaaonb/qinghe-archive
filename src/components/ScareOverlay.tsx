@@ -1,21 +1,19 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import type { ScareMode } from '../types/game';
+import type { ScareVisualType } from '../sites/siteProps';
 
 interface ScareOverlayProps {
   scareEvent: {
     title: string;
     message: string;
-    visualType: 'peeker' | 'shrine' | 'rule_break' | 'meta_eye';
+    visualType: ScareVisualType;
   } | null;
   scareMode: ScareMode;
   onDismiss: () => void;
 }
 
-const SCARE_STILL_MAP: Record<
-  NonNullable<ScareOverlayProps['scareEvent']>['visualType'],
-  { src: string; code: string }
-> = {
+const SCARE_STILL_MAP: Record<ScareVisualType, { src: string; code: string }> = {
   shrine: {
     src: './media/horror_shrine_stare.png',
     code: 'REEL-QH38-S00 // 祠堂正龛泥胎异变帧',
@@ -25,12 +23,24 @@ const SCARE_STILL_MAP: Record<
     code: 'SEAL-10-MIRROR // 十月封镜水银暗影帧',
   },
   meta_eye: {
-    src: './media/horror_mirror_reflection.png',
-    code: 'RETINA-SAMPLE-39 // 屏幕暗边反向取景帧',
+    src: './media/horror_webcam_behind.png',
+    code: 'CAM-EXT-39 // 屏幕顶置红外反向抓拍帧',
   },
   rule_break: {
     src: './media/horror_door_gap.png',
     code: 'VAULT-B1-DOOR // 门缝库底渗水抓痕帧',
+  },
+  peephole: {
+    src: './media/horror_peephole_corridor.png',
+    code: 'VAULT-PEEPHOLE // 地下库房门镜贴脸对射帧',
+  },
+  under_desk: {
+    src: './media/horror_under_desk.png',
+    code: 'DESK-FLOOR-IR // 当前工位桌底盲罩潜伏帧',
+  },
+  webcam: {
+    src: './media/horror_webcam_behind.png',
+    code: 'CAM-EXT-39 // 座椅后方湿衣旁观者实测帧',
   },
 };
 
@@ -49,8 +59,8 @@ export const ScareOverlay: React.FC<ScareOverlayProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/82 p-4 backdrop-blur-sm ${
+      transition={{ duration: 0.22 }}
+      className={`fixed inset-0 z-[120] flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm ${
         isFull ? 'glitch-burst' : ''
       }`}
       onClick={onDismiss}
@@ -58,11 +68,10 @@ export const ScareOverlay: React.FC<ScareOverlayProps> = ({
       <motion.div
         initial={{ scale: isFull ? 1.04 : 0.98, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        className="relative z-10 w-full max-w-2xl overflow-hidden rounded-xl border border-[#9e2a2b]/65 bg-[#120e0e] text-[#f3ede2] shadow-[0_28px_90px_rgba(0,0,0,0.92)]"
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="relative z-10 w-full max-w-2xl overflow-hidden rounded-xl border border-[#9e2a2b]/65 bg-[#120e0e] text-[#f3ede2] shadow-[0_28px_90px_rgba(0,0,0,0.94)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 真实 gpt-image 纪实民俗惊悚底片框（无任何廉价手绘SVG，无任何破戏系统提示） */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-black">
           <motion.img
             src={visual.src}
@@ -77,14 +86,14 @@ export const ScareOverlay: React.FC<ScareOverlayProps> = ({
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(circle at 50% 42%, transparent 38%, rgba(10, 7, 7, 0.78) 100%), linear-gradient(to top, rgba(18, 14, 14, 0.96) 0%, transparent 34%)',
+                'radial-gradient(circle at 50% 42%, transparent 40%, rgba(10, 7, 7, 0.76) 100%), linear-gradient(to top, rgba(18, 14, 14, 0.96) 0%, transparent 30%)',
             }}
           />
-          <div className="pointer-events-none absolute left-4 top-3.5 rounded border border-red-500/40 bg-black/70 px-2.5 py-0.5 font-mono-tech text-[10.5px] tracking-widest text-red-300/90">
+          <div className="pointer-events-none absolute left-4 top-3.5 rounded border border-red-500/40 bg-black/75 px-2.5 py-0.5 font-mono-tech text-[10.5px] tracking-widest text-red-300/90">
             {visual.code}
           </div>
           <div className="pointer-events-none absolute right-4 top-3.5 font-mono-tech text-[10.5px] text-amber-300/80">
-            TC 02:17:04:19
+            TC 02:17:09:14
           </div>
         </div>
 

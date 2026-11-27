@@ -982,7 +982,11 @@ export const App: React.FC = () => {
       </div>
 
       {/* 全局中式民俗恐怖实景异变演出层 */}
-      <HauntedAtmosphereLayer state={state} activeDocKey={activeDocKey} />
+      <HauntedAtmosphereLayer
+        state={state}
+        activeDocKey={activeDocKey}
+        onTriggerScare={handleTriggerScare}
+      />
 
       <SelectionClipPopup
         currentSite={state.currentSite}

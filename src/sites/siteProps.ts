@@ -7,10 +7,19 @@ import type {
   SiteId,
 } from '../types/game';
 
+export type ScareVisualType =
+  | 'peeker'
+  | 'shrine'
+  | 'rule_break'
+  | 'meta_eye'
+  | 'peephole'
+  | 'under_desk'
+  | 'webcam';
+
 export interface ScarePayload {
   title: string;
   message: string;
-  visualType: 'peeker' | 'shrine' | 'rule_break' | 'meta_eye';
+  visualType: ScareVisualType;
 }
 
 export interface NavCommand {

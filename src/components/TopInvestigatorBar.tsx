@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'motion/react';
 import {
   Search,
   Settings,
@@ -350,10 +349,10 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
         </div>
       </div>
 
-      {/* 第二排：纯净无AI小图标的典籍式站点切换标签栏（切走再切回自动保持原浏览位置！） */}
-      <div className="border-t border-[#eae4d7] bg-[#f3efe5]/90 px-4 py-1.5">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2">
-          <div className="flex items-center gap-1 overflow-x-auto">
+      {/* 第二排：无黑框、无滚动条溢出的纯净站点切换标签栏 */}
+      <div className="border-t border-[#eae4d7] bg-[#f3efe5]/95 px-4 py-1.5">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2">
+          <div className="no-scrollbar flex flex-wrap items-center gap-1.5">
             {state.unlockedSites.map((siteId) => {
               const meta = SITE_METAS[siteId];
               const active = state.currentSite === siteId;
@@ -365,33 +364,24 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
                     horrorAudio.playClick('ui');
                     onSelectSite(siteId);
                   }}
-                  className={`relative inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium cursor-pointer transition ${
-                    active ? 'text-[#16263f] font-semibold' : 'text-stone-600 hover:text-[#16263f]'
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1 text-xs cursor-pointer outline-none focus:outline-none focus-visible:outline-none transition-colors duration-150 ${
+                    active
+                      ? 'border-[#d4cbb8] bg-white font-semibold text-[#16263f] shadow-2xs'
+                      : 'border-transparent bg-transparent font-medium text-stone-600 hover:bg-white/60 hover:text-[#16263f]'
                   }`}
                 >
-                  {active && (
-                    <motion.span
-                      layoutId="activeSiteTab"
-                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                      className="absolute inset-0 rounded-lg border border-[#d4cbb8] bg-white shadow-2xs"
-                    />
+                  {active && <span className="h-1.5 w-1.5 rounded-full bg-[#9e2a2b]" />}
+                  <span>{meta.shortName}</span>
+                  {siteId === 'mail' && unreadMailCount > 0 && (
+                    <span className="rounded-full bg-[#9e2a2b] px-1.5 py-0.2 text-[10px] font-mono-tech font-bold text-white">
+                      {unreadMailCount}
+                    </span>
                   )}
-                  <span className="relative z-10 flex items-center gap-1.5">
-                    {active && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#9e2a2b]" />
-                    )}
-                    <span>{meta.shortName}</span>
-                    {siteId === 'mail' && unreadMailCount > 0 && (
-                      <span className="rounded-full bg-[#9e2a2b] px-1.5 py-0.2 text-[10px] font-mono-tech font-bold text-white shadow-2xs">
-                        {unreadMailCount}
-                      </span>
-                    )}
-                    {siteId === 'oa' && state.oaLevel > 0 && (
-                      <span className="rounded bg-emerald-100 border border-emerald-300/70 px-1 text-[10px] font-mono-tech text-emerald-800">
-                        Lv.{state.oaLevel}
-                      </span>
-                    )}
-                  </span>
+                  {siteId === 'oa' && state.oaLevel > 0 && (
+                    <span className="rounded border border-emerald-300/70 bg-emerald-100 px-1 text-[10px] font-mono-tech text-emerald-800">
+                      Lv.{state.oaLevel}
+                    </span>
+                  )}
                 </button>
               );
             })}

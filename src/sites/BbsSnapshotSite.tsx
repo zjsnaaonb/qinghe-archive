@@ -25,6 +25,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   onNavigateSite,
   onUnlockSite,
   onMarkRead,
+  onTriggerScare,
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'thread'>(() => siteUiMemory.bbs.viewMode);
   const [activeBoard, setActiveBoard] = useState<'zijing' | 'developer'>(() => siteUiMemory.bbs.activeBoard);
@@ -202,18 +203,9 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     }
   }, [viewMode, activeThread, state.readDocIds, onMarkRead]);
 
-  // 帖内实况民俗惊悚演出：浏览核心热帖或第2幕以后帖子时，B2暗房幽灵节点实时敲字回帖
+  // 帖内实况民俗惊悚演出：在静态快照帖中停留片刻后，B2暗房节点实时敲字回帖并回传真实恐怖抓拍图！
   useEffect(() => {
     if (viewMode !== 'thread' || !activeThread) {
-      setGhostReplyStage('idle');
-      return;
-    }
-    const isHauntedTarget =
-      activeThread.id === 'zijing-40918' ||
-      activeThread.id === 'dev-9816mm' ||
-      state.act >= 2;
-
-    if (!isHauntedTarget) {
       setGhostReplyStage('idle');
       return;
     }
@@ -226,19 +218,19 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     setGhostReplyStage('idle');
     const t1 = window.setTimeout(() => {
       setGhostReplyStage('typing');
-    }, 3600);
+    }, 2800);
 
     const t2 = window.setTimeout(() => {
       ghostPlayedThreadsRef.current.add(activeThread.id);
-      horrorAudio.playWoodenClapper();
+      horrorAudio.playMirrorChill(state.scareMode);
       setGhostReplyStage('posted');
-    }, 6800);
+    }, 5400);
 
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
-  }, [viewMode, activeThread, state.act]);
+  }, [viewMode, activeThread, state.scareMode]);
 
   const ghostLivePayload = useMemo(() => {
     if (!activeThread) return null;
@@ -246,20 +238,29 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
       return {
         author: '匿名树洞 #40918-回声',
         ip: '南大校内 · 人文楼B2湿法暗房专线',
-        text: '别帮苏晓棠算访客口令了。她把自己锁在 B1 善本库里，把眼镜片都磨花了，看不见门缝底下塞进去的红纸条；你面前这块屏幕这么亮，替她低头看一眼桌底吧。',
+        text: '别帮苏晓棠算访客口令了。她把自己锁在 B1 善本库里，把眼镜片都磨花了，看不见门缝底下塞进去的红纸条；你面前这块屏幕这么亮，替她低头看一眼你自己的电脑桌底吧。',
+        imgSrc: './media/horror_under_desk.png',
+        imgCaption: '附件：DESK_FLOOR_IR.JPG（刚刚上传 · 终端桌底红外抓拍）',
+        scareType: 'under_desk' as const,
       };
     }
     if (activeThread.id === 'dev-9816mm') {
       return {
         author: '逆光底片 [离线托管态]',
         ip: '10.14.202.38 · B2三号机柜',
-        text: '师姐托你翻我旧帖的？Bolex 取景器里全是水库底下的白雾……我数了一宿，晒谷场上明明站着十二个人，你怎么只数出十一个？你把站在你椅子正后方看屏幕的那个漏掉了。',
+        text: '师姐托你翻我旧帖的？Bolex 取景器里全是水库底下的白雾……我数了一宿，晒谷场上明明站着十二个人，你怎么只数出十一个？我刚调了你屏幕顶上的反向取景，你自己数数你椅背后面站着几个。',
+        imgSrc: './media/horror_webcam_behind.png',
+        imgCaption: '附件：CAM-EXT-39_0217.JPG（刚刚上传 · 屏幕上方反向夜视帧）',
+        scareType: 'webcam' as const,
       };
     }
     return {
       author: '祠下戏班看箱人',
       ip: '未知内网节点 · 高程 108.4m',
-      text: '三通铜锣还没敲完，客官翻帖子翻得这么急做什么。十月半看盲戏，忌讳拿反光的玻璃照脸——你屏幕右上角的反光里，是不是多了一截湿透的粗布黑领口？',
+      text: '三通铜锣还没敲完，客官翻帖子翻得这么急做什么。方才有人端着第 40 面木框梳妆镜贴在善本库门镜外头往里照——借你的眼睛认认，镜子里排着队的是哪一村的乡亲？',
+      imgSrc: './media/horror_peephole_corridor.png',
+      imgCaption: '附件：VAULT_B1_PEEPHOLE.JPG（刚刚上传 · 地下库房防盗猫眼实拍）',
+      scareType: 'peephole' as const,
     };
   }, [activeThread]);
 
@@ -387,20 +388,14 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 setViewMode('list');
                 onRecordNav?.('__list:zijing__', '紫荆站 · 夜间树洞列表');
               }}
-              className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer transition ${
-                isZijing ? 'text-purple-900' : 'text-stone-500 hover:text-stone-800'
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-semibold cursor-pointer outline-none transition-colors duration-150 ${
+                isZijing
+                  ? 'border-purple-300/80 bg-white text-purple-900 shadow-2xs'
+                  : 'border-transparent text-stone-500 hover:text-stone-800'
               }`}
             >
-              {isZijing && (
-                <motion.span
-                  layoutId="bbsBoardTab"
-                  className="absolute inset-0 rounded-lg bg-white border border-purple-300/80 shadow-2xs"
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <span className="font-mono-tech text-[10px] opacity-75">[ZIJING]</span>
-                <span>南大紫荆站 · 夜间树洞</span>
-              </span>
+              <span className="font-mono-tech text-[10px] opacity-75">[ZIJING]</span>
+              <span>南大紫荆站 · 夜间树洞</span>
             </button>
 
             <button
@@ -411,20 +406,14 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 setViewMode('list');
                 onRecordNav?.('__list:developer__', '显影液 · 胶片论坛列表');
               }}
-              className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer transition ${
-                !isZijing ? 'text-amber-950' : 'text-stone-500 hover:text-stone-800'
+              className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-semibold cursor-pointer outline-none transition-colors duration-150 ${
+                !isZijing
+                  ? 'border-amber-400/70 bg-white text-amber-950 shadow-2xs'
+                  : 'border-transparent text-stone-500 hover:text-stone-800'
               }`}
             >
-              {!isZijing && (
-                <motion.span
-                  layoutId="bbsBoardTab"
-                  className="absolute inset-0 rounded-lg bg-white border border-amber-400/70 shadow-2xs"
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <span className="font-mono-tech text-[10px] opacity-75">[16MM]</span>
-                <span>显影液 · 老式 DV 胶片论坛</span>
-              </span>
+              <span className="font-mono-tech text-[10px] opacity-75">[16MM]</span>
+              <span>显影液 · 老式 DV 胶片论坛</span>
             </button>
           </div>
 
@@ -833,6 +822,36 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                         <p className="font-serif-cn text-[14px] leading-[1.9] text-[#5c1616]">
                           {ghostLivePayload.text}
                         </p>
+
+                        {/* 暗房实时显影的恐怖抓拍附件（点击可全屏放大检视） */}
+                        <div className="mt-3.5 overflow-hidden rounded-xl border border-[#9e2a2b]/40 bg-black">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onTriggerScare({
+                                title: ghostLivePayload.imgCaption,
+                                message: ghostLivePayload.text,
+                                visualType: ghostLivePayload.scareType,
+                              })
+                            }
+                            className="group relative block w-full overflow-hidden text-left cursor-pointer"
+                          >
+                            <motion.img
+                              src={ghostLivePayload.imgSrc}
+                              alt={ghostLivePayload.imgCaption}
+                              initial={{ filter: 'brightness(0.18) blur(5px) grayscale(0.6)' }}
+                              animate={{ filter: 'brightness(0.92) blur(0px) grayscale(0)' }}
+                              transition={{ duration: 2.4, ease: 'easeOut' }}
+                              className="h-52 sm:h-64 w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                            />
+                            <div className="flex items-center justify-between bg-[#160f0f] px-3.5 py-2 font-mono-tech text-[11px] text-red-200/90">
+                              <span>{ghostLivePayload.imgCaption}</span>
+                              <span className="underline text-amber-200 group-hover:text-white">
+                                点击全幅放大检视 →
+                              </span>
+                            </div>
+                          </button>
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>

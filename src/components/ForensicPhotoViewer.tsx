@@ -9,6 +9,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import type { ActNumber, ScareMode } from '../types/game';
+import type { ScareVisualType } from '../sites/siteProps';
 import { horrorAudio } from '../engine/audio';
 
 export type ForensicVisualId =
@@ -42,12 +43,12 @@ export interface ForensicPhotoViewerProps {
   onTriggerScare?: (event: {
     title: string;
     message: string;
-    visualType: 'peeker' | 'shrine' | 'rule_break' | 'meta_eye';
+    visualType: ScareVisualType;
   }) => void;
   onAdjustContamination?: (delta: number) => void;
 }
 
-// 由 gpt-image 100% 像素对齐生成的光学放大镜专属恐怖潜影底片（肉眼原片正常，仅在镜片内显影！）
+// 由 gpt-image 100% 像素对齐生成的光学放大镜与斜射显影专属恐怖潜影底片（共 10 张馆藏核心异变图！）
 const LENS_ONLY_MUTATION_SRC: Partial<Record<ForensicVisualId, string>> = {
   nuo_mask: './media/nuo_mask_lens.png',
   qh_12_03: './media/qh_12_03_lens.png',
@@ -55,6 +56,10 @@ const LENS_ONLY_MUTATION_SRC: Partial<Record<ForensicVisualId, string>> = {
   qh_26_03: './media/qh_26_03_lens.png',
   qh_10_04: './media/qh_10_04_lens.png',
   village_mist: './media/village_mist_lens.png',
+  qh_05_08: './media/qh_05_08_lens.png',
+  qh_19_02: './media/qh_19_02_lens.png',
+  qh_01_02: './media/qh_01_02_lens.png',
+  thumbprint_ledger: './media/thumbprint_ledger_lens.png',
 };
 
 export const VISUAL_CAPTIONS: Record<
@@ -445,6 +450,51 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
       return;
     }
 
+    // 8. 双溪口陈氏宗祠迁主起龛：黑暗祠堂门洞挤满空洞人影 + 牌位浮现活人脸
+    if (photoId === 'qh_05_08' && ((nx > 0.08 && nx < 0.36 && ny > 0.2 && ny < 0.65) || (nx > 0.42 && nx < 0.54 && ny > 0.32 && ny < 0.52))) {
+      if (!lensAnomalySoundedRef.current.qh_05_08) {
+        lensAnomalySoundedRef.current.qh_05_08 = true;
+        horrorAudio.playMirrorChill(scareMode);
+        onAdjustContamination?.(2);
+      }
+      setAnomalyIfChanged('银盐暗部潜影：族老身后的宗祠黑门洞里挤满了未撤离的湿衣人影，手捧木主牌位上浮现出睁眼人脸');
+      return;
+    }
+
+    // 9. 福春班戏箱账本：左侧空白页洇出朱砂血字与血指印
+    if (photoId === 'qh_19_02' && nx > 0.08 && nx < 0.38 && ny > 0.12 && ny < 0.9) {
+      if (!lensAnomalySoundedRef.current.qh_19_02) {
+        lensAnomalySoundedRef.current.qh_19_02 = true;
+        horrorAudio.playWoodenClapper();
+        horrorAudio.playMirrorChill(scareMode);
+        onAdjustContamination?.(3);
+      }
+      setAnomalyIfChanged('竹纸夹层透光显影：左页空白处渗出暗红血书——「十月十七夜 锣响三声 谁也走不掉 戏箱里多出一颗头」');
+      return;
+    }
+
+    // 10. 清嘉庆镇水铁牛拓片：生铁浇封的牛眼裂开泣血活眼
+    if (photoId === 'qh_01_02' && nx > 0.13 && nx < 0.26 && ny > 0.18 && ny < 0.42) {
+      if (!lensAnomalySoundedRef.current.qh_01_02) {
+        lensAnomalySoundedRef.current.qh_01_02 = true;
+        horrorAudio.playMirrorChill(scareMode);
+        onAdjustContamination?.(2);
+      }
+      setAnomalyIfChanged('拓本破损异象：原本生铁封死的铁牛眼窝在宣纸拓片下裂开，露出一只流着铁锈血水的活体眼球');
+      return;
+    }
+
+    // 11. 附表38红指模总览：每枚指模螺线中心睁开眼睛，且第2排第3栏篡改为「屏前调阅人」
+    if (photoId === 'thumbprint_ledger' && nx > 0.15 && nx < 0.98 && ny > 0.12 && ny < 0.9) {
+      if (!lensAnomalySoundedRef.current.thumbprint_ledger) {
+        lensAnomalySoundedRef.current.thumbprint_ledger = true;
+        horrorAudio.playMirrorChill(scareMode);
+        onAdjustContamination?.(3);
+      }
+      setAnomalyIfChanged('红印泥微距异变：124枚指模螺线中心均嵌着湿润瞳仁，且二排三列户主已被鲜红印泥涂改为「屏前调阅人」');
+      return;
+    }
+
     setAnomalyIfChanged(null);
   };
 
@@ -486,6 +536,17 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
           draggable={false}
           className="block h-full w-full object-cover select-none"
         />
+
+        {/* 点击「斜射显影」时，在原片上幽微浮现 52% 浓度的暗房潜影异变层（模拟暗房斜射光检出纸背/银盐鬼影！） */}
+        {!isInsideMagnifier && rakingLight && lensMutationSrc && (
+          <img
+            src={lensMutationSrc}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-55 transition-opacity duration-500 select-none"
+          />
+        )}
 
         {/* 《晒谷场收工图》扫描转头异变层 */}
         {showTurnLayer && (
