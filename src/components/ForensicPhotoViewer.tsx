@@ -366,10 +366,10 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
     // 1. 《晒谷场收工图》正中二楼雕花木窗窥视脸
     if (
       photoId === 'threshing_1998' &&
-      nx > 0.48 &&
-      nx < 0.58 &&
-      ny > 0.13 &&
-      ny < 0.28
+      nx > 0.45 &&
+      nx < 0.56 &&
+      ny > 0.11 &&
+      ny < 0.24
     ) {
       if (!windowChimeRef.current) {
         windowChimeRef.current = true;
@@ -595,7 +595,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
               alt="木窗局部异变"
               draggable={false}
               style={{
-                clipPath: 'inset(15% 44% 74% 50%)',
+                clipPath: 'inset(12% 46% 76% 47%)',
                 opacity: isInsideMagnifier ? 0.95 : 0.85,
               }}
               className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
@@ -633,12 +633,12 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
             className="pointer-events-none absolute inset-0"
           >
             {[
-              { left: '51.3%', top: '16.8%', w: '3.0%', h: '6.8%', tag: 'WINDOW' },
-              { left: '38.6%', top: '40.5%', w: '3.6%', h: '5.8%', tag: 'LOCK #04' },
-              { left: '44.5%', top: '38.6%', w: '3.8%', h: '6.0%', tag: 'LOCK #05' },
-              { left: '50.8%', top: '40.4%', w: '3.6%', h: '5.8%', tag: 'LOCK #06' },
-              { left: '57.3%', top: '39.0%', w: '3.6%', h: '5.8%', tag: 'LOCK #07' },
-              { left: '63.9%', top: '41.4%', w: '3.6%', h: '5.8%', tag: 'LOCK #08' },
+              { left: '48.2%', top: '13.5%', w: '4.0%', h: '7.5%', tag: 'WINDOW' },
+              { left: '32.2%', top: '34.5%', w: '4.0%', h: '6.5%', tag: 'LOCK #04' },
+              { left: '39.8%', top: '37.5%', w: '4.0%', h: '6.5%', tag: 'LOCK #05' },
+              { left: '57.2%', top: '34.5%', w: '4.0%', h: '6.5%', tag: 'LOCK #06' },
+              { left: '64.2%', top: '37.0%', w: '4.0%', h: '6.5%', tag: 'LOCK #07' },
+              { left: '70.5%', top: '36.2%', w: '4.2%', h: '6.5%', tag: 'LOCK #08' },
             ].map((box) => (
               <div
                 key={box.tag}
