@@ -1,12 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  Mail,
-  ArrowRight,
-  Clock,
-  Inbox,
-  ShieldAlert,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { MAIL_MESSAGES, type MailMessage } from '../data/mailData';
 import type { CommonSiteProps } from './siteProps';
 import type { SiteId } from '../types/game';
@@ -17,6 +11,8 @@ export const MailSite: React.FC<CommonSiteProps> = ({
   state,
   focusedItemId,
   onClearFocus,
+  navCommand,
+  onRecordNav,
   onNavigateSite,
   onUnlockSite,
   onMarkRead,
@@ -25,12 +21,14 @@ export const MailSite: React.FC<CommonSiteProps> = ({
     return MAIL_MESSAGES.filter((m) => {
       if (m.id === focusedItemId) return true;
       if (m.id === 'mail-prologue') return true;
+      if (m.id === 'mail-prologue-step2') return state.readDocIds.includes('qh-37-09');
       if (m.minAct === 1) return state.unlockedSites.includes('bbs');
       return state.act >= m.minAct;
     });
-  }, [state.act, state.unlockedSites, focusedItemId]);
+  }, [state.act, state.unlockedSites, state.readDocIds, focusedItemId]);
 
   const [selectedId, setSelectedId] = useState<string>('mail-prologue');
+  const lastNavSeqRef = useRef<number>(0);
 
   useEffect(() => {
     if (focusedItemId && MAIL_MESSAGES.some((m) => m.id === focusedItemId)) {
@@ -38,6 +36,16 @@ export const MailSite: React.FC<CommonSiteProps> = ({
       onClearFocus?.();
     }
   }, [focusedItemId, onClearFocus]);
+
+  useEffect(() => {
+    if (!navCommand || navCommand.site !== 'mail' || navCommand.seq === lastNavSeqRef.current) {
+      return;
+    }
+    lastNavSeqRef.current = navCommand.seq;
+    if (MAIL_MESSAGES.some((m) => m.id === navCommand.itemId)) {
+      setSelectedId(navCommand.itemId);
+    }
+  }, [navCommand]);
 
   const activeMail: MailMessage = useMemo(() => {
     return (
@@ -65,31 +73,29 @@ export const MailSite: React.FC<CommonSiteProps> = ({
   return (
     <div className="min-h-[calc(100vh-124px)] bg-[#f5f2ea] px-4 py-8 text-stone-800">
       <div className={`mx-auto ${showSidebar ? 'max-w-6xl' : 'max-w-3xl'}`}>
-        {/* 清爽护眼的邮件客户端标头 */}
+        {/* 去AI图标化的典雅书信档案页眉 */}
         <div className="mb-6 flex items-center justify-between border-b border-[#e2dbcd] pb-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d9d0bf] bg-white text-[#9e2a2b] shadow-2xs">
-              <Mail className="h-5 w-5" />
+          <div className="border-l-4 border-[#9e2a2b] pl-3.5">
+            <div className="font-mono-tech text-[10.5px] tracking-widest text-[#9e2a2b]">
+              PROTON-RELAY // DEADMAN-SWITCH ARCHIVE
             </div>
-            <div>
-              <h1 className="font-serif-cn text-lg font-bold tracking-wide text-[#16263f]">
-                加密定时收件箱
-              </h1>
-              <p className="text-xs text-stone-500">
-                {visibleMails.length === 1
-                  ? '1 封紧急未读信件 · 发自南州大学课题组备用信箱'
-                  : `共收到 ${visibleMails.length} 封关联投递记录`}
-              </p>
-            </div>
+            <h1 className="mt-0.5 font-serif-cn text-lg sm:text-xl font-bold tracking-wide text-[#16263f]">
+              加密定时收件箱
+            </h1>
+            <p className="mt-0.5 text-xs text-stone-500">
+              {visibleMails.length === 1
+                ? '1 封紧急未读信件 · 发自南州大学课题组备用信箱'
+                : `共收到 ${visibleMails.length} 封关联投递记录`}
+            </p>
           </div>
         </div>
 
         <div className={`grid grid-cols-1 gap-6 ${showSidebar ? 'lg:grid-cols-12' : ''}`}>
           {showSidebar && (
             <aside className="lg:col-span-4 space-y-2">
-              <div className="mb-2 flex items-center gap-1.5 px-1 text-xs font-semibold text-stone-500">
-                <Inbox className="h-3.5 w-3.5 text-[#9e2a2b]" />
-                <span>收件列表</span>
+              <div className="mb-2 flex items-center justify-between px-1 text-xs font-semibold text-stone-500">
+                <span>收件目录</span>
+                <span className="font-mono-tech text-[11px]">{visibleMails.length} 封</span>
               </div>
               {visibleMails.map((mail) => {
                 const selected = activeMail.id === mail.id;
@@ -102,6 +108,7 @@ export const MailSite: React.FC<CommonSiteProps> = ({
                     onClick={() => {
                       horrorAudio.playClick('ui');
                       setSelectedId(mail.id);
+                      onRecordNav?.(mail.id, `收件箱 · ${mail.subject.slice(0, 16)}`);
                     }}
                     className={`w-full rounded-xl border p-3.5 text-left transition cursor-pointer ${
                       selected
@@ -128,7 +135,7 @@ export const MailSite: React.FC<CommonSiteProps> = ({
             </aside>
           )}
 
-          {/* 清爽纸感信件阅读卡 */}
+          {/* 纸感信件阅读卡 */}
           <section className={showSidebar ? 'lg:col-span-8' : ''}>
             <AnimatePresence mode="wait">
               <motion.article
@@ -142,14 +149,12 @@ export const MailSite: React.FC<CommonSiteProps> = ({
                 <div className="border-b border-[#ece6da] bg-[#faf8f3] px-7 py-6">
                   <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
                     {activeMail.isUrgent && (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-0.5 text-[11px] font-medium text-[#9e2a2b]">
-                        <ShieldAlert className="h-3 w-3" />
-                        定时死信开关触发
+                      <span className="rounded border border-red-200 bg-red-50 px-2 py-0.5 font-mono-tech text-[11px] font-medium text-[#9e2a2b]">
+                        定时死信触发
                       </span>
                     )}
-                    <span className="inline-flex items-center gap-1 font-mono-tech text-[11px] text-stone-500">
-                      <Clock className="h-3 w-3" />
-                      {activeMail.date}
+                    <span className="font-mono-tech text-[11px] text-stone-500">
+                      投递时间：{activeMail.date}
                     </span>
                   </div>
 
@@ -173,7 +178,7 @@ export const MailSite: React.FC<CommonSiteProps> = ({
                   {activeMail.id === 'mail-prologue' ? (
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <p className="text-xs text-stone-500">
-                        提示：读完后可直接前往民俗馆核查信中提到的照片；看到关键信息时，用鼠标划选文字即可摘录进右侧手记。
+                        提示：核查完照片后，林知夏预设的第二封分段死信会自动送达收件箱，指引后续三条线索。
                       </p>
                       <motion.button
                         whileHover={{ scale: 1.02 }}

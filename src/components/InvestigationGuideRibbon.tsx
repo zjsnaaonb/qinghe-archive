@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Compass, ChevronRight, X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import type { GameState, SiteId } from '../types/game';
 
 interface InvestigationGuideRibbonProps {
@@ -33,10 +33,20 @@ function resolveStageDirection(state: GameState): StageDirection {
     };
   }
 
+  if (!state.readDocIds.includes('mail-prologue-step2')) {
+    return {
+      tag: '新信送达',
+      text: '已核查《晒谷场收工图》！收件箱刚刚自动投递了林知夏的第二封分段死信，内含树洞口令、陈默网名与后续三条追查路线。',
+      actionLabel: state.currentSite !== 'mail' ? '拆阅第二封续信' : undefined,
+      actionSite: state.currentSite !== 'mail' ? 'mail' : undefined,
+      actionDocId: 'mail-prologue-step2',
+    };
+  }
+
   if (!state.unlockedSites.includes('chronicles')) {
     return {
       tag: '跨站追查',
-      text: '已解锁校园树洞与显影液 BBS！翻看老胶片修复求助帖寻找外部水利档案网，同时用鼠标划选任何可疑数字/日期即可【摘录到手记】。',
+      text: '前往「树洞 & 显影液BBS」：在树洞 #40918 查 OA 访客口令规律，并在显影液论坛找【逆光底片】（陈默）的求助长帖。',
       actionLabel: state.currentSite !== 'bbs' ? '前往树洞/BBS' : undefined,
       actionSite: state.currentSite !== 'bbs' ? 'bbs' : undefined,
     };
@@ -45,7 +55,7 @@ function resolveStageDirection(state: GameState): StageDirection {
   if (state.oaLevel < 1) {
     return {
       tag: '潜入内网',
-      text: '青禾馆页脚藏着「内部教职工 OA 入口」。结合校园树洞吐槽的规则与公开网页里的关键编号/日期，推算公共访客账号密码。',
+      text: '青禾馆网页最底部藏着「教职工内部 OA 工单系统」。结合树洞 #40918 规则与《项目立项概况》中的编号和截流月日登录 qh_guest。',
       actionLabel: state.currentSite !== 'oa' && state.unlockedSites.includes('oa') ? '前往 OA 登录' : undefined,
       actionSite: state.unlockedSites.includes('oa') ? 'oa' : undefined,
     };
@@ -54,7 +64,7 @@ function resolveStageDirection(state: GameState): StageDirection {
   if (state.oaLevel === 1) {
     return {
       tag: '第二幕',
-      text: '交叉核查水利网的淹没台账与 OA 门禁考勤异常：查清技术员陈默的去向，根据草稿备忘与论坛签名推算二级权限密码。',
+      text: '交叉核查水利网的淹没台账（记得开启高程图紫外显影）与 OA 内部草稿：结合论坛器材签名档推算陈默的二级权限密钥。',
     };
   }
 
@@ -67,7 +77,7 @@ function resolveStageDirection(state: GameState): StageDirection {
       tag: '第三幕',
       text: `牢记 OA 中的《安全审片十诫》：前往 B2 审片台合规检视三卷母带（${
         [state.b2Progress.reel04Passed, state.b2Progress.reel09Passed, state.b2Progress.reel12Passed].filter(Boolean).length
-      }/3），并结合云笔记与多站点暗语设法解救四名受困成员（${rescuedCount}/4）。`,
+      }/3），并结合云笔记与多站点暗语解救四名受困成员（${rescuedCount}/4）。`,
       actionLabel: !reelsDone && state.currentSite !== 'b2' && state.unlockedSites.includes('b2') ? '进入 B2 终端' : undefined,
       actionSite: state.unlockedSites.includes('b2') ? 'b2' : undefined,
     };
@@ -102,8 +112,7 @@ export const InvestigationGuideRibbon: React.FC<InvestigationGuideRibbonProps> =
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[#9e2a2b]/30 bg-[#9e2a2b]/8 px-2 py-0.5 text-[11px] font-semibold text-[#9e2a2b]">
-              <Compass className="h-3 w-3" />
+            <span className="inline-flex shrink-0 items-center rounded border border-[#9e2a2b]/35 bg-[#9e2a2b]/8 px-2 py-0.5 font-mono-tech text-[11px] font-semibold text-[#9e2a2b]">
               {direction.tag}
             </span>
             <p className="truncate sm:whitespace-normal text-stone-700 leading-relaxed">

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect x="4" y="4" width="56" height="56" rx="8" fill="#9e2a2b"/>
+  <rect x="8.5" y="8.5" width="47" height="47" rx="4" fill="none" stroke="#f6f2e8" stroke-width="2.4" stroke-opacity="0.92"/>
+  <text x="32" y="44" text-anchor="middle" font-family="'Noto Serif SC', 'Songti SC', 'SimSun', serif" font-size="33" font-weight="700" fill="#f6f2e8">禾</text>
+</svg>

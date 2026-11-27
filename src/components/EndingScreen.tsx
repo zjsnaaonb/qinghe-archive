@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Award,
   RotateCcw,
   ArrowLeft,
-  FileText,
-  Sparkles,
-  AlertOctagon,
-  ShieldCheck,
-  EyeOff,
-  Flame,
 } from 'lucide-react';
 import type { EndingId, EndingPayload, EncryptedBlock, RescueStatus } from '../types/game';
 import { decryptVaultBlock } from '../engine/crypto';
@@ -208,42 +201,37 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
 
   const themeMap: Record<
     EndingPayload['tone'],
-    { bg: string; border: string; accent: string; badge: string; icon: React.ReactNode }
+    { bg: string; border: string; accent: string; badge: string }
   > = {
     bad: {
       bg: 'from-[#f9eeee] via-[#f6f2ea] to-[#eee8dc]',
       border: 'border-red-300',
       accent: 'text-[#8b1e1e]',
       badge: 'bg-red-50 text-[#9e2a2b] border-red-200',
-      icon: <EyeOff className="h-6 w-6 text-[#9e2a2b]" />,
     },
     normal: {
       bg: 'from-[#fbf4e6] via-[#f6f2ea] to-[#eee8dc]',
       border: 'border-amber-300',
       accent: 'text-amber-950',
       badge: 'bg-amber-50 text-amber-900 border-amber-300',
-      icon: <Flame className="h-6 w-6 text-amber-700" />,
     },
     bittersweet: {
       bg: 'from-[#edf4f9] via-[#f6f2ea] to-[#eee8dc]',
       border: 'border-sky-300',
       accent: 'text-[#16263f]',
       badge: 'bg-sky-50 text-sky-900 border-sky-300',
-      icon: <ShieldCheck className="h-6 w-6 text-sky-700" />,
     },
     twist: {
       bg: 'from-[#f6eef5] via-[#f6f2ea] to-[#eee8dc]',
       border: 'border-rose-300',
       accent: 'text-[#7f1d1d]',
       badge: 'bg-rose-50 text-rose-900 border-rose-300',
-      icon: <AlertOctagon className="h-6 w-6 text-rose-700" />,
     },
     true: {
       bg: 'from-[#ecf7f1] via-[#f6f2ea] to-[#eee8dc]',
       border: 'border-emerald-400',
       accent: 'text-emerald-950',
       badge: 'bg-emerald-50 text-emerald-900 border-emerald-300',
-      icon: <Sparkles className="h-6 w-6 text-emerald-700" />,
     },
   };
 
@@ -256,7 +244,6 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
         <div className={`mb-8 rounded-2xl border ${theme.border} bg-[#fffdf9] p-7 shadow-lg`}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#ece5d5] pb-4">
             <div className="flex items-center gap-2.5">
-              {theme.icon}
               <span className={`rounded border px-2.5 py-0.5 text-xs font-mono-tech font-semibold ${theme.badge}`}>
                 {data.code}
               </span>
@@ -307,7 +294,9 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
         {!decrypting && visibleCount >= data.paragraphs.length && (
           <div className="mb-8 rounded-2xl border border-[#dfd8ca] bg-white p-6 shadow-sm">
             <div className="mb-3 flex items-center gap-2 border-b border-[#ece6da] pb-3">
-              <FileText className="h-4 w-4 text-[#9e2a2b]" />
+              <span className="rounded-[2px] border border-[#9e2a2b] bg-[#9e2a2b] px-1.5 py-0.5 font-serif-cn text-[10px] font-bold text-white">
+                附卷
+              </span>
               <span className="text-xs font-mono-tech font-semibold uppercase tracking-wider text-[#9e2a2b]">
                 EPILOGUE ARCHIVE // 尾声解密附件
               </span>
@@ -324,8 +313,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
         {/* 结局分支导航与操作栏 */}
         <div className="rounded-2xl border border-[#dfd8ca] bg-white p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#16263f]">
-              <Award className="h-4 w-4 text-amber-600" />
+            <div className="border-l-2 border-[#9e2a2b] pl-2.5 text-xs font-bold text-[#16263f]">
               <span>已解锁分支结局图鉴（可在总控台继续探索未达成结局）</span>
             </div>
             <div className="flex flex-wrap gap-1.5">

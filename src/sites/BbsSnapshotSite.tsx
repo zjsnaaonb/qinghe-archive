@@ -1,32 +1,26 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  MessageSquare,
-  Film,
   Search,
-  Flame,
-  Lock,
   ExternalLink,
   ArrowLeft,
-  Unlock,
-  Clock,
-  MapPin,
   ChevronDown,
   ChevronRight,
-  User,
-  Camera,
-  Sparkles,
+  X,
 } from 'lucide-react';
 import { BBS_THREADS } from '../data/bbsData';
 import type { BBSReply, BBSThread } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
 import { renderInlineRichText, stripInlineMarkdown } from '../components/EditorialProse';
+import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
 import { horrorAudio } from '../engine/audio';
 
 export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   state,
   focusedItemId,
   onClearFocus,
+  navCommand,
+  onRecordNav,
   onNavigateSite,
   onUnlockSite,
   onMarkRead,
@@ -35,13 +29,17 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   const [activeBoard, setActiveBoard] = useState<'zijing' | 'developer'>('zijing');
   const [selectedThreadId, setSelectedThreadId] = useState<string>('zijing-40918');
   const [searchInput, setSearchInput] = useState('');
-  const [activeQuery, setActiveQuery] = useState('');
   const [hiddenFloorInput, setHiddenFloorInput] = useState('');
   const [unlockedHiddenKeywords, setUnlockedHiddenKeywords] = useState<string[]>([]);
   const [hiddenFloorError, setHiddenFloorError] = useState('');
   const [visibleFloorLimit, setVisibleFloorLimit] = useState<number>(8);
   const [onlyOp, setOnlyOp] = useState(false);
   const [expandAllThreads, setExpandAllThreads] = useState(false);
+  const lastNavSeqRef = useRef<number>(0);
+
+  // 论坛实况灵异盖楼状态：阅读核心帖数秒后，B2暗房离线节点实时正在输入并刷出第四面墙鬼回复
+  const [ghostReplyStage, setGhostReplyStage] = useState<'idle' | 'typing' | 'posted'>('idle');
+  const ghostPlayedThreadsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!focusedItemId) return;
@@ -56,37 +54,99 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     }
   }, [focusedItemId, onClearFocus]);
 
+  useEffect(() => {
+    if (!navCommand || navCommand.site !== 'bbs' || navCommand.seq === lastNavSeqRef.current) {
+      return;
+    }
+    lastNavSeqRef.current = navCommand.seq;
+    if (navCommand.itemId.startsWith('__list')) {
+      if (navCommand.itemId === '__list:developer__') setActiveBoard('developer');
+      if (navCommand.itemId === '__list:zijing__') setActiveBoard('zijing');
+      setViewMode('list');
+      return;
+    }
+    const target = BBS_THREADS.find((t) => t.id === navCommand.itemId);
+    if (target) {
+      setActiveBoard(target.board);
+      setSelectedThreadId(target.id);
+      setVisibleFloorLimit(12);
+      setOnlyOp(false);
+      setViewMode('thread');
+    }
+  }, [navCommand]);
+
+  const activeQuery = searchInput.trim();
+
   const isKeywordUnlocked = (reqKeyword?: string): boolean => {
     if (!reqKeyword) return true;
     const target = reqKeyword.trim().toLowerCase();
-    if (activeQuery.trim().toLowerCase().includes(target)) return true;
+    if (activeQuery.toLowerCase().includes(target)) return true;
     if (unlockedHiddenKeywords.some((k) => k.toLowerCase() === target)) return true;
     if (state.searchHistory.some((h) => h.toLowerCase().includes(target))) return true;
     if (state.unlockedKeywords.some((k) => k.toLowerCase() === target)) return true;
     return false;
   };
 
-  const boardThreads = useMemo(() => {
-    const q = activeQuery.trim().toLowerCase();
-    return BBS_THREADS.filter((t) => {
-      if (t.board !== activeBoard) return false;
-      if (!q) return true;
-      const hay = [
-        t.id,
-        t.tag,
-        t.title,
-        t.author,
-        ...t.keywords,
-        ...t.replies.map((r) => `${r.author} ${r.content} ${r.hiddenKeywordRequired ?? ''}`),
-      ]
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
+  const scoreThread = (t: BBSThread, q: string) => {
+    const repliesBody = t.replies
+      .filter((r) => !r.act3Appended || state.act >= 3)
+      .map((r) => `${r.author}：${r.content} ${r.hiddenKeywordRequired ?? ''}`)
+      .join('\n');
+    const res = scoreSearchMatch(q, {
+      code: `${t.tag} ${t.id}`,
+      title: t.title,
+      subtitle: t.author,
+      tags: t.keywords,
+      summary: t.replies[0]?.content ?? '',
+      body: repliesBody,
+      allowBodyMatch: true,
     });
-  }, [activeBoard, activeQuery]);
+    return {
+      ...res,
+      snippet: extractSearchSnippet(
+        repliesBody,
+        q,
+        t.replies[0]?.content ?? '',
+        res.bestTerm
+      ),
+    };
+  };
 
-  // 渐进式帖列展示：第一幕未主动搜索时优先聚焦 3 条核心热议帖，其余历史水帖可一键展开，降低初期信息噪点
-  const shouldFoldMinorThreads = state.act === 1 && !activeQuery && !expandAllThreads && boardThreads.length > 3;
+  const scoredBoardThreads = useMemo(() => {
+    const inBoard = BBS_THREADS.filter((t) => t.board === activeBoard);
+    if (!activeQuery) {
+      return inBoard.map((t) => ({
+        thread: t,
+        score: 1,
+        snippet: stripInlineMarkdown(t.replies[0]?.content ?? ''),
+      }));
+    }
+    const hits: Array<{ thread: BBSThread; score: number; snippet: string }> = [];
+    for (const t of inBoard) {
+      const s = scoreThread(t, activeQuery);
+      if (s.matched) {
+        hits.push({ thread: t, score: s.score, snippet: s.snippet });
+      }
+    }
+    hits.sort((a, b) => b.score - a.score);
+    return hits;
+  }, [activeBoard, activeQuery, state.act]);
+
+  const boardThreads = useMemo(
+    () => scoredBoardThreads.map((x) => x.thread),
+    [scoredBoardThreads]
+  );
+
+  const snippetByThreadId = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const x of scoredBoardThreads) {
+      m.set(x.thread.id, x.snippet);
+    }
+    return m;
+  }, [scoredBoardThreads]);
+
+  const shouldFoldMinorThreads =
+    state.act === 1 && !activeQuery && !expandAllThreads && boardThreads.length > 3;
   const displayedThreads = useMemo(() => {
     if (!shouldFoldMinorThreads) return boardThreads;
     const hot = boardThreads.filter((t) => t.isHot);
@@ -98,24 +158,10 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   const foldedThreadCount = Math.max(0, boardThreads.length - displayedThreads.length);
 
   const otherBoardMatchCount = useMemo(() => {
-    const q = activeQuery.trim().toLowerCase();
-    if (!q) return 0;
+    if (!activeQuery) return 0;
     const other = activeBoard === 'zijing' ? 'developer' : 'zijing';
-    return BBS_THREADS.filter((t) => {
-      if (t.board !== other) return false;
-      const hay = [
-        t.id,
-        t.tag,
-        t.title,
-        t.author,
-        ...t.keywords,
-        ...t.replies.map((r) => `${r.author} ${r.content}`),
-      ]
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    }).length;
-  }, [activeBoard, activeQuery]);
+    return BBS_THREADS.filter((t) => t.board === other && scoreThread(t, activeQuery).matched).length;
+  }, [activeBoard, activeQuery, state.act]);
 
   const activeThread: BBSThread | undefined = useMemo(() => {
     return (
@@ -131,6 +177,10 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     setVisibleFloorLimit(state.act >= 2 ? 12 : 8);
     setOnlyOp(false);
     setViewMode('thread');
+    onRecordNav?.(
+      thread.id,
+      `${thread.board === 'zijing' ? '树洞' : '显影液'} · ${thread.title.slice(0, 15)}`
+    );
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -141,12 +191,72 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     }
   }, [viewMode, activeThread, state.readDocIds, onMarkRead]);
 
+  // 帖内实况民俗惊悚演出：浏览核心热帖或第2幕以后帖子时，B2暗房幽灵节点实时敲字回帖
+  useEffect(() => {
+    if (viewMode !== 'thread' || !activeThread) {
+      setGhostReplyStage('idle');
+      return;
+    }
+    const isHauntedTarget =
+      activeThread.id === 'zijing-40918' ||
+      activeThread.id === 'dev-9816mm' ||
+      state.act >= 2;
+
+    if (!isHauntedTarget) {
+      setGhostReplyStage('idle');
+      return;
+    }
+
+    if (ghostPlayedThreadsRef.current.has(activeThread.id)) {
+      setGhostReplyStage('posted');
+      return;
+    }
+
+    setGhostReplyStage('idle');
+    const t1 = window.setTimeout(() => {
+      setGhostReplyStage('typing');
+    }, 3600);
+
+    const t2 = window.setTimeout(() => {
+      ghostPlayedThreadsRef.current.add(activeThread.id);
+      horrorAudio.playWoodenClapper();
+      setGhostReplyStage('posted');
+    }, 6800);
+
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [viewMode, activeThread, state.act]);
+
+  const ghostLivePayload = useMemo(() => {
+    if (!activeThread) return null;
+    if (activeThread.id === 'zijing-40918') {
+      return {
+        author: '匿名树洞 #40918-回声',
+        ip: '南大校内 · 人文楼B2湿法暗房专线',
+        text: '别帮苏晓棠算访客口令了。她把自己锁在 B1 善本库里，把眼镜片都磨花了，看不见门缝底下塞进去的红纸条；你面前这块屏幕这么亮，替她低头看一眼桌底吧。',
+      };
+    }
+    if (activeThread.id === 'dev-9816mm') {
+      return {
+        author: '逆光底片 [离线托管态]',
+        ip: '10.14.202.38 · B2三号机柜',
+        text: '师姐托你翻我旧帖的？Bolex 取景器里全是水库底下的白雾……我数了一宿，晒谷场上明明站着十二个人，你怎么只数出十一个？你把站在你椅子正后方看屏幕的那个漏掉了。',
+      };
+    }
+    return {
+      author: '祠下戏班看箱人',
+      ip: '未知内网节点 · 高程 108.4m',
+      text: '三通铜锣还没敲完，客官翻帖子翻得这么急做什么。十月半看盲戏，忌讳拿反光的玻璃照脸——你屏幕右上角的反光里，是不是多了一截湿透的粗布黑领口？',
+    };
+  }, [activeThread]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     horrorAudio.playClick('ui');
     const q = searchInput.trim();
-    setActiveQuery(q);
-    setViewMode('list');
+    if (!q) return;
 
     if (q.toLowerCase().includes('eyegen')) {
       horrorAudio.playClick('unlock');
@@ -160,8 +270,17 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
         setVisibleFloorLimit(99);
         setOnlyOp(false);
         setViewMode('thread');
+        onRecordNav?.(targetThread.id, `显影液 · #88F 异常缓存层`);
+        return;
       }
     }
+
+    // 若当前版块无命中但另一版块有命中，自动切过去方便玩家直达（如在树洞搜“逆光底片”自动跳显影液论坛！）
+    if (boardThreads.length === 0 && otherBoardMatchCount > 0) {
+      const nextBoard = activeBoard === 'zijing' ? 'developer' : 'zijing';
+      setActiveBoard(nextBoard);
+    }
+    setViewMode('list');
   };
 
   const handleUnlockHiddenReply = (reqKey: string) => {
@@ -229,7 +348,6 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
     });
   };
 
-  // 自动拆分经典老论坛底部的「器材签名档」，视觉清晰醒目不淹没在长文里
   const splitBodyAndSignature = (raw: string): { body: string; signature: string | null } => {
     const match = raw.match(/^([\s\S]*?)\n[—─-]{6,}\n([\s\S]*签名档[\s\S]*)$/);
     if (!match) return { body: raw, signature: null };
@@ -242,7 +360,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
         isZijing ? 'bg-[#f6f5fa] text-slate-800' : 'bg-[#f6f2e8] text-stone-800'
       }`}
     >
-      {/* 清爽双版块切换顶栏 */}
+      {/* 纯文字质感双版块切换顶栏（去除AI图标） */}
       <div
         className={`border-b ${
           isZijing ? 'border-purple-200/80 bg-white/95' : 'border-[#e2d9c5] bg-[#fcfaf4]/95'
@@ -256,6 +374,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 horrorAudio.playClick('ui');
                 setActiveBoard('zijing');
                 setViewMode('list');
+                onRecordNav?.('__list:zijing__', '紫荆站 · 夜间树洞列表');
               }}
               className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer transition ${
                 isZijing ? 'text-purple-900' : 'text-stone-500 hover:text-stone-800'
@@ -268,8 +387,8 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 />
               )}
               <span className="relative z-10 flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5 text-purple-600" />
-                南大紫荆站 · 夜间树洞
+                <span className="font-mono-tech text-[10px] opacity-75">[ZIJING]</span>
+                <span>南大紫荆站 · 夜间树洞</span>
               </span>
             </button>
 
@@ -279,6 +398,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 horrorAudio.playClick('ui');
                 setActiveBoard('developer');
                 setViewMode('list');
+                onRecordNav?.('__list:developer__', '显影液 · 胶片论坛列表');
               }}
               className={`relative inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold cursor-pointer transition ${
                 !isZijing ? 'text-amber-950' : 'text-stone-500 hover:text-stone-800'
@@ -291,21 +411,36 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 />
               )}
               <span className="relative z-10 flex items-center gap-1.5">
-                <Film className="h-3.5 w-3.5 text-amber-700" />
-                显影液 · 老式 DV 胶片论坛
+                <span className="font-mono-tech text-[10px] opacity-75">[16MM]</span>
+                <span>显影液 · 老式 DV 胶片论坛</span>
               </span>
             </button>
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="w-full sm:w-72">
+          <form onSubmit={handleSearchSubmit} className="w-full sm:w-80">
             <div className="relative">
               <input
                 type="text"
                 value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="搜帖子标题、楼层关键词……"
-                className="w-full rounded-xl border border-stone-300 bg-white py-2 pl-3.5 pr-9 text-xs text-stone-800 placeholder-stone-400 shadow-2xs focus:border-[#9e2a2b] focus:outline-none"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchInput(val);
+                  if (val.trim() && viewMode !== 'list') {
+                    setViewMode('list');
+                  }
+                }}
+                placeholder="实时搜帖号(40918)、作者(逆光底片)或关键词……"
+                className="w-full rounded-xl border border-stone-300 bg-white py-2 pl-3.5 pr-14 text-xs text-stone-800 placeholder-stone-400 shadow-2xs focus:border-[#9e2a2b] focus:outline-none"
               />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => setSearchInput('')}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-700 cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
               <button
                 type="submit"
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-[#9e2a2b] cursor-pointer"
@@ -335,18 +470,26 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                     : '民间 16mm / 老式 DV 胶片转磁技术交流版块快照'}
                 </span>
                 {activeQuery && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span>
-                      当前筛选 “<strong className="text-[#9e2a2b]">{activeQuery}</strong>”（{boardThreads.length} 帖
-                      {otherBoardMatchCount > 0 ? `，另一版块另有 ${otherBoardMatchCount} 帖` : ''}）
+                      筛选 “<strong className="text-[#9e2a2b]">{activeQuery}</strong>” 命中 {boardThreads.length} 帖
                     </span>
+                    {otherBoardMatchCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          horrorAudio.playClick('ui');
+                          setActiveBoard(isZijing ? 'developer' : 'zijing');
+                        }}
+                        className="rounded-full border border-[#9e2a2b]/40 bg-red-50 px-2.5 py-0.5 text-[11px] font-semibold text-[#9e2a2b] hover:bg-red-100 cursor-pointer"
+                      >
+                        切换查看另一版块的 {otherBoardMatchCount} 条命中 →
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => {
-                        setActiveQuery('');
-                        setSearchInput('');
-                      }}
-                      className="text-[#9e2a2b] font-medium underline cursor-pointer"
+                      onClick={() => setSearchInput('')}
+                      className="text-stone-600 underline cursor-pointer"
                     >
                       重置
                     </button>
@@ -354,66 +497,85 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 )}
               </div>
 
-              <div className="space-y-3">
-                {displayedThreads.map((thread, idx) => {
-                  const isRead = state.readDocIds.includes(thread.id);
-                  return (
-                    <motion.button
-                      key={thread.id}
-                      type="button"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: Math.min(idx * 0.03, 0.24) }}
-                      onClick={() => openThread(thread)}
-                      className={`group flex w-full items-start justify-between gap-4 rounded-2xl border p-5 text-left transition cursor-pointer shadow-2xs ${
-                        isZijing
-                          ? 'border-purple-200/80 bg-white hover:border-purple-400 hover:shadow-sm'
-                          : 'border-[#e3dac7] bg-[#fffdf9] hover:border-amber-500/60 hover:shadow-sm'
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
-                          <span
-                            className={`rounded-md px-2 py-0.5 font-medium ${
-                              isZijing
-                                ? 'bg-purple-50 text-purple-800 border border-purple-200'
-                                : 'bg-amber-50 text-amber-900 border border-amber-200'
-                            }`}
-                          >
-                            {thread.tag}
-                          </span>
-                          {thread.isHot && (
-                            <span className="inline-flex items-center gap-0.5 rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-[#9e2a2b]">
-                              <Flame className="h-3 w-3" />
-                              热议焦点
+              {displayedThreads.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-stone-300 bg-white/70 py-12 text-center text-xs text-stone-500">
+                  {otherBoardMatchCount > 0 ? (
+                    <div className="space-y-2">
+                      <p>当前版块未命中 “{activeQuery}”，但在另一版块中找到了 {otherBoardMatchCount} 篇关联帖子。</p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveBoard(isZijing ? 'developer' : 'zijing')}
+                        className="rounded-lg bg-[#9e2a2b] px-4 py-1.5 text-xs font-semibold text-white cursor-pointer"
+                      >
+                        立即切往{isZijing ? '「显影液论坛」' : '「紫荆站树洞」'}查看命中帖 →
+                      </button>
+                    </div>
+                  ) : (
+                    <span>未找到包含 “{activeQuery}” 的帖子，可尝试搜 40918、逆光底片、7104 或 EyeGen。</span>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {displayedThreads.map((thread, idx) => {
+                    const isRead = state.readDocIds.includes(thread.id);
+                    const snippet = snippetByThreadId.get(thread.id) ?? stripInlineMarkdown(thread.replies[0]?.content ?? '');
+                    return (
+                      <motion.button
+                        key={thread.id}
+                        type="button"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(idx * 0.03, 0.24) }}
+                        onClick={() => openThread(thread)}
+                        className={`group flex w-full items-start justify-between gap-4 rounded-2xl border p-5 text-left transition cursor-pointer shadow-2xs ${
+                          isZijing
+                            ? 'border-purple-200/80 bg-white hover:border-purple-400 hover:shadow-sm'
+                            : 'border-[#e3dac7] bg-[#fffdf9] hover:border-amber-500/60 hover:shadow-sm'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-2 flex flex-wrap items-center gap-2 text-[11px]">
+                            <span
+                              className={`rounded-md px-2 py-0.5 font-mono-tech font-medium ${
+                                isZijing
+                                  ? 'bg-purple-50 text-purple-800 border border-purple-200'
+                                  : 'bg-amber-50 text-amber-900 border border-amber-200'
+                              }`}
+                            >
+                              {thread.tag}
                             </span>
-                          )}
-                          <span className="font-medium text-stone-600">{thread.author}</span>
-                          <span className="text-stone-300">·</span>
-                          <span className="font-mono-tech text-stone-400">{thread.createdAt}</span>
+                            {thread.isHot && (
+                              <span className="rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 font-medium text-[#9e2a2b]">
+                                置顶热议
+                              </span>
+                            )}
+                            <span className="font-medium text-stone-600">{thread.author}</span>
+                            <span className="text-stone-300">·</span>
+                            <span className="font-mono-tech text-stone-400">{thread.createdAt}</span>
+                          </div>
+
+                          <h3 className="text-[15px] font-bold leading-snug text-[#16263f] group-hover:text-[#9e2a2b] transition">
+                            {thread.title}
+                          </h3>
+                          <p className="mt-1.5 line-clamp-2 text-xs text-stone-500">
+                            {snippet}
+                          </p>
                         </div>
 
-                        <h3 className="text-[15px] font-bold leading-snug text-[#16263f] group-hover:text-[#9e2a2b] transition">
-                          {thread.title}
-                        </h3>
-                        <p className="mt-1.5 line-clamp-1 text-xs text-stone-500">
-                          {stripInlineMarkdown(thread.replies[0]?.content ?? '')}
-                        </p>
-                      </div>
-
-                      <div className="flex shrink-0 flex-col items-end gap-2 text-xs">
-                        <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono-tech text-[11px] text-stone-600">
-                          {thread.replies.length} 楼
-                        </span>
-                        <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-stone-400 group-hover:text-[#9e2a2b]">
-                          {isRead ? '已阅' : '进帖'}
-                          <ChevronRight className="h-3.5 w-3.5" />
-                        </span>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+                        <div className="flex shrink-0 flex-col items-end gap-2 text-xs">
+                          <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 font-mono-tech text-[11px] text-stone-600">
+                            {thread.replies.length} 楼
+                          </span>
+                          <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-stone-400 group-hover:text-[#9e2a2b]">
+                            {isRead ? '已阅' : '进帖'}
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </span>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              )}
 
               {foldedThreadCount > 0 && (
                 <div className="pt-2 text-center">
@@ -448,6 +610,10 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                       onClick={() => {
                         horrorAudio.playClick('ui');
                         setViewMode('list');
+                        onRecordNav?.(
+                          `__list:${activeBoard}__`,
+                          `${isZijing ? '紫荆站树洞' : '显影液论坛'} · 帖子列表`
+                        );
                       }}
                       className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-1.5 text-xs font-medium text-[#16263f] hover:border-[#16263f] cursor-pointer transition"
                     >
@@ -455,7 +621,6 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                       <span>返回帖子列表</span>
                     </button>
 
-                    {/* 经典 BBS「只看楼主」筛选开关 */}
                     <button
                       type="button"
                       onClick={() => {
@@ -468,7 +633,6 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'
                       }`}
                     >
-                      <User className="h-3.5 w-3.5" />
                       <span>{onlyOp ? '正在只看楼主（点击看全楼）' : '只看楼主'}</span>
                     </button>
                   </div>
@@ -480,7 +644,6 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                         onClick={jumpToHiddenFloor}
                         className="inline-flex items-center gap-1 rounded-full border border-amber-400 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-950 hover:bg-amber-100 cursor-pointer transition"
                       >
-                        <Sparkles className="h-3.5 w-3.5 text-amber-700" />
                         <span>直达末楼折叠异常层 (#{hiddenFloorReply.floor}F)</span>
                       </button>
                     )}
@@ -502,7 +665,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                 <div className="mb-5 rounded-2xl border border-[#dfd8ca] bg-white px-6 py-5 shadow-2xs">
                   <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                     <span
-                      className={`rounded px-2 py-0.5 text-[11px] font-medium ${
+                      className={`rounded px-2 py-0.5 font-mono-tech text-[11px] font-medium ${
                         isZijing
                           ? 'bg-purple-50 text-purple-800 border border-purple-200'
                           : 'bg-amber-50 text-amber-900 border border-amber-200'
@@ -519,7 +682,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                   </h2>
                 </div>
 
-                {/* 清爽分层的楼层卡片 */}
+                {/* 楼层卡片 */}
                 <div className="space-y-3.5">
                   {displayedReplies.map((reply) => {
                     const isHiddenTarget = Boolean(reply.hiddenKeywordRequired);
@@ -534,7 +697,9 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           className="rounded-2xl border-2 border-dashed border-amber-500/70 bg-amber-50/85 p-5 shadow-2xs"
                         >
                           <div className="mb-2 flex items-center gap-2 text-xs font-bold text-amber-950">
-                            <Lock className="h-4 w-4 text-amber-700" />
+                            <span className="rounded bg-amber-200/80 px-1.5 py-0.5 font-mono-tech text-[10px]">
+                              FOLDED
+                            </span>
                             <span>#{reply.floor} 楼 · 已被站务折叠的异常缓存楼层</span>
                           </div>
                           <p className="mb-3 text-xs leading-relaxed text-stone-600">
@@ -551,10 +716,9 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                             <button
                               type="button"
                               onClick={() => handleUnlockHiddenReply(reply.hiddenKeywordRequired!)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-[#16263f] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#1f3557] cursor-pointer"
+                              className="rounded-lg bg-[#16263f] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#1f3557] cursor-pointer"
                             >
-                              <Unlock className="h-3.5 w-3.5" />
-                              <span>调出缓存</span>
+                              调出缓存
                             </button>
                           </div>
                           {hiddenFloorError && (
@@ -599,14 +763,8 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                             )}
                           </div>
                           <div className="flex items-center gap-3 text-[11px] text-stone-400 font-mono-tech">
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {reply.time}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {reply.ipLocation}
-                            </span>
+                            <span>{reply.time}</span>
+                            <span>IP：{reply.ipLocation}</span>
                           </div>
                         </div>
 
@@ -614,16 +772,59 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           {renderTextWithLinks(body)}
                         </div>
 
-                        {/* 复古论坛标志性虚线个人器材签名档 */}
                         {signature && (
-                          <div className="mt-4 flex items-center gap-2 rounded-lg border border-dashed border-amber-400/80 bg-amber-50/65 px-3.5 py-2 font-mono-tech text-xs text-amber-950">
-                            <Camera className="h-3.5 w-3.5 shrink-0 text-amber-700" />
-                            <span>{signature}</span>
+                          <div className="mt-4 rounded-lg border border-dashed border-amber-400/80 bg-amber-50/65 px-3.5 py-2 font-mono-tech text-xs text-amber-950">
+                            {signature}
                           </div>
                         )}
                       </div>
                     );
                   })}
+
+                  {/* 实况灵异盖楼：原本静态的归档快照里，B2暗房突然有人正在敲字回帖！ */}
+                  <AnimatePresence mode="wait">
+                    {ghostReplyStage === 'typing' && (
+                      <motion.div
+                        key="ghost-typing"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        className="rounded-2xl border border-dashed border-[#9e2a2b]/45 bg-red-50/60 px-5 py-3.5 font-mono-tech text-xs text-[#9e2a2b]"
+                      >
+                        <span className="inline-block animate-pulse">
+                          ● [快照异常写入] 检测到校内局域网节点 10.14.202.38（人文楼 B2 湿法暗房）正在本帖底部输入新回复……
+                        </span>
+                      </motion.div>
+                    )}
+
+                    {ghostReplyStage === 'posted' && ghostLivePayload && (
+                      <motion.div
+                        key="ghost-posted"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35 }}
+                        className="rounded-2xl border border-[#9e2a2b]/50 bg-[#fff5f4] p-5 shadow-sm"
+                      >
+                        <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-red-200/70 pb-2 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="rounded bg-[#9e2a2b] px-1.5 py-0.5 font-mono-tech text-[10px] font-bold text-white">
+                              #LIVE
+                            </span>
+                            <span className="font-bold text-[#7f1d1d]">{ghostLivePayload.author}</span>
+                            <span className="rounded border border-red-300 bg-white px-1.5 py-0.2 font-mono-tech text-[10px] text-[#9e2a2b]">
+                              非静态快照 · 刚刚写入
+                            </span>
+                          </div>
+                          <span className="font-mono-tech text-[11px] text-[#9e2a2b]">
+                            IP：{ghostLivePayload.ip}
+                          </span>
+                        </div>
+                        <p className="font-serif-cn text-[14px] leading-[1.9] text-[#5c1616]">
+                          {ghostLivePayload.text}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {hiddenRemainingCount > 0 && (

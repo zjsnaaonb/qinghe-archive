@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { renderDisplacementMap } from 'liquid-glass-web-react';
 import {
   Search,
-  Eye,
   Sliders,
   Sparkles,
   AlertTriangle,
@@ -202,6 +201,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   scareMode,
   viewCount = 1,
   onInspect,
+  onTriggerScare,
   onAdjustContamination,
 }) => {
   const LENS_SIZE = 200;
@@ -214,6 +214,9 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   const pointerRef = useRef({ x: 0.5, y: 0.5, cw: 720, ch: 480 });
   const rafRef = useRef<number | null>(null);
   const windowChimeRef = useRef(false);
+  const lensAnomalySoundedRef = useRef<Record<string, boolean>>({});
+  const shrineHoverStartRef = useRef<number | null>(null);
+  const shrineScareFiredRef = useRef(false);
 
   const [loupeEnabled, setLoupeEnabled] = useState(false);
   const [lensVisible, setLensVisible] = useState(false);
@@ -223,6 +226,7 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
 
   const [rakingLight, setRakingLight] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
+  const [lensAnomalyMsg, setLensAnomalyMsg] = useState<string | null>(null);
 
   // 一次性调用开源 liquid-glass-web-react 预计算真实球面凸透镜折射位移贴图（静态缓存，60~120fps 零卡顿）
   const displacementMapUrl = useMemo(() => {
@@ -300,6 +304,9 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
   useEffect(() => {
     setHdState('idle');
     setScanProgress(0);
+    setLensAnomalyMsg(null);
+    shrineHoverStartRef.current = null;
+    shrineScareFiredRef.current = false;
   }, [photoId]);
 
   useEffect(() => {
@@ -362,15 +369,92 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
     // 放大镜扫过《晒谷场收工图》正中二楼雕花木窗（x: 50%-56%, y: 15%-26%）时轻响一声木梆
     if (
       photoId === 'threshing_1998' &&
-      (act >= 3 || hdState === 'revealed') &&
-      !windowChimeRef.current &&
-      nx > 0.50 &&
-      nx < 0.56 &&
-      ny > 0.15 &&
-      ny < 0.26
+      (act >= 2 || hdState === 'revealed') &&
+      nx > 0.49 &&
+      nx < 0.57 &&
+      ny > 0.14 &&
+      ny < 0.27
     ) {
-      windowChimeRef.current = true;
-      horrorAudio.playWoodenClapper();
+      if (!windowChimeRef.current) {
+        windowChimeRef.current = true;
+        horrorAudio.playWoodenClapper();
+      }
+      setLensAnomalyMsg('二楼雕花木窗暗格：放大镜内可见窗棂后方贴着半张苍白人脸');
+      return;
+    }
+
+    // 凸透镜专属民俗异象 1：无目盲傩面具（实木眼窝裂隙里藏着活人湿润瞳仁）
+    if (photoId === 'nuo_mask' && nx > 0.36 && nx < 0.64 && ny > 0.34 && ny < 0.54) {
+      if (!lensAnomalySoundedRef.current.nuo_mask) {
+        lensAnomalySoundedRef.current.nuo_mask = true;
+        horrorAudio.playWoodenClapper();
+        horrorAudio.playMirrorChill(scareMode);
+        onAdjustContamination?.(3);
+      }
+      setLensAnomalyMsg('光学透镜异象：原本实木封死的盲傩眼窝木纹裂开，内侧有两只湿润瞳仁正贴着木缝往外看');
+      return;
+    }
+
+    // 凸透镜专属民俗异象 2：晚清朱漆镜匣「十月封镜」（水银镜面映出身后第二个人）
+    if (photoId === 'qh_12_03' && nx > 0.32 && nx < 0.68 && ny > 0.22 && ny < 0.68) {
+      if (!lensAnomalySoundedRef.current.qh_12_03) {
+        lensAnomalySoundedRef.current.qh_12_03 = true;
+        horrorAudio.playMirrorChill(scareMode);
+        onAdjustContamination?.(3);
+      }
+      setLensAnomalyMsg('水银镜底反光：「十月封镜」红纸交叉缝隙深处，映出了一件站在你椅背后的湿黑布褂领口');
+      return;
+    }
+
+    // 凸透镜专属民俗异象 3：1998 空神龛（直视满 2 秒触发首诫违规惊吓！）
+    if (photoId === 'shrine_1998' && nx > 0.38 && nx < 0.62 && ny > 0.18 && ny < 0.54) {
+      const now = performance.now();
+      if (shrineHoverStartRef.current === null) {
+        shrineHoverStartRef.current = now;
+        horrorAudio.playMirrorChill(scareMode);
+      } else if (now - shrineHoverStartRef.current >= 1950 && !shrineScareFiredRef.current) {
+        shrineScareFiredRef.current = true;
+        horrorAudio.playBronzeGong(1);
+        onAdjustContamination?.(6);
+        onTriggerScare?.({
+          title: '已违背首诫：透过透镜直视空神龛逾两秒',
+          message:
+            '《地下审片安全十诫》第一条：三通锣响后，切勿直视空神龛超过两秒。\n刚才在凸透镜焦平面内，空龛深处那两粒没有眼白的湿黑瞳孔已经完成了对焦。（视网膜残留 +6%）',
+          visualType: 'shrine',
+        });
+      }
+      setLensAnomalyMsg('危险警告：空神龛深处检出双点湿润高光！请立即移开放大镜（切勿凝视超过两秒）');
+      return;
+    } else {
+      shrineHoverStartRef.current = null;
+    }
+
+    // 凸透镜专属民俗异象 4：辞灶浓雾门外 / 雾锁龛下坳（仅在镜片内显影的雾中成排背影）
+    if (
+      (photoId === 'qh_26_03' && nx > 0.52 && nx < 0.9 && ny > 0.16 && ny < 0.72) ||
+      (photoId === 'village_mist' && nx > 0.26 && nx < 0.76 && ny > 0.3 && ny < 0.68)
+    ) {
+      const key = `mist_${photoId}`;
+      if (!lensAnomalySoundedRef.current[key]) {
+        lensAnomalySoundedRef.current[key] = true;
+        horrorAudio.playMirrorChill(scareMode);
+      }
+      setLensAnomalyMsg('银盐雾翳潜影：肉眼空白的灰雾里显影出成排静立不动的黑褂背影');
+      return;
+    }
+
+    // 凸透镜专属民俗异象 5：空心古樟树洞内壁抓痕
+    if (photoId === 'qh_10_04' && nx > 0.34 && nx < 0.66 && ny > 0.16 && ny < 0.54) {
+      if (!lensAnomalySoundedRef.current.qh_10_04) {
+        lensAnomalySoundedRef.current.qh_10_04 = true;
+        horrorAudio.playWoodenClapper();
+      }
+      setLensAnomalyMsg('树洞内壁暗痕：放大镜下可见古樟空腔内侧布满由里向外抠抓的红泥指印');
+      return;
+    }
+
+    if (lensAnomalyMsg) {
+      setLensAnomalyMsg(null);
     }
   };
 
@@ -423,18 +507,96 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
           />
         )}
 
-        {/* 第三幕自然回访时的幽微预览：二楼正中雕花木窗内浮现苍白窥视脸 */}
-        {photoId === 'threshing_1998' && act === 3 && hdState === 'idle' && (
-          <img
-            src="./media/threshing_1998_turn.png"
-            alt="第三幕局部异变"
-            draggable={false}
-            style={{
-              clipPath: 'inset(15% 44% 74% 50%)',
-              opacity: 0.85,
-            }}
-            className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
-          />
+        {/* 第三幕自然回访时的幽微预览，或任意幕次在【光学放大镜】镜片内部提前窥见二楼木窗苍白人脸！ */}
+        {photoId === 'threshing_1998' &&
+          (act === 3 || (isInsideMagnifier && act >= 1)) &&
+          hdState === 'idle' && (
+            <img
+              src="./media/threshing_1998_turn.png"
+              alt="木窗局部异变"
+              draggable={false}
+              style={{
+                clipPath: 'inset(15% 44% 74% 50%)',
+                opacity: isInsideMagnifier ? 0.92 : 0.85,
+              }}
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover select-none"
+            />
+          )}
+
+        {/* ===== 仅在光学放大镜镜片内部显影的民俗诡异潜影（肉眼看原图完全正常，移镜至此骤然浮现！） ===== */}
+        {isInsideMagnifier && photoId === 'nuo_mask' && (
+          <svg
+            viewBox="0 0 600 400"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none"
+          >
+            {/* 左眼窝木缝湿瞳 */}
+            <path d="M236 172 Q256 164 276 173 Q256 181 236 172 Z" fill="#120707" fillOpacity="0.88" />
+            <circle cx="257" cy="172" r="5.5" fill="#d8cfc2" fillOpacity="0.82" />
+            <circle cx="257" cy="172" r="2.9" fill="#090404" />
+            <circle cx="258.5" cy="170.8" r="1" fill="#ffffff" fillOpacity="0.9" />
+            {/* 右眼窝木缝湿瞳 */}
+            <path d="M324 172 Q344 164 364 173 Q344 181 324 172 Z" fill="#120707" fillOpacity="0.88" />
+            <circle cx="343" cy="172" r="5.5" fill="#d8cfc2" fillOpacity="0.82" />
+            <circle cx="343" cy="172" r="2.9" fill="#090404" />
+            <circle cx="344.5" cy="170.8" r="1" fill="#ffffff" fillOpacity="0.9" />
+          </svg>
+        )}
+
+        {isInsideMagnifier && photoId === 'qh_12_03' && (
+          <svg
+            viewBox="0 0 600 400"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none opacity-80"
+          >
+            {/* 水银镜十字封条缝隙后的苍白窥视半脸与黑褂领口 */}
+            <ellipse cx="306" cy="168" rx="28" ry="36" fill="#cfc8b8" fillOpacity="0.34" />
+            <path d="M262 238 C274 206, 338 206, 350 238 L360 290 L252 290 Z" fill="#0f1318" fillOpacity="0.58" />
+            <ellipse cx="316" cy="164" rx="8.5" ry="4.4" fill="#eee8da" fillOpacity="0.85" />
+            <circle cx="316" cy="164" r="2.8" fill="#1a0505" />
+          </svg>
+        )}
+
+        {isInsideMagnifier && photoId === 'shrine_1998' && (
+          <svg
+            viewBox="0 0 600 400"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none"
+          >
+            {/* 漆黑空龛正中央凝视镜头的双点湿冷眼白与血丝暗影 */}
+            <ellipse cx="288" cy="136" rx="6" ry="3.3" fill="#e7dfd1" fillOpacity="0.82" />
+            <circle cx="288" cy="136" r="2.3" fill="#2b0505" />
+            <ellipse cx="312" cy="136" rx="6" ry="3.3" fill="#e7dfd1" fillOpacity="0.82" />
+            <circle cx="312" cy="136" r="2.3" fill="#2b0505" />
+          </svg>
+        )}
+
+        {isInsideMagnifier && (photoId === 'qh_26_03' || photoId === 'village_mist') && (
+          <svg
+            viewBox="0 0 600 400"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none blur-[1px]"
+          >
+            {/* 白雾深处静立不动的五道高瘦黑褂人影 */}
+            {[345, 382, 418, 456, 492].map((cx, i) => (
+              <g key={cx} opacity={0.34 - i * 0.03}>
+                <ellipse cx={cx} cy={148 + (i % 2) * 6} rx="8" ry="10" fill="#14171c" />
+                <path
+                  d={`M${cx - 14} ${166 + (i % 2) * 6} L${cx + 14} ${166 + (i % 2) * 6} L${cx + 17} 252 L${cx - 17} 252 Z`}
+                  fill="#14171c"
+                />
+              </g>
+            ))}
+          </svg>
+        )}
+
+        {isInsideMagnifier && photoId === 'qh_10_04' && (
+          <svg
+            viewBox="0 0 600 400"
+            className="pointer-events-none absolute inset-0 h-full w-full select-none opacity-75"
+          >
+            {/* 空心古樟树洞深处的苍白半脸与暗红抓痕 */}
+            <ellipse cx="298" cy="146" rx="18" ry="23" fill="#cbbba8" fillOpacity="0.28" />
+            <ellipse cx="291" cy="143" rx="4.2" ry="2.2" fill="#efe9dc" fillOpacity="0.7" />
+            <ellipse cx="305" cy="143" rx="4.2" ry="2.2" fill="#efe9dc" fillOpacity="0.7" />
+            <path d="M276 168 L280 198 M286 166 L289 201 M312 167 L309 199" stroke="#7f1d1d" strokeWidth="2.2" strokeOpacity="0.65" />
+          </svg>
         )}
 
         {/* 2) 课题组成员接触印相表：第3/4幕或斜射显影下切换像素对齐的瞳孔神龛反光异变照 */}
@@ -680,7 +842,11 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
             handlePointerMove(e);
           }
         }}
-        onMouseLeave={() => setLensVisible(false)}
+        onMouseLeave={() => {
+          setLensVisible(false);
+          setLensAnomalyMsg(null);
+          shrineHoverStartRef.current = null;
+        }}
         className={`relative w-full select-none overflow-hidden bg-black ${
           loupeEnabled ? 'cursor-none' : 'cursor-default'
         }`}
@@ -774,15 +940,28 @@ export const ForensicPhotoViewer: React.FC<ForensicPhotoViewerProps> = ({
         )}
       </AnimatePresence>
 
+      {/* 凸透镜局部异象实时警示条 */}
+      <AnimatePresence>
+        {lensAnomalyMsg && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t border-[#9e2a2b]/35 bg-[#221717] px-4 py-2 text-xs font-mono-tech text-[#f8e7e7]"
+          >
+            ● {lensAnomalyMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 底部精简亮色取证说明栏 */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#e5dfd2] bg-[#f5f1e7] px-4 py-2 text-xs text-stone-600">
-        <div className="flex items-center gap-1.5">
-          <Eye className="h-3.5 w-3.5 shrink-0 text-[#9e2a2b]" />
+        <div className="flex items-center gap-2">
+          <span className="font-mono-tech text-[10px] font-bold text-[#9e2a2b]">[取证贴士]</span>
           <span>{info.forensicHint}</span>
         </div>
         {act >= 3 && (photoId === 'threshing_1998' || photoId === 'team_portraits') && (
           <span className="inline-flex items-center gap-1 text-[11px] font-mono-tech font-semibold text-[#9e2a2b]">
-            <AlertTriangle className="h-3 w-3" />
             底片校验偏移 · 阅览 {Math.max(1, viewCount)} 次
           </span>
         )}

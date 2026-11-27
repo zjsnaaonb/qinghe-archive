@@ -1,23 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
-  Lock,
   ArrowLeft,
-  History,
-  Eye,
   ChevronRight,
-  Sparkles,
-  FileText,
-  Camera,
-  Mic,
-  Compass,
+  X,
 } from 'lucide-react';
 import { QINGHE_ARCHIVE_ENTRIES } from '../data/qingheArchiveData';
 import type { ArchiveEntry } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
 import { ForensicPhotoViewer, VISUAL_CAPTIONS } from '../components/ForensicPhotoViewer';
 import { EditorialProse } from '../components/EditorialProse';
+import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
 import { horrorAudio } from '../engine/audio';
 
 type CategoryFilter = '全部馆藏' | ArchiveEntry['category'] | '已发现残卷';
@@ -30,17 +24,12 @@ const CATEGORIES: CategoryFilter[] = [
   '器物标本',
 ];
 
-const CATEGORY_ICON: Record<string, React.ReactNode> = {
-  图像档案: <Camera className="h-3.5 w-3.5" />,
-  口述访谈: <Mic className="h-3.5 w-3.5" />,
-  工作公示: <FileText className="h-3.5 w-3.5" />,
-  器物标本: <Compass className="h-3.5 w-3.5" />,
-};
-
 export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   state,
   focusedItemId,
   onClearFocus,
+  navCommand,
+  onRecordNav,
   onNavigateSite,
   onUnlockSite,
   onMarkRead,
@@ -48,16 +37,15 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   onAdjustContamination,
   onTriggerScare,
 }) => {
-  // 清爽博物馆双视图：'home'（清爽精选导览与分类卡片）| 'detail'（专注阅读与高清取证）
   const [viewMode, setViewMode] = useState<'home' | 'detail'>('home');
   const [category, setCategory] = useState<CategoryFilter>('全部馆藏');
   const [localQuery, setLocalQuery] = useState('');
-  const [submittedQuery, setSubmittedQuery] = useState('');
   const [selectedEntryId, setSelectedEntryId] = useState<string>('qh-37-09');
   const [compareOriginalSnapshot, setCompareOriginalSnapshot] = useState(false);
   const [fullCatalogOpen, setFullCatalogOpen] = useState(false);
+  const lastNavSeqRef = useRef<number>(0);
 
-  // 响应顶部跨站检索直达具体条目
+  // 响应跨站检索或引导条直达具体条目
   useEffect(() => {
     if (focusedItemId && QINGHE_ARCHIVE_ENTRIES.some((e) => e.id === focusedItemId)) {
       setSelectedEntryId(focusedItemId);
@@ -67,6 +55,21 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
     }
   }, [focusedItemId, onClearFocus]);
 
+  // 响应顶部「上一处 / 下一处 / 足迹」历史栈精确还原状态（含同站不同条目切换）
+  useEffect(() => {
+    if (!navCommand || navCommand.site !== 'qinghe' || navCommand.seq === lastNavSeqRef.current) {
+      return;
+    }
+    lastNavSeqRef.current = navCommand.seq;
+    if (navCommand.itemId === '__home__' || navCommand.itemId === '__list__') {
+      setViewMode('home');
+    } else if (QINGHE_ARCHIVE_ENTRIES.some((e) => e.id === navCommand.itemId)) {
+      setSelectedEntryId(navCommand.itemId);
+      setCompareOriginalSnapshot(false);
+      setViewMode('detail');
+    }
+  }, [navCommand]);
+
   const discoveredHiddenEntries = useMemo(
     () =>
       QINGHE_ARCHIVE_ENTRIES.filter(
@@ -75,25 +78,39 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
     [state.readDocIds]
   );
 
+  const activeQuery = localQuery.trim();
+
+  // 智能高精度馆内检索：实时输入即筛选，支持无连字符编号(3709/1203/qh38)、空格多词与上下文命中摘要
+  const searchScoredEntries = useMemo(() => {
+    if (!activeQuery) return null;
+    const scored: Array<{ entry: ArchiveEntry; score: number; snippet: string }> = [];
+
+    for (const entry of QINGHE_ARCHIVE_ENTRIES) {
+      const res = scoreSearchMatch(activeQuery, {
+        code: entry.code,
+        title: entry.title,
+        subtitle: `${entry.village} ${entry.year} ${entry.category} ${entry.photographer ?? ''}`,
+        tags: entry.keywords,
+        summary: entry.summary,
+        body: entry.content,
+        // 未挂接隐藏残卷仅在匹配编号/村名/采风人/专属关键词时检出，防止搜普通词误剧透
+        allowBodyMatch: !entry.hiddenFromList,
+      });
+      if (res.matched) {
+        scored.push({
+          entry,
+          score: res.score,
+          snippet: extractSearchSnippet(entry.content, activeQuery, entry.summary, res.bestTerm),
+        });
+      }
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored;
+  }, [activeQuery]);
+
   const filteredEntries = useMemo(() => {
-    const q = submittedQuery.trim().toLowerCase();
-    if (q.length > 0) {
-      return QINGHE_ARCHIVE_ENTRIES.filter((entry) =>
-        [
-          entry.code,
-          entry.title,
-          entry.village,
-          entry.year,
-          entry.category,
-          entry.photographer ?? '',
-          entry.summary,
-          entry.content,
-          ...entry.keywords,
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(q)
-      );
+    if (searchScoredEntries) {
+      return searchScoredEntries.map((s) => s.entry);
     }
     if (category === '已发现残卷') return discoveredHiddenEntries;
     return QINGHE_ARCHIVE_ENTRIES.filter((entry) => {
@@ -101,7 +118,17 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
       if (category === '全部馆藏') return true;
       return entry.category === category;
     });
-  }, [submittedQuery, category, discoveredHiddenEntries]);
+  }, [searchScoredEntries, category, discoveredHiddenEntries]);
+
+  const snippetByEntryId = useMemo(() => {
+    const map = new Map<string, string>();
+    if (searchScoredEntries) {
+      for (const s of searchScoredEntries) {
+        map.set(s.entry.id, s.snippet);
+      }
+    }
+    return map;
+  }, [searchScoredEntries]);
 
   const activeEntry = useMemo(() => {
     return (
@@ -111,14 +138,20 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   }, [selectedEntryId]);
 
   const openEntry = (id: string) => {
+    const target = QINGHE_ARCHIVE_ENTRIES.find((e) => e.id === id);
     horrorAudio.playClick('ui');
     setSelectedEntryId(id);
     setCompareOriginalSnapshot(false);
     setViewMode('detail');
+    if (target) {
+      onRecordNav?.(
+        target.id,
+        `${target.code} · ${target.title.replace(/[《》]/g, '').slice(0, 14)}`
+      );
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 进入详情页时仅标记已读（绝不自动往手记灌输剧透答案！）
   useEffect(() => {
     if (viewMode !== 'detail' || !activeEntry) return;
     if (!state.readDocIds.includes(activeEntry.id)) {
@@ -129,22 +162,15 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   const handlePortalSearch = (e: React.FormEvent) => {
     e.preventDefault();
     horrorAudio.playClick('ui');
-    const trimmed = localQuery.trim();
-    setSubmittedQuery(trimmed);
-    setViewMode('home');
-    if (trimmed) {
-      const qLower = trimmed.toLowerCase();
-      const exactOrHidden = QINGHE_ARCHIVE_ENTRIES.find(
-        (entry) =>
-          entry.hiddenFromList &&
-          [entry.code, entry.title, ...entry.keywords]
-            .join(' ')
-            .toLowerCase()
-            .includes(qLower)
-      );
-      if (exactOrHidden) {
-        openEntry(exactOrHidden.id);
-      }
+    if (!activeQuery) return;
+    // 若仅唯一命中一条（例如精确输入 QH-12-03 或 3709），回车直接打开该卷宗；否则切到列表展示全部命中项
+    if (searchScoredEntries && searchScoredEntries.length === 1) {
+      openEntry(searchScoredEntries[0].entry.id);
+      return;
+    }
+    if (viewMode !== 'home') {
+      setViewMode('home');
+      onRecordNav?.('__home__', `青禾馆检索 · “${activeQuery.slice(0, 10)}”`);
     }
   };
 
@@ -163,6 +189,9 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   const showTwoViewersAnomaly =
     state.act >= 3 ||
     activeEntry?.id === 'qh-37-09' ||
+    activeEntry?.id === 'qh-12-03' ||
+    activeEntry?.id === 'qh-24-07' ||
+    activeEntry?.id === 'qh-36-02' ||
     Boolean(activeEntry?.hiddenFromList);
 
   const featuredIds = ['qh-37-09', 'qh-overview-grant', 'qh-39-01'];
@@ -171,17 +200,21 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
     .filter((e): e is ArchiveEntry => Boolean(e));
 
   const hasInspected3709 = state.readDocIds.includes('qh-37-09');
-  const showFullCatalog = hasInspected3709 || fullCatalogOpen || Boolean(submittedQuery) || category !== '全部馆藏';
+  const showFullCatalog =
+    hasInspected3709 || fullCatalogOpen || Boolean(activeQuery) || category !== '全部馆藏';
   const progressiveBlocks = state.act === 1 ? 2 : state.act === 2 ? 4 : undefined;
 
   return (
     <div className="min-h-[calc(100vh-124px)] bg-[#f6f3ec] text-[#1f2937]">
-      {/* 典雅明亮的高校数字博物馆纸本页眉 */}
+      {/* 典雅明亮的高校数字博物馆纸本页眉（纯正排版，零AI图标） */}
       <div className="border-t-4 border-t-[#9e2a2b] border-b border-[#dfd8ca] bg-[#fcfaf5] text-[#16263f]">
         <div className="mx-auto max-w-6xl px-5 py-7">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 text-[11px] font-semibold tracking-widest text-[#9e2a2b]">
+                <span className="rounded-[2px] border border-[#9e2a2b] px-1.5 py-0.2 font-serif-cn text-[10px] font-bold">
+                  典藏
+                </span>
                 <span>南州大学人文高等研究院</span>
                 <span>·</span>
                 <span className="font-mono-tech">省社科重点项目 24ZDA0838</span>
@@ -194,20 +227,36 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
               </p>
             </div>
 
-            {/* 干净利落的站内检索框 */}
-            <form onSubmit={handlePortalSearch} className="w-full sm:w-80">
+            {/* 实时响应的高精度馆内检索框 */}
+            <form onSubmit={handlePortalSearch} className="w-full sm:w-84">
               <div className="relative">
                 <input
                   type="text"
                   value={localQuery}
-                  onChange={(e) => setLocalQuery(e.target.value)}
-                  placeholder="搜馆藏名、编号或人名（如：晒谷场收工图）"
-                  className="w-full rounded-xl border border-[#d6cebe] bg-white py-2.5 pl-4 pr-10 text-xs text-stone-800 placeholder-stone-400 shadow-2xs focus:border-[#9e2a2b] focus:outline-none transition"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setLocalQuery(val);
+                    if (val.trim() && viewMode !== 'home') {
+                      setViewMode('home');
+                    }
+                  }}
+                  placeholder="输入编号(如1203/3709)、村名、人名实时检索……"
+                  className="w-full rounded-xl border border-[#d6cebe] bg-white py-2.5 pl-4 pr-16 text-xs text-stone-800 placeholder-stone-400 shadow-2xs focus:border-[#9e2a2b] focus:outline-none transition"
                 />
+                {localQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setLocalQuery('')}
+                    className="absolute right-9 top-1/2 -translate-y-1/2 rounded p-1 text-stone-400 hover:text-stone-700 cursor-pointer"
+                    title="清空检索词"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
                 <button
                   type="submit"
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[#9e2a2b] hover:bg-red-50 cursor-pointer"
-                  title="馆内检索"
+                  title="馆内精准检索"
                 >
                   <Search className="h-4 w-4" />
                 </button>
@@ -229,8 +278,8 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
               transition={{ duration: 0.22 }}
               className="space-y-9"
             >
-              {/* 首屏 3 张精选核心卡片（仅在未搜索时展示，一眼抓住焦点，零信息过载！） */}
-              {!submittedQuery && (
+              {/* 首屏 3 张精选核心卡片（仅在未搜索时展示） */}
+              {!activeQuery && (
                 <section>
                   <div className="mb-4 flex items-baseline justify-between">
                     <h2 className="font-serif-cn text-lg font-bold text-[#16263f]">
@@ -264,9 +313,8 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                             <span className="absolute left-3 top-3 rounded-md bg-[#9e2a2b] px-2 py-0.5 font-mono-tech text-[10px] font-semibold text-white shadow-sm">
                               {item.code}
                             </span>
-                            <span className="absolute right-3 bottom-2.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] text-amber-200 backdrop-blur-xs">
-                              <Camera className="h-2.5 w-2.5" />
-                              含原片取证
+                            <span className="absolute right-3 bottom-2.5 rounded bg-black/70 px-2 py-0.5 font-mono-tech text-[10px] text-amber-200 backdrop-blur-xs">
+                              原片取证
                             </span>
                           </div>
                         ) : (
@@ -298,7 +346,7 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                 </section>
               )}
 
-              {/* 渐进式馆藏目录：初次进入时默认折叠全量列表，避免首屏信息轰炸；核查过 QH-37-09 后自然展开并提示未挂接号段可检索 */}
+              {/* 渐进式馆藏目录 */}
               {!showFullCatalog ? (
                 <div className="rounded-2xl border border-[#dfd8ca] bg-white/80 p-6 text-center shadow-2xs">
                   <p className="text-xs text-stone-500">
@@ -318,141 +366,134 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                 </div>
               ) : (
                 <section>
-                  {hasInspected3709 && discoveredHiddenEntries.length === 0 && !submittedQuery && (
+                  {hasInspected3709 && discoveredHiddenEntries.length === 0 && !activeQuery && (
                     <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300/75 bg-amber-50/75 px-4 py-2.5 text-xs text-amber-950">
                       <span>
-                        <strong>馆藏索引说明：</strong>公开列表仅列示已挂接分区（<code className="font-mono-tech">QH-01</code> 至 <code className="font-mono-tech">QH-37</code> 及特展段 <code className="font-mono-tech">QH-39</code>）。未挂接之空缺分区或采集人底稿，可在右上角检索框输入<strong>精确分区号</strong>或<strong>采集人姓名/缩写</strong>调档。
+                        <strong>馆藏索引说明：</strong>公开列表仅列示已挂接分区（<code className="font-mono-tech">QH-01</code> 至 <code className="font-mono-tech">QH-37</code> 及特展段 <code className="font-mono-tech">QH-39</code>）。未挂接之空缺分区或采集人底稿，可在右上角检索框输入<strong>分区号（如 QH-38）</strong>或<strong>采集人姓名/缩写</strong>调档。
                       </span>
                     </div>
                   )}
 
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#dfd8ca] pb-3">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => {
-                          horrorAudio.playClick('ui');
-                          setSubmittedQuery('');
-                          setLocalQuery('');
-                          setCategory(cat);
-                        }}
-                        className={`rounded-full px-3.5 py-1.5 text-xs font-medium cursor-pointer transition ${
-                          !submittedQuery && category === cat
-                            ? 'bg-[#16263f] text-white shadow-sm'
-                            : 'bg-white text-stone-600 border border-[#dfd8ca] hover:border-stone-400'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                    {discoveredHiddenEntries.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          horrorAudio.playClick('ui');
-                          setSubmittedQuery('');
-                          setCategory('已发现残卷');
-                        }}
-                        className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium cursor-pointer transition ${
-                          category === '已发现残卷'
-                            ? 'bg-[#9e2a2b] text-white'
-                            : 'border border-red-900/30 bg-red-50 text-[#9e2a2b]'
-                        }`}
-                      >
-                        <Sparkles className="h-3 w-3" />
-                        <span>已检出未编目残卷 ({discoveredHiddenEntries.length})</span>
-                      </button>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => {
+                            horrorAudio.playClick('ui');
+                            setLocalQuery('');
+                            setCategory(cat);
+                          }}
+                          className={`rounded-full px-3.5 py-1.5 text-xs font-medium cursor-pointer transition ${
+                            !activeQuery && category === cat
+                              ? 'bg-[#16263f] text-white shadow-sm'
+                              : 'bg-white text-stone-600 border border-[#dfd8ca] hover:border-stone-400'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                      {discoveredHiddenEntries.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            horrorAudio.playClick('ui');
+                            setLocalQuery('');
+                            setCategory('已发现残卷');
+                          }}
+                          className={`inline-flex items-center gap-1 rounded-full px-3.5 py-1.5 text-xs font-medium cursor-pointer transition ${
+                            !activeQuery && category === '已发现残卷'
+                              ? 'bg-[#9e2a2b] text-white'
+                              : 'border border-red-900/30 bg-red-50 text-[#9e2a2b]'
+                          }`}
+                        >
+                          <span>未编目残卷 ({discoveredHiddenEntries.length})</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {activeQuery && (
+                      <div className="flex items-center gap-2 text-xs text-stone-600">
+                        <span>
+                          精准检索 “<strong className="text-[#9e2a2b]">{activeQuery}</strong>” 命中 {filteredEntries.length} 条（按相关度排序）
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setLocalQuery('')}
+                          className="underline hover:text-[#16263f] cursor-pointer"
+                        >
+                          清除
+                        </button>
+                      </div>
                     )}
                   </div>
 
-                  {submittedQuery && (
-                    <div className="flex items-center gap-2 text-xs text-stone-600">
-                      <span>
-                        检索 “<strong className="text-[#9e2a2b]">{submittedQuery}</strong>” 命中 {filteredEntries.length} 条
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSubmittedQuery('');
-                          setLocalQuery('');
-                        }}
-                        className="underline hover:text-[#16263f] cursor-pointer"
-                      >
-                        清除
-                      </button>
+                  {filteredEntries.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-[#d4ccbc] bg-white/60 py-14 text-center text-sm text-stone-500">
+                      未在当前馆藏中检索到 “{activeQuery}”。支持直接输入数字编号（如 1203、24、36、3709）、人名或村名。
                     </div>
-                  )}
-                </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                      {filteredEntries.map((entry) => {
+                        const isRead = state.readDocIds.includes(entry.id);
+                        const thumbSrc = entry.specialPhotoId
+                          ? VISUAL_CAPTIONS[entry.specialPhotoId]?.src
+                          : undefined;
+                        const displaySnippet = snippetByEntryId.get(entry.id) ?? entry.summary;
 
-                {filteredEntries.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-[#d4ccbc] bg-white/60 py-14 text-center text-sm text-stone-500">
-                    未在当前公开目录中检索到 “{submittedQuery}”。可尝试更简短的人名、村名或索书号。
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-                    {filteredEntries.map((entry) => {
-                      const isRead = state.readDocIds.includes(entry.id);
-                      const thumbSrc = entry.specialPhotoId
-                        ? VISUAL_CAPTIONS[entry.specialPhotoId]?.src
-                        : undefined;
-                      return (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          onClick={() => openEntry(entry.id)}
-                          className="group flex items-stretch gap-3.5 rounded-xl border border-[#e3dccf] bg-white p-4 text-left hover:border-[#16263f]/40 hover:shadow-sm cursor-pointer transition"
-                        >
-                          {thumbSrc && (
-                            <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-zinc-900 sm:h-24 sm:w-32">
-                              <img
-                                src={thumbSrc}
-                                alt={entry.title}
-                                loading="lazy"
-                                className="h-full w-full object-cover opacity-95 transition duration-300 group-hover:scale-105"
-                              />
-                              <span className="absolute bottom-1 right-1 inline-flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 font-mono-tech text-[9px] text-amber-200">
-                                <Camera className="h-2.5 w-2.5" />
-                                底片
-                              </span>
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1 flex flex-col justify-between">
-                            <div>
-                              <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`rounded px-1.5 py-0.5 font-mono-tech font-medium ${
-                                      entry.hiddenFromList
-                                        ? 'bg-red-50 text-[#9e2a2b] border border-red-200'
-                                        : 'bg-stone-100 text-stone-600'
-                                    }`}
-                                  >
-                                    {entry.code}
-                                  </span>
-                                  <span className="inline-flex items-center gap-1 text-stone-500">
-                                    {CATEGORY_ICON[entry.category]}
-                                    {entry.category}
-                                  </span>
-                                </div>
-                                <span className="text-stone-400">
-                                  {isRead ? '已阅' : entry.year}
+                        return (
+                          <button
+                            key={entry.id}
+                            type="button"
+                            onClick={() => openEntry(entry.id)}
+                            className="group flex items-stretch gap-3.5 rounded-xl border border-[#e3dccf] bg-white p-4 text-left hover:border-[#16263f]/40 hover:shadow-sm cursor-pointer transition"
+                          >
+                            {thumbSrc && (
+                              <div className="relative h-24 w-28 shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-zinc-900 sm:h-24 sm:w-32">
+                                <img
+                                  src={thumbSrc}
+                                  alt={entry.title}
+                                  loading="lazy"
+                                  className="h-full w-full object-cover opacity-95 transition duration-300 group-hover:scale-105"
+                                />
+                                <span className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 font-mono-tech text-[9px] text-amber-200">
+                                  底片
                                 </span>
                               </div>
-                              <h3 className="font-serif-cn text-[15px] font-bold leading-snug text-[#16263f] group-hover:text-[#9e2a2b] transition line-clamp-2">
-                                {entry.title}
-                              </h3>
-                              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-stone-500">
-                                {entry.summary}
-                              </p>
+                            )}
+                            <div className="min-w-0 flex-1 flex flex-col justify-between">
+                              <div>
+                                <div className="mb-1.5 flex items-center justify-between gap-2 text-[11px]">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`rounded px-1.5 py-0.5 font-mono-tech font-medium ${
+                                        entry.hiddenFromList
+                                          ? 'bg-red-50 text-[#9e2a2b] border border-red-200'
+                                          : 'bg-stone-100 text-stone-600'
+                                      }`}
+                                    >
+                                      {entry.code}
+                                    </span>
+                                    <span className="text-stone-500">[{entry.category}]</span>
+                                  </div>
+                                  <span className="text-stone-400">
+                                    {isRead ? '已阅' : entry.year}
+                                  </span>
+                                </div>
+                                <h3 className="font-serif-cn text-[15px] font-bold leading-snug text-[#16263f] group-hover:text-[#9e2a2b] transition line-clamp-2">
+                                  {entry.title}
+                                </h3>
+                                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-stone-500">
+                                  {displaySnippet}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
               )}
             </motion.div>
@@ -472,6 +513,7 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                   onClick={() => {
                     horrorAudio.playClick('ui');
                     setViewMode('home');
+                    onRecordNav?.('__home__', '青禾民俗馆 · 馆藏目录');
                   }}
                   className="inline-flex items-center gap-1.5 rounded-full border border-[#d6cfc0] bg-white px-4 py-1.5 text-xs font-medium text-[#16263f] hover:border-[#16263f] cursor-pointer transition"
                 >
@@ -484,23 +526,20 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                     <button
                       type="button"
                       onClick={() => setCompareOriginalSnapshot((v) => !v)}
-                      className="inline-flex items-center gap-1 rounded-full border border-red-900/30 bg-red-50 px-3 py-1 text-xs font-medium text-[#9e2a2b] hover:bg-red-100 cursor-pointer"
+                      className="rounded-full border border-red-900/30 bg-red-50 px-3 py-1 text-xs font-medium text-[#9e2a2b] hover:bg-red-100 cursor-pointer"
                     >
-                      <History className="h-3.5 w-3.5" />
-                      <span>{compareOriginalSnapshot ? '查看当前异变页面' : '对照早期原始快照'}</span>
+                      {compareOriginalSnapshot ? '查看当前异变页面' : '对照早期原始快照'}
                     </button>
                   )}
                   {showTwoViewersAnomaly && (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-red-900/25 bg-red-50/80 px-2.5 py-1 font-mono-tech text-[11px] text-[#9e2a2b]">
-                      <Eye className="h-3 w-3" />
-                      当前同页浏览：2 人
+                    <span className="rounded-full border border-red-900/25 bg-red-50/80 px-2.5 py-1 font-mono-tech text-[11px] text-[#9e2a2b]">
+                      ● 当前同页浏览：2 人
                     </span>
                   )}
                 </div>
               </div>
 
               <div className="overflow-hidden rounded-2xl border border-[#dfd8ca] bg-white shadow-sm">
-                {/* 精炼元数据头部 */}
                 <div className="border-b border-[#ece6da] bg-[#faf8f3] px-6 sm:px-9 py-6">
                   <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                     <span className="rounded bg-[#16263f] px-2 py-0.5 font-mono-tech text-[11px] text-white">
@@ -523,7 +562,6 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
                   </h2>
                 </div>
 
-                {/* 正文与高精度光学取证图 */}
                 <div className="px-6 sm:px-9 py-7">
                   {activeEntry.specialPhotoId && (
                     <div className="mb-7">
@@ -550,7 +588,7 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
           )}
         </AnimatePresence>
 
-        {/* 克制逼真的高校官网底部与内部 OA 入口 */}
+        {/* 高校官网页脚与内部 OA 入口 */}
         <footer className="mt-14 border-t border-[#ddd6c8] pt-6 flex flex-wrap items-center justify-between gap-4 text-xs text-stone-500">
           <div>
             南州大学人文高等研究院 · 青禾民俗影像数字化保护工程（内部编目号段 QH-01 ~ QH-37 / 压测段 QH-39）
@@ -564,8 +602,7 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
             }}
             className="inline-flex items-center gap-1.5 rounded-lg border border-[#d4ccbc] bg-white px-3.5 py-1.5 text-xs font-medium text-[#16263f] hover:border-[#9e2a2b] hover:text-[#9e2a2b] cursor-pointer transition"
           >
-            <Lock className="h-3.5 w-3.5" />
-            <span>教职工内部 OA 工单系统</span>
+            <span>教职工内部 OA 工单系统 →</span>
           </button>
         </footer>
       </div>

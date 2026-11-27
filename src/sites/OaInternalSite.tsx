@@ -1,12 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlertTriangle,
-  Building2,
   CheckCircle2,
   ChevronRight,
   ExternalLink,
-  FolderOpen,
   KeyRound,
   Lock,
   Search,
@@ -18,6 +16,7 @@ import {
 import { OA_DOCUMENTS } from '../data/oaData';
 import { ENCRYPTED_VAULT, GATE_HASHES } from '../data/encryptedVault';
 import { decryptVaultBlock, verifyPassphraseHash } from '../engine/crypto';
+import { scoreSearchMatch } from '../engine/search';
 import { horrorAudio } from '../engine/audio';
 import { EditorialProse } from '../components/EditorialProse';
 import type { OADocument, OALevel, SiteId } from '../types/game';
@@ -99,6 +98,8 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
   state,
   focusedItemId,
   onClearFocus,
+  navCommand,
+  onRecordNav,
   onNavigateSite,
   onUnlockSite,
   onMarkRead,
@@ -111,6 +112,7 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
   const [activeFolder, setActiveFolder] = useState<FolderFilter>('全部卷宗');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocId, setSelectedDocId] = useState<string>(OA_DOCUMENTS[0]?.id ?? '');
+  const lastNavSeqRef = useRef<number>(0);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loginUser, setLoginUser] = useState<string>(
@@ -145,28 +147,45 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
     onClearFocus?.();
   }, [focusedItemId, onClearFocus]);
 
+  useEffect(() => {
+    if (!navCommand || navCommand.site !== 'oa' || navCommand.seq === lastNavSeqRef.current) {
+      return;
+    }
+    lastNavSeqRef.current = navCommand.seq;
+    const target = OA_DOCUMENTS.find((d) => d.id === navCommand.itemId || d.code === navCommand.itemId);
+    if (target) {
+      setSelectedDocId(target.id);
+      setActiveFolder('全部卷宗');
+    }
+  }, [navCommand]);
+
   const filteredDocs = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return OA_DOCUMENTS.filter((doc) => {
-      if (activeFolder !== '全部卷宗' && doc.folder !== activeFolder) {
-        return false;
-      }
-      if (!q) return true;
-      const unlocked = state.oaLevel >= doc.minLevel;
-      const cachedBody = doc.encryptedVaultId ? state.decryptedCache[doc.encryptedVaultId] || '' : doc.fallbackPlainContent || '';
-      const searchable = [
-        doc.code,
-        doc.title,
-        doc.senderOrAuthor,
-        doc.folder,
-        doc.date,
-        ...(unlocked ? doc.keywords : []),
-        unlocked ? cachedBody : '',
-      ]
-        .join(' ')
-        .toLowerCase();
-      return searchable.includes(q);
-    });
+    const q = searchQuery.trim();
+    const inFolder = OA_DOCUMENTS.filter(
+      (doc) => activeFolder === '全部卷宗' || doc.folder === activeFolder
+    );
+    if (!q) return inFolder;
+
+    const scored = inFolder
+      .map((doc) => {
+        const unlocked = state.oaLevel >= doc.minLevel;
+        const cachedBody = doc.encryptedVaultId
+          ? state.decryptedCache[doc.encryptedVaultId] || ''
+          : doc.fallbackPlainContent || '';
+        const res = scoreSearchMatch(q, {
+          code: doc.code,
+          title: unlocked ? doc.title : `${doc.folder}加密卷宗`,
+          subtitle: `${doc.senderOrAuthor} ${doc.folder} ${doc.date}`,
+          tags: unlocked ? doc.keywords : [],
+          body: unlocked ? cachedBody : '',
+          allowBodyMatch: unlocked,
+        });
+        return { doc, ...res };
+      })
+      .filter((x) => x.matched)
+      .sort((a, b) => b.score - a.score);
+
+    return scored.map((x) => x.doc);
   }, [activeFolder, searchQuery, state.oaLevel, state.decryptedCache]);
 
   const selectedDoc = useMemo(
@@ -471,18 +490,13 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
         <div className="mx-auto max-w-2xl">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg">
             <div className="border-b border-slate-200 bg-gradient-to-r from-[#f8fafc] via-blue-50/70 to-[#f8fafc] px-6 py-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700">
-                  <Building2 className="h-6 w-6" />
+              <div className="border-l-4 border-blue-700 pl-3.5">
+                <div className="font-mono-tech text-[11px] font-semibold tracking-widest text-blue-700">
+                  NANZHOU UNIV. INTRANET // oa.qinghe-internal.cn
                 </div>
-                <div>
-                  <div className="font-mono-tech text-[11px] font-semibold tracking-widest text-blue-700">
-                    NANZHOU UNIV. // oa.qinghe-internal.cn
-                  </div>
-                  <h1 className="text-lg font-bold tracking-wide text-[#1e3a8a] sm:text-xl">
-                    青禾民俗影像数字化保护工程 · 内部协同办公与工单系统
-                  </h1>
-                </div>
+                <h1 className="mt-0.5 text-lg font-bold tracking-wide text-[#1e3a8a] sm:text-xl">
+                  青禾民俗影像数字化保护工程 · 内部协同办公与工单系统
+                </h1>
               </div>
             </div>
 
@@ -582,22 +596,17 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
       {/* 顶部明亮企业内网导航栏 */}
       <div className="border-b border-slate-200 bg-white px-4 py-3 shadow-2xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700">
-              <Building2 className="h-5 w-5" />
+          <div className="border-l-4 border-blue-700 pl-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-[#1e3a8a] sm:text-base">
+                青禾工程内部协同 OA 与修复工单平台
+              </span>
+              <span className="hidden rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono-tech text-[11px] text-slate-600 sm:inline">
+                v3.4.2-intranet
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-[#1e3a8a] sm:text-base">
-                  青禾工程内部协同 OA 与修复工单平台
-                </span>
-                <span className="hidden rounded border border-slate-200 bg-slate-100 px-2 py-0.5 font-mono-tech text-[11px] text-slate-600 sm:inline">
-                  v3.4.2-intranet
-                </span>
-              </div>
-              <div className="font-mono-tech text-[11px] text-slate-500">
-                当前最高授权：{currentTierMeta.username} ({currentTierMeta.roleLabel})
-              </div>
+            <div className="font-mono-tech text-[11px] text-slate-500">
+              当前最高授权：{currentTierMeta.username} ({currentTierMeta.roleLabel})
             </div>
           </div>
 
@@ -761,7 +770,6 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                         : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:text-slate-900'
                     }`}
                   >
-                    <FolderOpen className="h-3 w-3" />
                     <span>{folder}</span>
                     <span className="font-mono-tech text-[10px] opacity-75">({count})</span>
                   </button>
@@ -794,6 +802,10 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
                       horrorAudio.playClick('ui');
                       setSelectedDocId(doc.id);
                       setInlineError(null);
+                      onRecordNav?.(
+                        doc.id,
+                        `内部OA · ${doc.code} ${unlocked ? doc.title.slice(0, 12) : '加密卷宗'}`
+                      );
                     }}
                     className={`w-full rounded-lg border p-3 text-left transition cursor-pointer ${
                       selected

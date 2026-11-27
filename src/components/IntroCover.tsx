@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Mail, ShieldAlert, Volume2, VolumeX, ArrowRight, Eye } from 'lucide-react';
+import { Volume2, VolumeX, ArrowRight } from 'lucide-react';
 import type { ScareMode } from '../types/game';
 import { horrorAudio } from '../engine/audio';
 
@@ -37,20 +37,23 @@ export const IntroCover: React.FC<IntroCoverProps> = ({
         className="relative z-10 w-full max-w-xl"
       >
         <div className="mb-8 text-center">
+          {/* 古籍朱文长印眉标，无AI小图标 */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.94 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.15, duration: 0.5 }}
-            className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-[#9e2a2b]/30 bg-white/85 px-3.5 py-1 text-[11px] font-mono-tech tracking-widest text-[#9e2a2b] shadow-2xs"
+            className="mx-auto mb-5 inline-flex items-center gap-2.5 border-y border-[#9e2a2b]/35 px-4 py-1 text-[11px] font-mono-tech tracking-[0.22em] text-[#9e2a2b]"
           >
-            <Eye className="h-3.5 w-3.5 text-[#9e2a2b]" />
+            <span className="rounded-[2px] border border-[#9e2a2b] px-1 py-0.2 font-serif-cn text-[10px] font-bold">
+              青禾封存
+            </span>
             <span>云溪库区遗存影像调查档案 · 1998—2026</span>
           </motion.div>
 
-          <h1 className="font-serif-cn text-4xl sm:text-5xl font-bold tracking-[0.14em] text-[#16263f]">
+          <h1 className="font-serif-cn text-4xl sm:text-5xl font-bold tracking-[0.16em] text-[#16263f]">
             青禾库
           </h1>
-          <p className="mt-2 font-serif-cn text-base tracking-[0.25em] text-stone-500">
+          <p className="mt-2.5 font-serif-cn text-base tracking-[0.28em] text-stone-500">
             祠下村遗存影像考
           </p>
 
@@ -64,9 +67,8 @@ export const IntroCover: React.FC<IntroCoverProps> = ({
         {/* 清爽纸本风体验偏好卡片 */}
         <div className="rounded-2xl border border-[#dfd8ca] bg-white/95 p-6 backdrop-blur-md shadow-xl shadow-stone-900/5">
           <div className="mb-4 flex items-center justify-between border-b border-[#ece6da] pb-3 text-xs text-stone-500">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-[#16263f]">
-              <ShieldAlert className="h-3.5 w-3.5 text-[#9e2a2b]" />
-              惊吓与声景偏好（游玩中随时可切）
+            <span className="border-l-2 border-[#9e2a2b] pl-2.5 font-semibold text-[#16263f]">
+              惊吓分级与古琴声景（游玩中随时可切）
             </span>
             <button
               type="button"
@@ -80,8 +82,8 @@ export const IntroCover: React.FC<IntroCoverProps> = ({
                 </>
               ) : (
                 <>
-                  <Volume2 className="h-3 w-3 text-emerald-600" />
-                  <span>音效开启（推荐）</span>
+                  <Volume2 className="h-3 w-3 text-emerald-700" />
+                  <span>古琴夜雨声景开启</span>
                 </>
               )}
             </button>
@@ -97,9 +99,9 @@ export const IntroCover: React.FC<IntroCoverProps> = ({
                   : 'border-stone-200 bg-[#faf8f3] text-stone-600 hover:border-stone-300'
               }`}
             >
-              <div className="text-xs font-bold">完整惊悚体验</div>
+              <div className="text-xs font-bold">完整民俗惊悚体验</div>
               <div className="mt-1 text-[11px] leading-relaxed opacity-85">
-                含老照片异变转头、故障音效与违规惊吓演出
+                含放大镜潜影、门外叩门拧锁、镜面黑影与底片转头异变
               </div>
             </button>
 
@@ -114,16 +116,16 @@ export const IntroCover: React.FC<IntroCoverProps> = ({
             >
               <div className="text-xs font-bold">心理压迫模式（温和）</div>
               <div className="mt-1 text-[11px] leading-relaxed opacity-85">
-                保留全部细思极恐异变，移除高分贝突发惊吓
+                保留全部细思极恐异象与潜影，降低突发声响强度
               </div>
             </button>
           </div>
 
           <div className="mt-4 rounded-xl border border-[#ece6da] bg-[#faf8f3] px-3.5 py-2.5 text-[11.5px] leading-relaxed text-stone-600">
-            <strong className="text-[#16263f]">玩法贴士：</strong>
-            游戏不会替你自动总结答案。阅读档案时，用鼠标
+            <strong className="text-[#16263f]">调查贴士：</strong>
+            阅读档案时，用鼠标
             <strong className="text-[#9e2a2b]">划选任意可疑文字</strong>
-            即可直接摘录到右侧随身手记或跨站搜索；展开手记时主页面会自动左移，方便对照取证。
+            即可摘录到右侧随身手记或跨站搜索；切换不同网站时会自动保留你正在翻看的页面，也可随时点左上角「上一处 / 足迹」跳回。
           </div>
 
           <motion.button
@@ -135,10 +137,9 @@ export const IntroCover: React.FC<IntroCoverProps> = ({
               horrorAudio.startOrUpdateAmbient(1);
               onEnter();
             }}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8f2425] to-[#ad2f30] py-3 text-sm font-semibold text-white shadow-md shadow-[#9e2a2b]/20 hover:brightness-105 cursor-pointer transition"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8f2425] to-[#ad2f30] py-3 text-sm font-semibold tracking-wider text-white shadow-md shadow-[#9e2a2b]/20 hover:brightness-105 cursor-pointer transition"
           >
-            <Mail className="h-4 w-4" />
-            <span>查收林知夏的未读定时邮件</span>
+            <span>拆阅林知夏的未读定时死信</span>
             <ArrowRight className="h-4 w-4" />
           </motion.button>
         </div>

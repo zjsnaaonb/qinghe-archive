@@ -16,6 +16,11 @@ import {
   saveGameState,
 } from './engine/gameState';
 import { horrorAudio } from './engine/audio';
+import {
+  extractSearchSnippet,
+  normalizeCompactSearch,
+  scoreSearchMatch,
+} from './engine/search';
 import { TopInvestigatorBar, SITE_METAS } from './components/TopInvestigatorBar';
 import { SideWorkspacePanel, type RightPanelMode } from './components/SideWorkspacePanel';
 import { InvestigationGuideRibbon } from './components/InvestigationGuideRibbon';
@@ -24,7 +29,13 @@ import { IntroCover } from './components/IntroCover';
 import { GlobalSearchModal, type SearchHit } from './components/GlobalSearchModal';
 import { ScareOverlay } from './components/ScareOverlay';
 import { EndingScreen } from './components/EndingScreen';
-import type { CommonSiteProps, ScarePayload } from './sites/siteProps';
+import { HauntedAtmosphereLayer } from './components/HauntedAtmosphereLayer';
+import type {
+  CommonSiteProps,
+  NavCommand,
+  NavSnapshot,
+  ScarePayload,
+} from './sites/siteProps';
 
 import { MailSite } from './sites/MailSite';
 import { QinghePortalSite } from './sites/QinghePortalSite';
@@ -50,6 +61,56 @@ const ACT_TITLES: Record<number, string> = {
   5: '第五幕 · 子时封龛',
 };
 
+function resolveItemLabel(site: SiteId, itemId?: string): string {
+  if (!itemId || itemId.startsWith('__')) {
+    return `${SITE_METAS[site].shortName} · 目录`;
+  }
+  if (site === 'qinghe') {
+    const e = QINGHE_ARCHIVE_ENTRIES.find((x) => x.id === itemId);
+    if (e) return `${e.code} · ${e.title.replace(/[《》]/g, '').slice(0, 14)}`;
+  }
+  if (site === 'bbs') {
+    const t = BBS_THREADS.find((x) => x.id === itemId);
+    if (t) return `${t.board === 'zijing' ? '树洞' : '显影液'} · ${t.title.slice(0, 15)}`;
+  }
+  if (site === 'chronicles') {
+    const d = CHRONICLE_DOCS.find((x) => x.id === itemId);
+    if (d) return `水利方志 · ${d.title.replace(/[《》]/g, '').slice(0, 15)}`;
+  }
+  if (site === 'oa') {
+    const o = OA_DOCUMENTS.find((x) => x.id === itemId || x.code === itemId);
+    if (o) return `内部OA · ${o.code}`;
+  }
+  if (site === 'notes') {
+    const n = ZHIXIA_NOTES.find((x) => x.id === itemId);
+    if (n) return `夏夜拾遗 · ${n.title.slice(0, 14)}`;
+  }
+  if (site === 'mail') {
+    const m = MAIL_MESSAGES.find((x) => x.id === itemId);
+    if (m) return `收件箱 · ${m.subject.slice(0, 16)}`;
+  }
+  return `${SITE_METAS[site].shortName}`;
+}
+
+function getDefaultItemForSite(site: SiteId): string {
+  switch (site) {
+    case 'mail':
+      return 'mail-prologue';
+    case 'qinghe':
+      return '__home__';
+    case 'bbs':
+      return '__list:zijing__';
+    case 'chronicles':
+      return '__list__';
+    case 'oa':
+      return OA_DOCUMENTS[0]?.id ?? '__home__';
+    case 'notes':
+      return ZHIXIA_NOTES[0]?.id ?? '__home__';
+    case 'b2':
+      return 'telecine';
+  }
+}
+
 export const App: React.FC = () => {
   const [state, setState] = useState<GameState>(() => loadGameState());
   const [activePanel, setActivePanel] = useState<RightPanelMode>(null);
@@ -60,21 +121,58 @@ export const App: React.FC = () => {
   const [activeScare, setActiveScare] = useState<ScarePayload | null>(null);
   const [toastBanner, setToastBanner] = useState<string | null>(null);
 
+  // 跨站/同站统一浏览历史栈 + 各站点独立滚动条与停留页记忆
+  const [navStack, setNavStack] = useState<NavSnapshot[]>(() => [
+    {
+      site: state.currentSite,
+      itemId: getDefaultItemForSite(state.currentSite),
+      label: resolveItemLabel(state.currentSite, getDefaultItemForSite(state.currentSite)),
+    },
+  ]);
+  const [navIdx, setNavIdx] = useState<number>(0);
+  const [navCommand, setNavCommand] = useState<NavCommand | null>(null);
+
+  const navSeqRef = useRef<number>(1);
+  const siteScrollMapRef = useRef<Partial<Record<SiteId, number>>>({});
+  const lastSiteSnapRef = useRef<Partial<Record<SiteId, NavSnapshot>>>({
+    [state.currentSite]: {
+      site: state.currentSite,
+      itemId: getDefaultItemForSite(state.currentSite),
+      label: resolveItemLabel(state.currentSite, getDefaultItemForSite(state.currentSite)),
+    },
+  });
+
   const flashToast = useCallback((msg: string) => {
     setToastBanner(msg);
     setTimeout(() => {
       setToastBanner((curr) => (curr === msg ? null : curr));
-    }, 4500);
+    }, 4600);
   }, []);
 
-  // 计算当前阶段已送达的可见邮件与未读数，并在新信件抵达时主动轻提示
+  const pushNavHistory = useCallback((snap: NavSnapshot) => {
+    lastSiteSnapRef.current[snap.site] = snap;
+    setNavStack((prev) => {
+      const sliced = prev.slice(0, navIdx + 1);
+      const top = sliced[sliced.length - 1];
+      if (top && top.site === snap.site && top.itemId === snap.itemId) {
+        return sliced;
+      }
+      const next = [...sliced, snap];
+      const trimmed = next.length > 60 ? next.slice(next.length - 60) : next;
+      setNavIdx(trimmed.length - 1);
+      return trimmed;
+    });
+  }, [navIdx]);
+
+  // 计算当前阶段已送达的可见邮件与未读数（含读完 QH-37-09 自动送达的第二封分段死信）
   const visibleMails = useMemo(() => {
     return MAIL_MESSAGES.filter((m) => {
       if (m.id === 'mail-prologue') return true;
+      if (m.id === 'mail-prologue-step2') return state.readDocIds.includes('qh-37-09');
       if (m.minAct === 1) return state.unlockedSites.includes('bbs');
       return state.act >= m.minAct;
     });
-  }, [state.act, state.unlockedSites]);
+  }, [state.act, state.unlockedSites, state.readDocIds]);
 
   const unreadMailCount = useMemo(
     () => visibleMails.filter((m) => !state.readDocIds.includes(m.id)).length,
@@ -85,7 +183,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (state.hasEnteredGame && visibleMails.length > prevVisibleMailCountRef.current) {
       const added = visibleMails.length - prevVisibleMailCountRef.current;
-      flashToast(`收件箱新到 ${added} 封关联邮件，可点击左上「收件箱」查阅`);
+      flashToast(`收件箱新到 ${added} 封关键邮件（含林知夏后续线索指引），点击左上「收件箱」查阅`);
     }
     prevVisibleMailCountRef.current = visibleMails.length;
   }, [visibleMails.length, state.hasEnteredGame, flashToast]);
@@ -103,7 +201,7 @@ export const App: React.FC = () => {
     saveGameState(state);
   }, [state, flashToast]);
 
-  // 统计点击并唤醒声景
+  // 唤醒古琴夜雨声景
   useEffect(() => {
     const onAnyPointer = () => {
       horrorAudio.setMuted(state.audioMuted);
@@ -116,17 +214,141 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('pointerdown', onAnyPointer);
   }, [state.audioMuted, state.act, state.hasEnteredGame]);
 
-  const handleNavigateSite = useCallback((site: SiteId, targetItemId?: string) => {
-    setState((prev) => ({
-      ...prev,
-      currentSite: site,
-      unlockedSites: prev.unlockedSites.includes(site)
-        ? prev.unlockedSites
-        : [...prev.unlockedSites, site],
-    }));
-    setFocusedItemId(targetItemId || null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  const handleNavigateSite = useCallback(
+    (site: SiteId, targetItemId?: string) => {
+      if (typeof window !== 'undefined') {
+        siteScrollMapRef.current[state.currentSite] = window.scrollY;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        currentSite: site,
+        unlockedSites: prev.unlockedSites.includes(site)
+          ? prev.unlockedSites
+          : [...prev.unlockedSites, site],
+      }));
+
+      if (targetItemId) {
+        const snap: NavSnapshot = {
+          site,
+          itemId: targetItemId,
+          label: resolveItemLabel(site, targetItemId),
+        };
+        pushNavHistory(snap);
+        setFocusedItemId(targetItemId);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // 纯切换顶部网站标签：恢复该站点上次停留的原页面与原滚动位置！
+        const remembered = lastSiteSnapRef.current[site] ?? {
+          site,
+          itemId: getDefaultItemForSite(site),
+          label: resolveItemLabel(site, getDefaultItemForSite(site)),
+        };
+        pushNavHistory(remembered);
+        const savedScroll = siteScrollMapRef.current[site] ?? 0;
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: savedScroll, behavior: 'auto' });
+        });
+      }
+    },
+    [state.currentSite, pushNavHistory]
+  );
+
+  const applySnapshotNavigation = useCallback(
+    (target: NavSnapshot, nextIdx: number) => {
+      if (typeof window !== 'undefined') {
+        siteScrollMapRef.current[state.currentSite] = window.scrollY;
+      }
+      lastSiteSnapRef.current[target.site] = target;
+      setNavIdx(nextIdx);
+      setState((prev) => ({
+        ...prev,
+        currentSite: target.site,
+        unlockedSites: prev.unlockedSites.includes(target.site)
+          ? prev.unlockedSites
+          : [...prev.unlockedSites, target.site],
+      }));
+      navSeqRef.current += 1;
+      setNavCommand({
+        seq: navSeqRef.current,
+        site: target.site,
+        itemId: target.itemId,
+      });
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    },
+    [state.currentSite]
+  );
+
+  const handleGoBack = useCallback(() => {
+    if (navIdx <= 0) return;
+    const prevSnap = navStack[navIdx - 1];
+    if (!prevSnap) return;
+    applySnapshotNavigation(prevSnap, navIdx - 1);
+  }, [navIdx, navStack, applySnapshotNavigation]);
+
+  const handleGoForward = useCallback(() => {
+    if (navIdx >= navStack.length - 1) return;
+    const nextSnap = navStack[navIdx + 1];
+    if (!nextSnap) return;
+    applySnapshotNavigation(nextSnap, navIdx + 1);
+  }, [navIdx, navStack, applySnapshotNavigation]);
+
+  const handleJumpSnapshot = useCallback(
+    (snap: NavSnapshot) => {
+      if (typeof window !== 'undefined') {
+        siteScrollMapRef.current[state.currentSite] = window.scrollY;
+      }
+      pushNavHistory(snap);
+      setState((prev) => ({
+        ...prev,
+        currentSite: snap.site,
+        unlockedSites: prev.unlockedSites.includes(snap.site)
+          ? prev.unlockedSites
+          : [...prev.unlockedSites, snap.site],
+      }));
+      navSeqRef.current += 1;
+      setNavCommand({
+        seq: navSeqRef.current,
+        site: snap.site,
+        itemId: snap.itemId,
+      });
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    },
+    [state.currentSite, pushNavHistory]
+  );
+
+  // 支持浏览器习惯快捷键 Alt + ← / Alt + → 快速回退上一条线索页
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleGoBack();
+      } else if (e.altKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleGoForward();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleGoBack, handleGoForward]);
+
+  const recentFootprints = useMemo(() => {
+    const seen = new Set<string>();
+    const list: NavSnapshot[] = [];
+    for (let i = navStack.length - 1; i >= 0; i--) {
+      const item = navStack[i];
+      const key = `${item.site}::${item.itemId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      list.push(item);
+      if (list.length >= 12) break;
+    }
+    return list;
+  }, [navStack]);
 
   const handleUnlockSite = useCallback(
     (site: SiteId) => {
@@ -150,12 +372,11 @@ export const App: React.FC = () => {
           ? prev.readDocIds
           : [...prev.readDocIds, docId];
 
-        // 渐进式引导：查阅核心照片《晒谷场收工图》后，自然解锁【校园树洞 & 显影液BBS】
         let nextSites = prev.unlockedSites;
         if (docId === 'qh-37-09' && !prev.unlockedSites.includes('bbs')) {
           nextSites = [...prev.unlockedSites, 'bbs'];
           horrorAudio.playClick('unlock');
-          flashToast('发现异常线索，已同步接入【树洞 & 显影液BBS】快照');
+          flashToast('发现异常黑影线索！已接入【树洞 & 显影液BBS】并收到林知夏第二封续信');
         }
 
         if (nextRead === prev.readDocIds && nextSites === prev.unlockedSites) return prev;
@@ -169,7 +390,6 @@ export const App: React.FC = () => {
     [flashToast]
   );
 
-  // 点 8 核心修改：不再由页面自动往手记灌输谜底；仅当玩家主动划词摘录（isPlayerClip）时写入手记！
   const handleAddClue = useCallback((clue: Omit<DiscoveredClue, 'discoveredAt'>) => {
     if (!clue.isPlayerClip) return;
     setState((prev) => {
@@ -206,7 +426,6 @@ export const App: React.FC = () => {
           ],
         };
       });
-      // 若手记未打开，保持非打扰轻提示；若已打开，立刻在右栏看到新增卡片
       flashToast('已摘录至随身手记');
     },
     [flashToast]
@@ -219,9 +438,8 @@ export const App: React.FC = () => {
     }));
   }, []);
 
-  // 不再自动塞入未发现关键词，仅允许玩家手动添加或在跨站搜索命中隐藏残卷时记录
   const handleAddKeywords = useCallback((_keywords: string[]) => {
-    // intentionally no-op for auto-dump; player collects manually via handleAddManualKeyword
+    // 玩家通过划词或手记自主整理
   }, []);
 
   const handleAddManualKeyword = useCallback((kw: string) => {
@@ -341,17 +559,18 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // 升级版高精度跨站联合检索引擎（按权重相关性排序 + 真实上下文摘录）
   const handleGlobalSearch = useCallback(
     (rawQuery: string) => {
       const q = rawQuery.trim();
       if (!q) return;
-      const ql = q.toLowerCase();
+      const qCompact = normalizeCompactSearch(q);
 
       let unlockedNow: SiteId | null = null;
-      const chronTriggers = ['云溪水库', '云溪', 'yunxi-chronicles', '壶口', '108.4', '水利', '县志'];
+      const chronTriggers = ['云溪水库', '云溪', 'yunxichronicles', '壶口', '1084', '水利', '县志'];
       const willUnlockChronicles =
         !state.unlockedSites.includes('chronicles') &&
-        chronTriggers.some((t) => ql.includes(t.toLowerCase()));
+        chronTriggers.some((t) => qCompact.includes(t));
 
       if (willUnlockChronicles) {
         unlockedNow = 'chronicles';
@@ -365,23 +584,23 @@ export const App: React.FC = () => {
 
       if (effectiveUnlockedSites.includes('qinghe')) {
         for (const item of QINGHE_ARCHIVE_ENTRIES) {
-          const keywordMatch = item.keywords.some(
-            (k) => k.toLowerCase().includes(ql) || ql.includes(k.toLowerCase())
-          );
-          const textMatch =
-            item.title.toLowerCase().includes(ql) ||
-            item.code.toLowerCase().includes(ql) ||
-            item.village.toLowerCase().includes(ql) ||
-            (item.photographer && item.photographer.toLowerCase().includes(ql)) ||
-            (!item.hiddenFromList && item.content.toLowerCase().includes(ql));
-
-          if (keywordMatch || textMatch) {
+          const res = scoreSearchMatch(q, {
+            code: item.code,
+            title: item.title,
+            subtitle: `${item.village} ${item.year} ${item.photographer ?? ''}`,
+            tags: item.keywords,
+            summary: item.summary,
+            body: item.content,
+            allowBodyMatch: !item.hiddenFromList,
+          });
+          if (res.matched) {
             hits.push({
               id: `hit-qh-${item.id}`,
               siteId: 'qinghe',
               codeOrTag: item.code,
               title: item.title,
-              snippet: item.summary,
+              snippet: extractSearchSnippet(item.content, q, item.summary, res.bestTerm),
+              score: res.score,
               isHiddenDiscovery: Boolean(item.hiddenFromList),
               targetItemId: item.id,
             });
@@ -395,27 +614,35 @@ export const App: React.FC = () => {
             (r) =>
               (!r.act3Appended || state.act >= 3) &&
               (!r.hiddenKeywordRequired ||
-                r.hiddenKeywordRequired.toLowerCase() === ql ||
-                ql.includes(r.hiddenKeywordRequired.toLowerCase()))
+                qCompact.includes(normalizeCompactSearch(r.hiddenKeywordRequired)))
           );
-          const replyHit = visibleReplies.find(
-            (r) => r.content.toLowerCase().includes(ql) || r.author.toLowerCase().includes(ql)
-          );
-          const headerHit =
-            thread.title.toLowerCase().includes(ql) ||
-            thread.author.toLowerCase().includes(ql) ||
-            thread.keywords.some((k) => k.toLowerCase().includes(ql));
+          const repliesText = visibleReplies
+            .map((r) => `${r.author}：${r.content}`)
+            .join('\n');
+          const res = scoreSearchMatch(q, {
+            code: `${thread.tag} ${thread.id}`,
+            title: thread.title,
+            subtitle: thread.author,
+            tags: thread.keywords,
+            summary: thread.replies[0]?.content ?? '',
+            body: repliesText,
+            allowBodyMatch: true,
+          });
 
-          if (headerHit || replyHit) {
+          if (res.matched) {
             const hasHiddenFloor = visibleReplies.some((r) => Boolean(r.hiddenKeywordRequired));
             hits.push({
               id: `hit-bbs-${thread.id}`,
               siteId: 'bbs',
               codeOrTag: thread.board === 'zijing' ? '紫荆树洞' : '显影液BBS',
               title: thread.title,
-              snippet: replyHit
-                ? `${replyHit.author}：${replyHit.content.slice(0, 100)}…`
-                : thread.replies[0]?.content.slice(0, 100) || '',
+              snippet: extractSearchSnippet(
+                repliesText,
+                q,
+                thread.replies[0]?.content ?? '',
+                res.bestTerm
+              ),
+              score: res.score,
               isHiddenDiscovery: hasHiddenFloor,
               targetItemId: thread.id,
             });
@@ -425,21 +652,23 @@ export const App: React.FC = () => {
 
       if (effectiveUnlockedSites.includes('chronicles')) {
         for (const doc of CHRONICLE_DOCS) {
-          const kwMatch = doc.keywords.some(
-            (k) => k.toLowerCase().includes(ql) || ql.includes(k.toLowerCase())
-          );
-          const bodyMatch =
-            doc.title.toLowerCase().includes(ql) ||
-            doc.docNumber.toLowerCase().includes(ql) ||
-            (!doc.hiddenFromDefault && doc.content.toLowerCase().includes(ql));
-
-          if (kwMatch || (!doc.hiddenFromDefault && bodyMatch)) {
+          const res = scoreSearchMatch(q, {
+            code: doc.docNumber,
+            title: doc.title,
+            subtitle: `${doc.department} ${doc.year} ${doc.classification}`,
+            tags: doc.keywords,
+            summary: doc.summary,
+            body: doc.content,
+            allowBodyMatch: !doc.hiddenFromDefault,
+          });
+          if (res.matched) {
             hits.push({
               id: `hit-chr-${doc.id}`,
               siteId: 'chronicles',
               codeOrTag: doc.docNumber,
               title: doc.title,
-              snippet: doc.summary,
+              snippet: extractSearchSnippet(doc.content, q, doc.summary, res.bestTerm),
+              score: res.score,
               isHiddenDiscovery: Boolean(doc.hiddenFromDefault),
               targetItemId: doc.id,
             });
@@ -453,18 +682,22 @@ export const App: React.FC = () => {
           const plain =
             oaDoc.fallbackPlainContent ||
             (oaDoc.encryptedVaultId ? state.decryptedCache[oaDoc.encryptedVaultId] || '' : '');
-          const matched =
-            oaDoc.title.toLowerCase().includes(ql) ||
-            oaDoc.code.toLowerCase().includes(ql) ||
-            oaDoc.keywords.some((k) => k.toLowerCase().includes(ql)) ||
-            plain.toLowerCase().includes(ql);
-          if (matched) {
+          const res = scoreSearchMatch(q, {
+            code: oaDoc.code,
+            title: oaDoc.title,
+            subtitle: `${oaDoc.senderOrAuthor} ${oaDoc.folder}`,
+            tags: oaDoc.keywords,
+            body: plain,
+            allowBodyMatch: true,
+          });
+          if (res.matched) {
             hits.push({
               id: `hit-oa-${oaDoc.id}`,
               siteId: 'oa',
               codeOrTag: `OA Lv.${oaDoc.minLevel}`,
               title: oaDoc.title,
-              snippet: plain ? `${plain.slice(0, 100)}…` : oaDoc.senderOrAuthor,
+              snippet: extractSearchSnippet(plain, q, oaDoc.senderOrAuthor, res.bestTerm),
+              score: res.score,
               targetItemId: oaDoc.id,
             });
           }
@@ -477,17 +710,22 @@ export const App: React.FC = () => {
           const text =
             note.plainContent ||
             (note.encryptedVaultId ? state.decryptedCache[note.encryptedVaultId] || '' : '');
-          const matched =
-            note.title.toLowerCase().includes(ql) ||
-            note.keywords.some((k) => k.toLowerCase().includes(ql)) ||
-            text.toLowerCase().includes(ql);
-          if (matched) {
+          const res = scoreSearchMatch(q, {
+            code: note.date,
+            title: note.title,
+            subtitle: note.weather,
+            tags: note.keywords,
+            body: text,
+            allowBodyMatch: true,
+          });
+          if (res.matched) {
             hits.push({
               id: `hit-note-${note.id}`,
               siteId: 'notes',
               codeOrTag: note.date,
               title: note.title,
-              snippet: text ? `${text.slice(0, 100)}…` : note.title,
+              snippet: extractSearchSnippet(text, q, note.title, res.bestTerm),
+              score: res.score,
               isHiddenDiscovery: Boolean(note.requiresDeepUnlock),
               targetItemId: note.id,
             });
@@ -495,23 +733,29 @@ export const App: React.FC = () => {
         }
       }
 
-      for (const mail of MAIL_MESSAGES) {
-        if (mail.minAct > state.act) continue;
-        if (
-          mail.subject.toLowerCase().includes(ql) ||
-          mail.content.toLowerCase().includes(ql) ||
-          mail.sender.toLowerCase().includes(ql)
-        ) {
+      for (const mail of visibleMails) {
+        const res = scoreSearchMatch(q, {
+          code: mail.category,
+          title: mail.subject,
+          subtitle: mail.sender,
+          summary: mail.summary,
+          body: mail.content,
+          allowBodyMatch: true,
+        });
+        if (res.matched) {
           hits.push({
             id: `hit-mail-${mail.id}`,
             siteId: 'mail',
             codeOrTag: mail.category,
             title: mail.subject,
-            snippet: mail.summary,
+            snippet: extractSearchSnippet(mail.content, q, mail.summary, res.bestTerm),
+            score: res.score,
             targetItemId: mail.id,
           });
         }
       }
+
+      hits.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
       setState((prev) => ({
         ...prev,
@@ -522,10 +766,10 @@ export const App: React.FC = () => {
       setSearchHits(hits);
       setSearchQuery(q);
     },
-    [state]
+    [state, visibleMails]
   );
 
-  // 首次访问的清爽沉浸式开局封面（避免首屏信息过载）
+  // 开局封面
   if (!state.hasEnteredGame && !state.activeEnding) {
     return (
       <IntroCover
@@ -574,10 +818,12 @@ export const App: React.FC = () => {
     );
   }
 
-  const siteProps: CommonSiteProps = {
+  const makeSiteProps = (siteId: SiteId): CommonSiteProps => ({
     state,
-    focusedItemId,
+    focusedItemId: state.currentSite === siteId ? focusedItemId : null,
     onClearFocus: () => setFocusedItemId(null),
+    navCommand: navCommand?.site === siteId ? navCommand : null,
+    onRecordNav: (itemId: string, label: string) => pushNavHistory({ site: siteId, itemId, label }),
     onNavigateSite: handleNavigateSite,
     onUnlockSite: handleUnlockSite,
     onMarkRead: handleMarkRead,
@@ -594,7 +840,10 @@ export const App: React.FC = () => {
     onRecordB2Violation: handleRecordB2Violation,
     onTriggerEnding: handleTriggerEnding,
     onGlobalSearch: handleGlobalSearch,
-  };
+  });
+
+  const activeNavSnap = navStack[navIdx];
+  const activeDocKey = activeNavSnap ? `${activeNavSnap.site}:${activeNavSnap.itemId}` : '';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f4ed] text-stone-800">
@@ -602,6 +851,14 @@ export const App: React.FC = () => {
         state={state}
         unreadMailCount={unreadMailCount}
         activePanel={activePanel}
+        canGoBack={navIdx > 0}
+        canGoForward={navIdx < navStack.length - 1}
+        backTargetLabel={navIdx > 0 ? navStack[navIdx - 1]?.label : undefined}
+        forwardTargetLabel={navIdx < navStack.length - 1 ? navStack[navIdx + 1]?.label : undefined}
+        recentFootprints={recentFootprints}
+        onGoBack={handleGoBack}
+        onGoForward={handleGoForward}
+        onJumpSnapshot={handleJumpSnapshot}
         onTogglePanel={(mode) => setActivePanel((prev) => (prev === mode ? null : mode))}
         onSelectSite={(s) => handleNavigateSite(s)}
         onGlobalSearch={handleGlobalSearch}
@@ -612,10 +869,8 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* 克制不剧透的单行阶段引导条 */}
       <InvestigationGuideRibbon state={state} onNavigateSite={handleNavigateSite} />
 
-      {/* 轻量化顶部动态提示气泡 */}
       <AnimatePresence>
         {toastBanner && (
           <motion.div
@@ -629,30 +884,48 @@ export const App: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 点 5 核心修复：真正的分栏挤压工作台 —— 打开手记/提示/设置时，左侧主页面与图片顺滑左移，绝不遮挡！ */}
+      {/* 常驻挂载多站点容器：从 OA 切去民俗馆或论坛再切回时，100% 保持刚才打开的那一页、检索框与滚动位置不丢失！ */}
       <div className="relative flex flex-1 w-full items-stretch">
         <motion.main
           layout
           transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
           className="flex-1 min-w-0"
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={state.currentSite}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
-            >
-              {state.currentSite === 'mail' && <MailSite {...siteProps} />}
-              {state.currentSite === 'qinghe' && <QinghePortalSite {...siteProps} />}
-              {state.currentSite === 'bbs' && <BbsSnapshotSite {...siteProps} />}
-              {state.currentSite === 'chronicles' && <ChroniclesGovSite {...siteProps} />}
-              {state.currentSite === 'oa' && <OaInternalSite {...siteProps} />}
-              {state.currentSite === 'notes' && <ZhixiaNotesSite {...siteProps} />}
-              {state.currentSite === 'b2' && <B2TerminalSite {...siteProps} />}
-            </motion.div>
-          </AnimatePresence>
+          {state.unlockedSites.includes('mail') && (
+            <div className={state.currentSite === 'mail' ? 'block' : 'hidden'}>
+              <MailSite {...makeSiteProps('mail')} />
+            </div>
+          )}
+          {state.unlockedSites.includes('qinghe') && (
+            <div className={state.currentSite === 'qinghe' ? 'block' : 'hidden'}>
+              <QinghePortalSite {...makeSiteProps('qinghe')} />
+            </div>
+          )}
+          {state.unlockedSites.includes('bbs') && (
+            <div className={state.currentSite === 'bbs' ? 'block' : 'hidden'}>
+              <BbsSnapshotSite {...makeSiteProps('bbs')} />
+            </div>
+          )}
+          {state.unlockedSites.includes('chronicles') && (
+            <div className={state.currentSite === 'chronicles' ? 'block' : 'hidden'}>
+              <ChroniclesGovSite {...makeSiteProps('chronicles')} />
+            </div>
+          )}
+          {state.unlockedSites.includes('oa') && (
+            <div className={state.currentSite === 'oa' ? 'block' : 'hidden'}>
+              <OaInternalSite {...makeSiteProps('oa')} />
+            </div>
+          )}
+          {state.unlockedSites.includes('notes') && (
+            <div className={state.currentSite === 'notes' ? 'block' : 'hidden'}>
+              <ZhixiaNotesSite {...makeSiteProps('notes')} />
+            </div>
+          )}
+          {state.unlockedSites.includes('b2') && (
+            <div className={state.currentSite === 'b2' ? 'block' : 'hidden'}>
+              <B2TerminalSite {...makeSiteProps('b2')} />
+            </div>
+          )}
         </motion.main>
 
         <AnimatePresence initial={false}>
@@ -717,7 +990,9 @@ export const App: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* 全局划词摘录浮层：读到可疑文本随手一划即可摘录到手记或跨站搜索 */}
+      {/* 全局中式民俗恐怖实景异变演出层 */}
+      <HauntedAtmosphereLayer state={state} activeDocKey={activeDocKey} />
+
       <SelectionClipPopup
         currentSite={state.currentSite}
         onClipText={handleClipSelection}

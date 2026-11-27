@@ -89,6 +89,8 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
   state,
   focusedItemId,
   onClearFocus,
+  navCommand,
+  onRecordNav,
   onNavigateSite,
   onAddClue,
   onAddKeywords,
@@ -101,6 +103,22 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
   onTriggerEnding,
 }) => {
   const [activeTab, setActiveTab] = useState<B2TabId>('telecine');
+  const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!navCommand || navCommand.site !== 'b2' || navCommand.seq === lastNavSeqRef.current) {
+      return;
+    }
+    lastNavSeqRef.current = navCommand.seq;
+    if (
+      navCommand.itemId === 'telecine' ||
+      navCommand.itemId === 'audio' ||
+      navCommand.itemId === 'rescue' ||
+      navCommand.itemId === 'master'
+    ) {
+      setActiveTab(navCommand.itemId);
+    }
+  }, [navCommand]);
 
   // ==================== ① 16mm 逐帧检视台状态 ====================
   const [selectedReel, setSelectedReel] = useState<ReelCode>('QH-38-04');
@@ -866,25 +884,20 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
       {/* 清爽实验室工控顶栏 */}
       <header className="border-b border-slate-200 bg-white px-4 py-3 shadow-2xs">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-teal-200 bg-teal-50 text-teal-800">
-              <Terminal className="h-5 w-5" />
+          <div className="border-l-4 border-teal-700 pl-3.5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-bold tracking-wider text-[#16263f]">
+                B2-TELECINE &amp; SECURITY CONSOLE // 地下B2远程审片与总控终端
+              </span>
+              <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
+                wss://terminal.qinghe-b2.local:9838
+              </span>
             </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-bold tracking-wider text-[#16263f]">
-                  B2-TELECINE &amp; SECURITY CONSOLE // 地下B2远程审片与总控终端
-                </span>
-                <span className="rounded border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
-                  wss://terminal.qinghe-b2.local:9838
-                </span>
-              </div>
-              <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
-                <span>母带审片: <strong className="text-teal-800">{reelsPassedCount}/3</strong></span>
-                <span>受困成员救援: <strong className="text-teal-800">{rescuedCount}/4</strong></span>
-                <span className="text-amber-700">违规记次: {state.b2Progress.violations}</span>
-                <span className="text-[#9e2a2b]">视网膜残留: {state.contamination}%</span>
-              </div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+              <span>母带审片: <strong className="text-teal-800">{reelsPassedCount}/3</strong></span>
+              <span>受困成员救援: <strong className="text-teal-800">{rescuedCount}/4</strong></span>
+              <span className="text-amber-700">违规记次: {state.b2Progress.violations}</span>
+              <span className="text-[#9e2a2b]">视网膜残留: {state.contamination}%</span>
             </div>
           </div>
 
@@ -938,7 +951,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
           </div>
         )}
 
-        {/* 四大功能标签页切换栏 */}
+        {/* 四大功能标签页切换栏（去AI小图标，保留清晰工控编号） */}
         <nav className="mx-auto mt-3 grid max-w-7xl grid-cols-2 gap-2 sm:grid-cols-4">
           {(
             [
@@ -946,25 +959,21 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                 id: 'telecine',
                 label: '① 16mm 逐帧检视台',
                 sub: `院长口令进度 ${reelsPassedCount}/3`,
-                icon: <Film className="h-4 w-4" />,
               },
               {
                 id: 'audio',
                 label: '② 多轨音频取证台',
                 sub: state.rescued.zhaoYiming ? '赵一鸣已脱困 ✓' : '赵一鸣声学辨伪',
-                icon: <AudioLines className="h-4 w-4" />,
               },
               {
                 id: 'rescue',
                 label: '③ 受困成员锚点救援台',
                 sub: `团队救援 ${rescuedCount}/4`,
-                icon: <ShieldCheck className="h-4 w-4" />,
               },
               {
                 id: 'master',
                 label: '④ 百年特展发布总控台',
                 sub: '零点推流 · 五结局决战',
-                icon: <Radio className="h-4 w-4" />,
               },
             ] as const
           ).map((tab) => {
@@ -977,6 +986,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                 onClick={() => {
                   horrorAudio.playClick('ui');
                   setActiveTab(tab.id);
+                  onRecordNav?.(tab.id, `B2终端 · ${tab.label}`);
                 }}
                 className={`flex flex-col items-start rounded-xl border px-3.5 py-2.5 text-left transition cursor-pointer ${
                   active
@@ -986,8 +996,7 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
                     : 'border-slate-200 bg-slate-50/80 text-slate-600 hover:border-slate-300 hover:bg-white hover:text-slate-900'
                 }`}
               >
-                <div className="flex items-center gap-2 text-xs font-bold">
-                  {tab.icon}
+                <div className="text-xs font-bold">
                   <span>{tab.label}</span>
                 </div>
                 <span className="mt-0.5 text-[10px] opacity-80">{tab.sub}</span>
