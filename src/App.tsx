@@ -868,6 +868,66 @@ export const App: React.FC = () => {
     [state, visibleMails]
   );
 
+  const activeNavSnap = navStack[navIdx];
+  const activeDocKey = activeNavSnap ? `${activeNavSnap.site}:${activeNavSnap.itemId}` : '';
+
+  // 限时民俗灵异突发事件：关键剧情节点必触发（每类一次）+ 探索途中 3.5 分钟低频随机突袭（绝不打断输入密码！）
+  // 注意：必须在所有早期 return（封面/结局）之前声明 Hooks，严格遵守 React Hooks 调用顺序
+  useEffect(() => {
+    if (!state.hasEnteredGame || state.activeEnding) return;
+
+    const milestoneMap: Record<string, EncounterId> = {
+      'qinghe:qh-12-03': 'knock_hold',
+      'chronicles:chr-elevation-map': 'fog_wipe_seal',
+      'oa:oa-l1-attendance': 'mirror_cross_seal',
+      'notes:note-s3': 'gong_freeze',
+    };
+
+    const encounterToFire = milestoneMap[activeDocKey];
+    if (!encounterToFire || firedStoryEncountersRef.current.has(encounterToFire)) return;
+
+    const timer = window.setTimeout(() => {
+      const el = document.activeElement;
+      const isTyping =
+        el instanceof HTMLElement &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+      if (isTyping || activeScare || activeEncounter || searchQuery) return;
+      firedStoryEncountersRef.current.add(encounterToFire);
+      setActiveEncounter(encounterToFire);
+    }, 8200);
+
+    return () => window.clearTimeout(timer);
+  }, [activeDocKey, state.hasEnteredGame, state.activeEnding, activeScare, activeEncounter, searchQuery]);
+
+  useEffect(() => {
+    if (!state.hasEnteredGame || state.activeEnding || !state.readDocIds.includes('qh-37-09')) return;
+
+    const interval = window.setInterval(() => {
+      const el = document.activeElement;
+      const isTyping =
+        el instanceof HTMLElement &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+      if (isTyping || activeScare || activeEncounter || searchQuery || document.hidden) return;
+
+      const allIds: EncounterId[] = ['knock_hold', 'fog_wipe_seal', 'mirror_cross_seal', 'gong_freeze'];
+      const survived = state.survivedEncounters ?? [];
+      const candidates = allIds.filter((id) => !survived.includes(id));
+      const pool = candidates.length > 0 ? candidates : allIds;
+      const picked = pool[Math.floor(Math.random() * pool.length)];
+      setActiveEncounter(picked);
+    }, 210000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    state.hasEnteredGame,
+    state.activeEnding,
+    state.readDocIds,
+    state.survivedEncounters,
+    activeScare,
+    activeEncounter,
+    searchQuery,
+  ]);
+
   // 开局封面
   if (!state.hasEnteredGame && !state.activeEnding) {
     return (
@@ -943,65 +1003,6 @@ export const App: React.FC = () => {
     onTriggerEnding: handleTriggerEnding,
     onGlobalSearch: handleGlobalSearch,
   });
-
-  const activeNavSnap = navStack[navIdx];
-  const activeDocKey = activeNavSnap ? `${activeNavSnap.site}:${activeNavSnap.itemId}` : '';
-
-  // 限时民俗灵异突发事件：关键剧情节点必触发（每类一次）+ 探索途中 3.5 分钟低频随机突袭（绝不打断输入密码！）
-  useEffect(() => {
-    if (!state.hasEnteredGame || state.activeEnding) return;
-
-    const milestoneMap: Record<string, EncounterId> = {
-      'qinghe:qh-12-03': 'knock_hold',
-      'chronicles:chr-elevation-map': 'fog_wipe_seal',
-      'oa:oa-l1-attendance': 'mirror_cross_seal',
-      'notes:note-s3': 'gong_freeze',
-    };
-
-    const encounterToFire = milestoneMap[activeDocKey];
-    if (!encounterToFire || firedStoryEncountersRef.current.has(encounterToFire)) return;
-
-    const timer = window.setTimeout(() => {
-      const el = document.activeElement;
-      const isTyping =
-        el instanceof HTMLElement &&
-        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
-      if (isTyping || activeScare || activeEncounter || searchQuery) return;
-      firedStoryEncountersRef.current.add(encounterToFire);
-      setActiveEncounter(encounterToFire);
-    }, 8200);
-
-    return () => window.clearTimeout(timer);
-  }, [activeDocKey, state.hasEnteredGame, state.activeEnding, activeScare, activeEncounter, searchQuery]);
-
-  useEffect(() => {
-    if (!state.hasEnteredGame || state.activeEnding || !state.readDocIds.includes('qh-37-09')) return;
-
-    const interval = window.setInterval(() => {
-      const el = document.activeElement;
-      const isTyping =
-        el instanceof HTMLElement &&
-        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
-      if (isTyping || activeScare || activeEncounter || searchQuery || document.hidden) return;
-
-      const allIds: EncounterId[] = ['knock_hold', 'fog_wipe_seal', 'mirror_cross_seal', 'gong_freeze'];
-      const survived = state.survivedEncounters ?? [];
-      const candidates = allIds.filter((id) => !survived.includes(id));
-      const pool = candidates.length > 0 ? candidates : allIds;
-      const picked = pool[Math.floor(Math.random() * pool.length)];
-      setActiveEncounter(picked);
-    }, 210000);
-
-    return () => window.clearInterval(interval);
-  }, [
-    state.hasEnteredGame,
-    state.activeEnding,
-    state.readDocIds,
-    state.survivedEncounters,
-    activeScare,
-    activeEncounter,
-    searchQuery,
-  ]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7f4ed] text-stone-800">
