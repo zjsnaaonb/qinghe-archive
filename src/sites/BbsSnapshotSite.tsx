@@ -20,6 +20,7 @@ import {
 import { BBS_THREADS } from '../data/bbsData';
 import type { BBSReply, BBSThread } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
+import { renderInlineRichText, stripInlineMarkdown } from '../components/EditorialProse';
 import { horrorAudio } from '../engine/audio';
 
 export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
@@ -224,7 +225,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
           </button>
         );
       }
-      return <React.Fragment key={idx}>{part}</React.Fragment>;
+      return <React.Fragment key={idx}>{renderInlineRichText(part, 'paper')}</React.Fragment>;
     });
   };
 
@@ -396,7 +397,7 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
                           {thread.title}
                         </h3>
                         <p className="mt-1.5 line-clamp-1 text-xs text-stone-500">
-                          {thread.replies[0]?.content}
+                          {stripInlineMarkdown(thread.replies[0]?.content ?? '')}
                         </p>
                       </div>
 

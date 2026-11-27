@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, ExternalLink, Sparkles, X, FileText, MessageSquare, Landmark, Lock, BookOpen } from 'lucide-react';
 import type { SiteId } from '../types/game';
 import { SITE_METAS } from './TopInvestigatorBar';
+import { stripInlineMarkdown } from './EditorialProse';
 
 export interface SearchHit {
   id: string;
@@ -119,7 +120,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 <h3 className="text-sm font-bold text-[#16263f] group-hover:text-[#9e2a2b]">
                   {hit.title}
                 </h3>
-                <p className="line-clamp-2 text-xs leading-relaxed text-stone-500">{hit.snippet}</p>
+                <p className="line-clamp-2 text-xs leading-relaxed text-stone-500">
+                  {stripInlineMarkdown(hit.snippet)}
+                </p>
               </div>
             ))
           )}

@@ -5,12 +5,72 @@ interface EditorialProseProps {
   text: string;
   theme?: 'paper' | 'dark' | 'gov' | 'journal';
   defaultCollapsedChars?: number;
-  defaultVisibleBlocks?: number; // 随游玩阶段递进控制首屏展示段数（前期精简清爽，后期完整深读）
+  defaultVisibleBlocks?: number;
 }
 
 interface ParsedBlock {
-  type: 'heading' | 'callout' | 'divider' | 'table' | 'paragraph';
+  type: 'heading' | 'callout' | 'blockquote' | 'divider' | 'table' | 'paragraph';
   text: string;
+}
+
+/**
+ * 清除搜索摘要或旧缓存中的原始 Markdown 星号与反引号（保留身份证号等连续脱敏 ****）
+ */
+export function stripInlineMarkdown(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/(^|\n)\s*\*\s+/g, '$1· ')
+    .replace(/(^|\n)>\s?/g, '$1')
+    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+    .replace(/`([^`\n]+)`/g, '$1');
+}
+
+/**
+ * 将字符串中的 **加粗**、`行内编号/代码` 与行首 * 列表符渲染为干净排版，彻底消除裸露 * 号
+ * （连续 3 个以上星号如身份证脱敏 3601021939******** 原样保留）
+ */
+export function renderInlineRichText(
+  raw: string,
+  theme: 'paper' | 'dark' | 'gov' | 'journal' = 'paper'
+): React.ReactNode {
+  if (!raw) return null;
+
+  const normalized = raw
+    .replace(/(^|\n)\s*\*\s+/g, '$1· ')
+    .replace(/(^|\n)>\s?/g, '$1');
+
+  const strongClass =
+    theme === 'dark'
+      ? 'font-semibold text-amber-100'
+      : theme === 'gov'
+      ? 'font-semibold text-slate-950'
+      : 'font-semibold text-[#16263f]';
+
+  const codeClass =
+    theme === 'dark'
+      ? 'mx-0.5 rounded bg-zinc-800 px-1.5 py-0.5 font-mono-tech text-[0.9em] text-amber-200'
+      : 'mx-0.5 rounded border border-stone-200/90 bg-stone-100/90 px-1.5 py-0.2 font-mono-tech text-[0.9em] text-[#16263f]';
+
+  const tokenRegex = /(\*\*[^*\n]+\*\*|`[^`\n]+`)/g;
+  const parts = normalized.split(tokenRegex);
+
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={idx} className={strongClass}>
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith('`') && part.endsWith('`') && part.length > 2) {
+      return (
+        <code key={idx} className={codeClass}>
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
 }
 
 export const EditorialProse: React.FC<EditorialProseProps> = ({
@@ -29,16 +89,23 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       .filter(Boolean);
 
     return rawParas.map((p) => {
+      const cleanForHeadingCheck = stripInlineMarkdown(p);
       if (/^[-=—─]{4,}$/.test(p)) {
         return { type: 'divider', text: p };
       }
       if (p.includes('|') && p.split('\n').length >= 2) {
-        return { type: 'table', text: p };
+        return { type: 'table', text: stripInlineMarkdown(p) };
       }
-      if (/^【[^】]{2,32}】[：:]?$/.test(p) || (/^[一二三四五六七八九十]+[、.]/.test(p) && p.length < 36)) {
-        return { type: 'heading', text: p };
+      if (/^>\s/.test(p)) {
+        return { type: 'blockquote', text: p };
       }
-      if (/^【[^】]*(校注|审计|批注|按语|警告|求救|附注|备忘|绝密|系统提示|核校)/.test(p)) {
+      if (
+        /^【[^】]{2,32}】[：:]?$/.test(cleanForHeadingCheck) ||
+        (/^[一二三四五六七八九十]+[、.]/.test(cleanForHeadingCheck) && cleanForHeadingCheck.length < 36)
+      ) {
+        return { type: 'heading', text: cleanForHeadingCheck };
+      }
+      if (/^【[^】]*(校注|审计|批注|按语|警告|求救|附注|备忘|绝密|系统提示|核校)/.test(cleanForHeadingCheck)) {
         return { type: 'callout', text: p };
       }
       return { type: 'paragraph', text: p };
@@ -52,7 +119,6 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
 
   const shouldCollapse = !expanded && (exceedsBlocks || exceedsChars);
 
-  // 折叠状态下：仅展示前 cutoff 段精要内容，但始终保留底部的紧急求救/核校批注（绝不漏掉关键校注！）
   const { visibleBlocks, hiddenCount } = useMemo(() => {
     if (!shouldCollapse) {
       return { visibleBlocks: blocks, hiddenCount: 0 };
@@ -74,6 +140,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       body: 'text-stone-700',
       heading: 'text-[#1b2a4a] border-l-2 border-[#9e2a2b] pl-3 font-serif-cn font-bold text-[15px]',
       callout: 'rounded-lg border border-amber-800/20 bg-amber-50/80 px-4 py-3 text-stone-800 text-[13.5px]',
+      blockquote: 'border-l-2 border-[#9e2a2b]/50 bg-[#faf7f0] pl-4 pr-3 py-2.5 font-serif-cn text-stone-700',
       table: 'rounded-lg border border-stone-200 bg-stone-50 px-3.5 py-2.5 font-mono-tech text-xs text-stone-700 overflow-x-auto',
       divider: 'border-stone-200',
     },
@@ -81,6 +148,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       body: 'text-slate-800',
       heading: 'text-[#1b365d] border-l-2 border-[#9e2a2b] pl-3 font-serif-cn font-bold text-[15px]',
       callout: 'rounded-lg border border-red-900/25 bg-red-50/65 px-4 py-3 text-slate-900 text-[13.5px]',
+      blockquote: 'border-l-2 border-[#1b365d]/50 bg-slate-50 pl-4 pr-3 py-2.5 font-serif-cn text-slate-800',
       table: 'rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 font-mono-tech text-xs text-slate-800 overflow-x-auto',
       divider: 'border-slate-200',
     },
@@ -88,6 +156,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       body: 'text-stone-700 font-serif-cn',
       heading: 'text-stone-900 font-serif-cn font-bold text-base tracking-wide',
       callout: 'rounded-lg border border-stone-300/80 bg-[#f3ede2] px-4 py-3 text-stone-800 text-[13.5px]',
+      blockquote: 'border-l-2 border-amber-700/50 bg-[#f7f2e7] pl-4 pr-3 py-2.5 font-serif-cn text-stone-800',
       table: 'rounded-lg border border-stone-300 bg-stone-100/70 px-3.5 py-2.5 font-mono-tech text-xs text-stone-700 overflow-x-auto',
       divider: 'border-stone-300/70',
     },
@@ -95,6 +164,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
       body: 'text-zinc-300',
       heading: 'text-amber-200 border-l-2 border-amber-500/70 pl-3 font-serif-cn font-bold text-[15px]',
       callout: 'rounded-lg border border-amber-700/35 bg-amber-950/25 px-4 py-3 text-amber-100/90 text-[13.5px]',
+      blockquote: 'border-l-2 border-amber-500/50 bg-zinc-900/60 pl-4 pr-3 py-2.5 font-serif-cn text-zinc-300',
       table: 'rounded-lg border border-zinc-800 bg-zinc-900/80 px-3.5 py-2.5 font-mono-tech text-xs text-zinc-300 overflow-x-auto',
       divider: 'border-zinc-800',
     },
@@ -116,8 +186,15 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
         if (block.type === 'callout') {
           return (
             <div key={idx} className={`whitespace-pre-line leading-[1.85] ${palette.callout}`}>
-              {block.text}
+              {renderInlineRichText(block.text, theme)}
             </div>
+          );
+        }
+        if (block.type === 'blockquote') {
+          return (
+            <blockquote key={idx} className={`whitespace-pre-line leading-[1.85] rounded-r-lg ${palette.blockquote}`}>
+              {renderInlineRichText(block.text, theme)}
+            </blockquote>
           );
         }
         if (block.type === 'table') {
@@ -129,7 +206,7 @@ export const EditorialProse: React.FC<EditorialProseProps> = ({
         }
         return (
           <p key={idx} className={`whitespace-pre-line ${palette.body}`}>
-            {block.text}
+            {renderInlineRichText(block.text, theme)}
           </p>
         );
       })}

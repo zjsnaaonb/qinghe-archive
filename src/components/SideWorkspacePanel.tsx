@@ -17,6 +17,7 @@ import type { EndingId, GameState, ScareMode, SiteId } from '../types/game';
 import { PROGRESSIVE_HINTS } from '../data/hints';
 import { exportSaveCode, importSaveCode } from '../engine/gameState';
 import { SITE_METAS } from './TopInvestigatorBar';
+import { stripInlineMarkdown } from './EditorialProse';
 import { horrorAudio } from '../engine/audio';
 
 export type RightPanelMode = 'notebook' | 'hints' | 'settings' | null;
@@ -212,7 +213,7 @@ export const SideWorkspacePanel: React.FC<SideWorkspacePanelProps> = ({
                         </button>
                       </div>
                       <p className="text-xs leading-relaxed text-stone-700 whitespace-pre-line">
-                        “{clue.detail}”
+                        “{stripInlineMarkdown(clue.detail)}”
                       </p>
                     </div>
                   ))}

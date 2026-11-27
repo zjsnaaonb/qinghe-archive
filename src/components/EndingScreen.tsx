@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { EndingId, EndingPayload, EncryptedBlock, RescueStatus } from '../types/game';
 import { decryptVaultBlock } from '../engine/crypto';
+import { renderInlineRichText } from './EditorialProse';
 import { horrorAudio } from '../engine/audio';
 
 export interface EndingScreenProps {
@@ -282,7 +283,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
               <div className="space-y-4 font-serif-cn text-base leading-8 text-stone-800">
                 {data.paragraphs.slice(0, visibleCount).map((p, idx) => (
                   <p key={idx} className="indent-8 transition-opacity duration-500">
-                    {p}
+                    {renderInlineRichText(p, 'journal')}
                   </p>
                 ))}
               </div>
@@ -315,7 +316,7 @@ export const EndingScreen: React.FC<EndingScreenProps> = ({
               {data.epilogueDocTitle}
             </h2>
             <div className="whitespace-pre-line rounded-xl border border-[#ece6da] bg-[#faf8f3] p-5 font-serif-cn text-sm leading-7 text-stone-700">
-              {data.epilogueDocBody}
+              {renderInlineRichText(data.epilogueDocBody, 'journal')}
             </div>
           </div>
         )}
