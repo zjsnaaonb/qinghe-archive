@@ -4,6 +4,7 @@ import { ZHIXIA_NOTES } from '../data/zhixiaNotesData';
 import { ENCRYPTED_VAULT, GATE_HASHES } from '../data/encryptedVault';
 import { decryptVaultBlock, verifyPassphraseHash } from '../engine/crypto';
 import { scoreSearchMatch } from '../engine/search';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 import { EditorialProse } from '../components/EditorialProse';
 import type { CommonSiteProps } from './siteProps';
@@ -26,10 +27,18 @@ export const ZhixiaNotesSite: React.FC<CommonSiteProps> = ({
   const surfaceNotes = useMemo(() => ZHIXIA_NOTES.filter((n) => !n.requiresDeepUnlock), []);
   const deepNotes = useMemo(() => ZHIXIA_NOTES.filter((n) => n.requiresDeepUnlock === true), []);
 
-  const [activeTab, setActiveTab] = useState<FolderTab>('surface');
-  const [selectedNoteId, setSelectedNoteId] = useState<string>(surfaceNotes[0]?.id ?? ZHIXIA_NOTES[0]?.id ?? '');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<FolderTab>(() => siteUiMemory.notes.activeTab);
+  const [selectedNoteId, setSelectedNoteId] = useState<string>(
+    () => siteUiMemory.notes.selectedNoteId || surfaceNotes[0]?.id || ZHIXIA_NOTES[0]?.id || ''
+  );
+  const [searchQuery, setSearchQuery] = useState(() => siteUiMemory.notes.searchQuery);
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.notes.activeTab = activeTab;
+    siteUiMemory.notes.selectedNoteId = selectedNoteId;
+    siteUiMemory.notes.searchQuery = searchQuery;
+  }, [activeTab, selectedNoteId, searchQuery]);
 
   const [passInput, setPassInput] = useState('');
   const [unlockBusy, setUnlockBusy] = useState(false);

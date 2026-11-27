@@ -17,6 +17,7 @@ import { OA_DOCUMENTS } from '../data/oaData';
 import { ENCRYPTED_VAULT, GATE_HASHES } from '../data/encryptedVault';
 import { decryptVaultBlock, verifyPassphraseHash } from '../engine/crypto';
 import { scoreSearchMatch } from '../engine/search';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 import { EditorialProse } from '../components/EditorialProse';
 import type { OADocument, OALevel, SiteId } from '../types/game';
@@ -109,10 +110,18 @@ export const OaInternalSite: React.FC<CommonSiteProps> = ({
   onElevateOaLevel,
   onCacheDecrypted,
 }) => {
-  const [activeFolder, setActiveFolder] = useState<FolderFilter>('全部卷宗');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDocId, setSelectedDocId] = useState<string>(OA_DOCUMENTS[0]?.id ?? '');
+  const [activeFolder, setActiveFolder] = useState<FolderFilter>(() => siteUiMemory.oa.activeFolder);
+  const [searchQuery, setSearchQuery] = useState(() => siteUiMemory.oa.searchQuery);
+  const [selectedDocId, setSelectedDocId] = useState<string>(
+    () => siteUiMemory.oa.selectedDocId || OA_DOCUMENTS[0]?.id || ''
+  );
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.oa.activeFolder = activeFolder;
+    siteUiMemory.oa.searchQuery = searchQuery;
+    siteUiMemory.oa.selectedDocId = selectedDocId;
+  }, [activeFolder, searchQuery, selectedDocId]);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [loginUser, setLoginUser] = useState<string>(

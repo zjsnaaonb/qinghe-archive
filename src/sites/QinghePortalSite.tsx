@@ -12,6 +12,7 @@ import type { CommonSiteProps } from './siteProps';
 import { ForensicPhotoViewer, VISUAL_CAPTIONS } from '../components/ForensicPhotoViewer';
 import { EditorialProse } from '../components/EditorialProse';
 import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 
 type CategoryFilter = '全部馆藏' | ArchiveEntry['category'] | '已发现残卷';
@@ -37,13 +38,21 @@ export const QinghePortalSite: React.FC<CommonSiteProps> = ({
   onAdjustContamination,
   onTriggerScare,
 }) => {
-  const [viewMode, setViewMode] = useState<'home' | 'detail'>('home');
-  const [category, setCategory] = useState<CategoryFilter>('全部馆藏');
-  const [localQuery, setLocalQuery] = useState('');
-  const [selectedEntryId, setSelectedEntryId] = useState<string>('qh-37-09');
+  const [viewMode, setViewMode] = useState<'home' | 'detail'>(() => siteUiMemory.qinghe.viewMode);
+  const [category, setCategory] = useState<CategoryFilter>(() => siteUiMemory.qinghe.category);
+  const [localQuery, setLocalQuery] = useState(() => siteUiMemory.qinghe.localQuery);
+  const [selectedEntryId, setSelectedEntryId] = useState<string>(() => siteUiMemory.qinghe.selectedEntryId);
   const [compareOriginalSnapshot, setCompareOriginalSnapshot] = useState(false);
-  const [fullCatalogOpen, setFullCatalogOpen] = useState(false);
+  const [fullCatalogOpen, setFullCatalogOpen] = useState(() => siteUiMemory.qinghe.fullCatalogOpen);
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.qinghe.viewMode = viewMode;
+    siteUiMemory.qinghe.category = category;
+    siteUiMemory.qinghe.localQuery = localQuery;
+    siteUiMemory.qinghe.selectedEntryId = selectedEntryId;
+    siteUiMemory.qinghe.fullCatalogOpen = fullCatalogOpen;
+  }, [viewMode, category, localQuery, selectedEntryId, fullCatalogOpen]);
 
   // 响应跨站检索或引导条直达具体条目
   useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type {
   DiscoveredClue,
@@ -16,6 +16,7 @@ import {
   saveGameState,
 } from './engine/gameState';
 import { horrorAudio } from './engine/audio';
+import { getSiteScroll, resetAllSiteMemory, saveSiteScroll } from './engine/siteMemory';
 import {
   extractSearchSnippet,
   normalizeCompactSearch,
@@ -133,7 +134,8 @@ export const App: React.FC = () => {
   const [navCommand, setNavCommand] = useState<NavCommand | null>(null);
 
   const navSeqRef = useRef<number>(1);
-  const siteScrollMapRef = useRef<Partial<Record<SiteId, number>>>({});
+  const pendingScrollRestoreRef = useRef<number | null>(null);
+  const pendingClicksRef = useRef<number>(0);
   const lastSiteSnapRef = useRef<Partial<Record<SiteId, NavSnapshot>>>({
     [state.currentSite]: {
       site: state.currentSite,
@@ -188,7 +190,7 @@ export const App: React.FC = () => {
     prevVisibleMailCountRef.current = visibleMails.length;
   }, [visibleMails.length, state.hasEnteredGame, flashToast]);
 
-  // 持久化保存与幕次推导
+  // 幕次推导与防抖持久化（避免每次点击同步阻塞主线程序列化 JSON）
   useEffect(() => {
     const derived = computeDerivedAct(state);
     if (derived !== state.act) {
@@ -198,26 +200,48 @@ export const App: React.FC = () => {
         flashToast(`已进入 ${ACT_TITLES[derived]}`);
       }
     }
-    saveGameState(state);
+    const saveTimer = window.setTimeout(() => {
+      saveGameState(state);
+    }, 300);
+    return () => window.clearTimeout(saveTimer);
   }, [state, flashToast]);
 
-  // 唤醒古琴夜雨声景
+  // 唤醒古琴夜雨声景，并将点击计数合并批处理（彻底消除点击瞬间触发全树重渲染的卡顿）
   useEffect(() => {
     const onAnyPointer = () => {
       horrorAudio.setMuted(state.audioMuted);
       if (state.hasEnteredGame) {
         horrorAudio.startOrUpdateAmbient(state.act);
       }
-      setState((prev) => ({ ...prev, totalClicks: prev.totalClicks + 1 }));
+      pendingClicksRef.current += 1;
     };
-    window.addEventListener('pointerdown', onAnyPointer);
-    return () => window.removeEventListener('pointerdown', onAnyPointer);
+    window.addEventListener('pointerdown', onAnyPointer, { passive: true });
+    const flushTimer = window.setInterval(() => {
+      if (pendingClicksRef.current > 0) {
+        const delta = pendingClicksRef.current;
+        pendingClicksRef.current = 0;
+        setState((prev) => ({ ...prev, totalClicks: prev.totalClicks + delta }));
+      }
+    }, 5000);
+    return () => {
+      window.removeEventListener('pointerdown', onAnyPointer);
+      window.clearInterval(flushTimer);
+    };
   }, [state.audioMuted, state.act, state.hasEnteredGame]);
+
+  // 切换站点后在浏览器绘制前零闪烁还原上次停留的滚动高度
+  useLayoutEffect(() => {
+    if (pendingScrollRestoreRef.current !== null && typeof window !== 'undefined') {
+      const targetY = pendingScrollRestoreRef.current;
+      pendingScrollRestoreRef.current = null;
+      window.scrollTo(0, targetY);
+    }
+  }, [state.currentSite]);
 
   const handleNavigateSite = useCallback(
     (site: SiteId, targetItemId?: string) => {
       if (typeof window !== 'undefined') {
-        siteScrollMapRef.current[state.currentSite] = window.scrollY;
+        saveSiteScroll(state.currentSite, window.scrollY);
       }
 
       setState((prev) => ({
@@ -236,19 +260,15 @@ export const App: React.FC = () => {
         };
         pushNavHistory(snap);
         setFocusedItemId(targetItemId);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        pendingScrollRestoreRef.current = 0;
       } else {
-        // 纯切换顶部网站标签：恢复该站点上次停留的原页面与原滚动位置！
         const remembered = lastSiteSnapRef.current[site] ?? {
           site,
           itemId: getDefaultItemForSite(site),
           label: resolveItemLabel(site, getDefaultItemForSite(site)),
         };
         pushNavHistory(remembered);
-        const savedScroll = siteScrollMapRef.current[site] ?? 0;
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: savedScroll, behavior: 'auto' });
-        });
+        pendingScrollRestoreRef.current = getSiteScroll(site);
       }
     },
     [state.currentSite, pushNavHistory]
@@ -257,7 +277,7 @@ export const App: React.FC = () => {
   const applySnapshotNavigation = useCallback(
     (target: NavSnapshot, nextIdx: number) => {
       if (typeof window !== 'undefined') {
-        siteScrollMapRef.current[state.currentSite] = window.scrollY;
+        saveSiteScroll(state.currentSite, window.scrollY);
       }
       lastSiteSnapRef.current[target.site] = target;
       setNavIdx(nextIdx);
@@ -274,9 +294,7 @@ export const App: React.FC = () => {
         site: target.site,
         itemId: target.itemId,
       });
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      pendingScrollRestoreRef.current = 0;
     },
     [state.currentSite]
   );
@@ -298,7 +316,7 @@ export const App: React.FC = () => {
   const handleJumpSnapshot = useCallback(
     (snap: NavSnapshot) => {
       if (typeof window !== 'undefined') {
-        siteScrollMapRef.current[state.currentSite] = window.scrollY;
+        saveSiteScroll(state.currentSite, window.scrollY);
       }
       pushNavHistory(snap);
       setState((prev) => ({
@@ -314,9 +332,7 @@ export const App: React.FC = () => {
         site: snap.site,
         itemId: snap.itemId,
       });
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      });
+      pendingScrollRestoreRef.current = 0;
     },
     [state.currentSite, pushNavHistory]
   );
@@ -810,6 +826,7 @@ export const App: React.FC = () => {
           }))
         }
         onResetGame={() => {
+          resetAllSiteMemory();
           const fresh = createInitialGameState();
           fresh.unlockedEndings = state.unlockedEndings;
           setState(fresh);
@@ -884,49 +901,17 @@ export const App: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 常驻挂载多站点容器：从 OA 切去民俗馆或论坛再切回时，100% 保持刚才打开的那一页、检索框与滚动位置不丢失！ */}
+      {/* 零卡顿单站点瞬切架构：仅渲染当前激活站点，由 siteUiMemory 毫秒级恢复各站原页面与原滚动位置 */}
       <div className="relative flex flex-1 w-full items-stretch">
-        <motion.main
-          layout
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="flex-1 min-w-0"
-        >
-          {state.unlockedSites.includes('mail') && (
-            <div className={state.currentSite === 'mail' ? 'block' : 'hidden'}>
-              <MailSite {...makeSiteProps('mail')} />
-            </div>
-          )}
-          {state.unlockedSites.includes('qinghe') && (
-            <div className={state.currentSite === 'qinghe' ? 'block' : 'hidden'}>
-              <QinghePortalSite {...makeSiteProps('qinghe')} />
-            </div>
-          )}
-          {state.unlockedSites.includes('bbs') && (
-            <div className={state.currentSite === 'bbs' ? 'block' : 'hidden'}>
-              <BbsSnapshotSite {...makeSiteProps('bbs')} />
-            </div>
-          )}
-          {state.unlockedSites.includes('chronicles') && (
-            <div className={state.currentSite === 'chronicles' ? 'block' : 'hidden'}>
-              <ChroniclesGovSite {...makeSiteProps('chronicles')} />
-            </div>
-          )}
-          {state.unlockedSites.includes('oa') && (
-            <div className={state.currentSite === 'oa' ? 'block' : 'hidden'}>
-              <OaInternalSite {...makeSiteProps('oa')} />
-            </div>
-          )}
-          {state.unlockedSites.includes('notes') && (
-            <div className={state.currentSite === 'notes' ? 'block' : 'hidden'}>
-              <ZhixiaNotesSite {...makeSiteProps('notes')} />
-            </div>
-          )}
-          {state.unlockedSites.includes('b2') && (
-            <div className={state.currentSite === 'b2' ? 'block' : 'hidden'}>
-              <B2TerminalSite {...makeSiteProps('b2')} />
-            </div>
-          )}
-        </motion.main>
+        <main className="flex-1 min-w-0">
+          {state.currentSite === 'mail' && <MailSite {...makeSiteProps('mail')} />}
+          {state.currentSite === 'qinghe' && <QinghePortalSite {...makeSiteProps('qinghe')} />}
+          {state.currentSite === 'bbs' && <BbsSnapshotSite {...makeSiteProps('bbs')} />}
+          {state.currentSite === 'chronicles' && <ChroniclesGovSite {...makeSiteProps('chronicles')} />}
+          {state.currentSite === 'oa' && <OaInternalSite {...makeSiteProps('oa')} />}
+          {state.currentSite === 'notes' && <ZhixiaNotesSite {...makeSiteProps('notes')} />}
+          {state.currentSite === 'b2' && <B2TerminalSite {...makeSiteProps('b2')} />}
+        </main>
 
         <AnimatePresence initial={false}>
           {activePanel && (
@@ -950,7 +935,10 @@ export const App: React.FC = () => {
                   onJumpToSite={(s, d) => handleNavigateSite(s, d)}
                   onChangeScareMode={(mode) => setState((prev) => ({ ...prev, scareMode: mode }))}
                   onImportState={(imported) => setState({ ...imported, hasEnteredGame: true })}
-                  onResetGame={() => setState(createInitialGameState())}
+                  onResetGame={() => {
+                    resetAllSiteMemory();
+                    setState(createInitialGameState());
+                  }}
                   onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
                 />
               </div>
@@ -982,7 +970,10 @@ export const App: React.FC = () => {
                 }}
                 onChangeScareMode={(mode) => setState((prev) => ({ ...prev, scareMode: mode }))}
                 onImportState={(imported) => setState({ ...imported, hasEnteredGame: true })}
-                onResetGame={() => setState(createInitialGameState())}
+                onResetGame={() => {
+                  resetAllSiteMemory();
+                  setState(createInitialGameState());
+                }}
                 onViewEnding={(eid) => setState((prev) => ({ ...prev, activeEnding: eid }))}
               />
             </motion.div>

@@ -146,10 +146,12 @@ export const TopInvestigatorBar: React.FC<TopInvestigatorBarProps> = ({
       <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-2.5 px-4 py-2.5">
         <div className="flex items-center gap-2.5 shrink-0">
           <div className="flex items-center gap-2">
-            {/* 传统朱文方印字标，取代廉价圆点/通用图标 */}
-            <span className="inline-flex h-5 w-5 items-center justify-center rounded-[3px] border border-[#7f1d1d] bg-[#9e2a2b] font-serif-cn text-[11px] font-bold leading-none text-[#fbf8f1] select-none">
-              禾
-            </span>
+            {/* 真实篆刻白文朱砂印记（gpt-image 生成） */}
+            <img
+              src="./favicon.png"
+              alt="禾"
+              className="h-5 w-5 rounded-[2px] object-cover shadow-2xs select-none"
+            />
             <span className="font-serif-cn text-sm font-bold tracking-[0.14em] text-[#16263f]">
               青禾库
             </span>

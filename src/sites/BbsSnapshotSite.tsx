@@ -13,6 +13,7 @@ import type { BBSReply, BBSThread } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
 import { renderInlineRichText, stripInlineMarkdown } from '../components/EditorialProse';
 import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 
 export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
@@ -25,17 +26,27 @@ export const BbsSnapshotSite: React.FC<CommonSiteProps> = ({
   onUnlockSite,
   onMarkRead,
 }) => {
-  const [viewMode, setViewMode] = useState<'list' | 'thread'>('list');
-  const [activeBoard, setActiveBoard] = useState<'zijing' | 'developer'>('zijing');
-  const [selectedThreadId, setSelectedThreadId] = useState<string>('zijing-40918');
-  const [searchInput, setSearchInput] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'thread'>(() => siteUiMemory.bbs.viewMode);
+  const [activeBoard, setActiveBoard] = useState<'zijing' | 'developer'>(() => siteUiMemory.bbs.activeBoard);
+  const [selectedThreadId, setSelectedThreadId] = useState<string>(() => siteUiMemory.bbs.selectedThreadId);
+  const [searchInput, setSearchInput] = useState(() => siteUiMemory.bbs.searchInput);
   const [hiddenFloorInput, setHiddenFloorInput] = useState('');
   const [unlockedHiddenKeywords, setUnlockedHiddenKeywords] = useState<string[]>([]);
   const [hiddenFloorError, setHiddenFloorError] = useState('');
-  const [visibleFloorLimit, setVisibleFloorLimit] = useState<number>(8);
-  const [onlyOp, setOnlyOp] = useState(false);
-  const [expandAllThreads, setExpandAllThreads] = useState(false);
+  const [visibleFloorLimit, setVisibleFloorLimit] = useState<number>(() => siteUiMemory.bbs.visibleFloorLimit);
+  const [onlyOp, setOnlyOp] = useState(() => siteUiMemory.bbs.onlyOp);
+  const [expandAllThreads, setExpandAllThreads] = useState(() => siteUiMemory.bbs.expandAllThreads);
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.bbs.viewMode = viewMode;
+    siteUiMemory.bbs.activeBoard = activeBoard;
+    siteUiMemory.bbs.selectedThreadId = selectedThreadId;
+    siteUiMemory.bbs.searchInput = searchInput;
+    siteUiMemory.bbs.visibleFloorLimit = visibleFloorLimit;
+    siteUiMemory.bbs.onlyOp = onlyOp;
+    siteUiMemory.bbs.expandAllThreads = expandAllThreads;
+  }, [viewMode, activeBoard, selectedThreadId, searchInput, visibleFloorLimit, onlyOp, expandAllThreads]);
 
   // 论坛实况灵异盖楼状态：阅读核心帖数秒后，B2暗房离线节点实时正在输入并刷出第四面墙鬼回复
   const [ghostReplyStage, setGhostReplyStage] = useState<'idle' | 'typing' | 'posted'>('idle');

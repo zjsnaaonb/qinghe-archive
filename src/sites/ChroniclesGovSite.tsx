@@ -12,6 +12,7 @@ import type { CommonSiteProps } from './siteProps';
 import { ForensicPhotoViewer } from '../components/ForensicPhotoViewer';
 import { EditorialProse } from '../components/EditorialProse';
 import { extractSearchSnippet, scoreSearchMatch } from '../engine/search';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 
 type GovTab = '全部公开卷宗' | ChronicleDoc['classification'];
@@ -36,13 +37,20 @@ export const ChroniclesGovSite: React.FC<CommonSiteProps> = ({
   onAdjustContamination,
   onTriggerScare,
 }) => {
-  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
-  const [activeTab, setActiveTab] = useState<GovTab>('全部公开卷宗');
-  const [searchInput, setSearchInput] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>(() => siteUiMemory.chronicles.viewMode);
+  const [activeTab, setActiveTab] = useState<GovTab>(() => siteUiMemory.chronicles.activeTab);
+  const [searchInput, setSearchInput] = useState(() => siteUiMemory.chronicles.searchInput);
   const [selectedDocId, setSelectedDocId] = useState<string>(
-    () => CHRONICLE_DOCS[0]?.id ?? 'chr-1999-closure'
+    () => siteUiMemory.chronicles.selectedDocId || CHRONICLE_DOCS[0]?.id || 'chr-1999-closure'
   );
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.chronicles.viewMode = viewMode;
+    siteUiMemory.chronicles.activeTab = activeTab;
+    siteUiMemory.chronicles.searchInput = searchInput;
+    siteUiMemory.chronicles.selectedDocId = selectedDocId;
+  }, [viewMode, activeTab, searchInput, selectedDocId]);
 
   useEffect(() => {
     if (!focusedItemId) return;

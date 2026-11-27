@@ -5,6 +5,7 @@ import { MAIL_MESSAGES, type MailMessage } from '../data/mailData';
 import type { CommonSiteProps } from './siteProps';
 import type { SiteId } from '../types/game';
 import { EditorialProse } from '../components/EditorialProse';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 
 export const MailSite: React.FC<CommonSiteProps> = ({
@@ -27,8 +28,12 @@ export const MailSite: React.FC<CommonSiteProps> = ({
     });
   }, [state.act, state.unlockedSites, state.readDocIds, focusedItemId]);
 
-  const [selectedId, setSelectedId] = useState<string>('mail-prologue');
+  const [selectedId, setSelectedId] = useState<string>(() => siteUiMemory.mail.selectedId || 'mail-prologue');
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.mail.selectedId = selectedId;
+  }, [selectedId]);
 
   useEffect(() => {
     if (focusedItemId && MAIL_MESSAGES.some((m) => m.id === focusedItemId)) {

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { ENCRYPTED_VAULT, GATE_HASHES } from '../data/encryptedVault';
 import { decryptVaultBlock, normalizePassphrase, verifyPassphraseHash } from '../engine/crypto';
+import { siteUiMemory } from '../engine/siteMemory';
 import { horrorAudio } from '../engine/audio';
 import type { EndingId } from '../types/game';
 import type { CommonSiteProps } from './siteProps';
@@ -102,8 +103,12 @@ export const B2TerminalSite: React.FC<CommonSiteProps> = ({
   onRecordB2Violation,
   onTriggerEnding,
 }) => {
-  const [activeTab, setActiveTab] = useState<B2TabId>('telecine');
+  const [activeTab, setActiveTab] = useState<B2TabId>(() => siteUiMemory.b2.activeTab);
   const lastNavSeqRef = useRef<number>(0);
+
+  useEffect(() => {
+    siteUiMemory.b2.activeTab = activeTab;
+  }, [activeTab]);
 
   useEffect(() => {
     if (!navCommand || navCommand.site !== 'b2' || navCommand.seq === lastNavSeqRef.current) {
